@@ -37,7 +37,7 @@ def split_episodes(path_video: Path):
     start_features = get_features(const.path_features.joinpath("start_episode"))
     end_features = get_features(const.path_features.joinpath("end_episode"))
 
-    episode_frames, episode_num, record = [], 0, False
+    episode_num, record = 0, False
     bar = tqdm(clip.iter_frames(), total=int(fps*duration))
     for image in bar:
         if image.shape[0] != const.image_size[0]:
@@ -53,6 +53,7 @@ def split_episodes(path_video: Path):
             record = False
             path = path_episodes.joinpath(f"{episode_num}.mp4")
             saved_clip =  mp.ImageSequenceClip(episode_frames, fps=30)
+            del(episode_frames)
             saved_clip.write_videofile(str(path))
             saved_clip.close()
         bar.set_description(f"Process {episode_num} episode")
