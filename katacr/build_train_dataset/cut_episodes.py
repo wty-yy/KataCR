@@ -12,6 +12,7 @@
 import os, sys
 sys.path.append(os.getcwd())
 import moviepy.editor as mp
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 from katacr.utils.related_pkgs.utility import *
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.utils import load_image_array
@@ -37,25 +38,20 @@ def split_episodes(path_video: Path):
     start_features = get_features(const.path_features.joinpath("start_episode"))
     end_features = get_features(const.path_features.joinpath("end_episode"))
 
-    episode_num, record = 0, False
-    bar = tqdm(clip.iter_frames(), total=int(fps*duration))
-    for image in bar:
+    episode_num, start_idx = 0, -1
+    bar = tqdm(clip.iter_frames(), total=int(fps*duration)+1)
+    for idx, image in enumerate(bar):
         if image.shape[0] != const.image_size[0]:
             image = cv2.resize(image, const.image_size)
         image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        if not record and check_feature_exists(image_gray, start_features):
+        if start_idx == -1 and check_feature_exists(image_gray, start_features):
+            assert(start_idx == -1)
             episode_num += 1
-            episode_frames = []
-            record = True
-        if record:
-            episode_frames.append(image)
-        if record and check_feature_exists(image_gray, end_features):
-            record = False
+            start_idx = idx
+        if start_idx != -1 and check_feature_exists(image_gray, end_features):
             path = path_episodes.joinpath(f"{episode_num}.mp4")
-            saved_clip =  mp.ImageSequenceClip(episode_frames, fps=30)
-            del(episode_frames)
-            saved_clip.write_videofile(str(path))
-            saved_clip.close()
+            ffmpeg_extract_subclip(str(path_video), start_idx/fps, idx/fps, str(path))
+            start_idx = -1
         bar.set_description(f"Process {episode_num} episode")
     clip.close()
 
