@@ -18,12 +18,27 @@ from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.utils import load_image_array
 import constant as const
 import cv2
+from katacr.ocr_text.ocr_predict import OCRText
+ocr_text = OCRText()
 
 def get_features(path_features: Path) -> Sequence[np.ndarray]:
     features = []
     for path in path_features.iterdir():
+        file_name = path.name[:-4]
         if path.is_file() and path.name[-3:] == 'jpg':
-            features.append(load_image_array(path, to_gray=True, keep_dim=False))
+            feature = {
+                'feature': None,
+                'x_loc_rate': None,
+                'y_loc_rate': None
+            }
+            feature['feature'] = load_image_array(path, to_gray=True, keep_dim=False)
+            for string in file_name.split('_'):
+                if '=' in string:
+                    axis, rate = string.split('=')
+                    if axis != 'x' and axis != 'y':
+                        raise Exception(f"Don't know `{axis}` meaning in `{str(path)}`")
+                    feature[f"{axis}_loc_rate"] = float(rate)
+            features.append(feature)
     return features
 
 def split_episodes(path_video: Path):
@@ -31,12 +46,11 @@ def split_episodes(path_video: Path):
     fps, duration = clip.fps, clip.duration
     file_name = path_video.name[:-4]
     path_episodes = path_video.parent.joinpath(file_name+"_episodes")
-    if path_episodes.exists():
-        print(f"The episodes path '{str(path_episodes)} is exists, still continue? [Enter]'"); input()
+    # if path_episodes.exists():
+    #     print(f"The episodes path '{str(path_episodes)} is exists, still continue? [Enter]'"); input()
     path_episodes.mkdir(exist_ok=True)
 
     start_features = get_features(const.path_features.joinpath("start_episode"))
-    end_features = get_features(const.path_features.joinpath("end_episode"))
 
     episode_num, start_idx = 0, -1
     bar = tqdm(clip.iter_frames(), total=int(fps*duration)+1)
@@ -45,28 +59,56 @@ def split_episodes(path_video: Path):
             image = cv2.resize(image, const.image_size)
         image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         if start_idx == -1 and check_feature_exists(image_gray, start_features):
-            assert(start_idx == -1)
             episode_num += 1
             start_idx = idx
-        if start_idx != -1 and check_feature_exists(image_gray, end_features):
+        from katacr.build_train_dataset.split_frame_parts import process_part4
+        if start_idx != -1 and check_text_exists(
+            list(process_part4(image_gray).values()),  # images
+            const.text_features_episode_end  # texts
+        ):
             path = path_episodes.joinpath(f"{episode_num}.mp4")
-            ffmpeg_extract_subclip(str(path_video), start_idx/fps, idx/fps, str(path))
+            ffmpeg_extract_subclip(str(path_video), start_idx/fps, idx/fps+1, str(path))
             start_idx = -1
         bar.set_description(f"Process {episode_num} episode")
     clip.close()
 
-def match_feature(image, feature):
+def match_feature(image, feature: dict):
     # assert(image.shape[-1] == feature.shape[-1])
     # print(image.shape, feature.shape)
-    result = cv2.matchTemplate(image, feature, cv2.TM_SQDIFF_NORMED)
+    result = cv2.matchTemplate(image, feature['feature'], cv2.TM_SQDIFF_NORMED)
+
+    # _, _, min_loc, _ = cv2.minMaxLoc(result)
+    # loc_mid = min_loc + np.array(feature['feature'].shape[::-1]) // 2
+    # # x_mid = min_loc[0] + feature.shape[1] // 2
+    # rate = loc_mid / np.array(image.shape[::-1])
+    # if (
+    #     feature['x_loc_rate'] is not None and 
+    #     abs(rate[0] - feature['x_loc_rate']) > 0.1
+    # ):
+    #     return False
+    # if (
+    #     feature['y_loc_rate'] is not None and
+    #     abs(rate[1] - feature['y_loc_rate']) > 0.1
+    # ):
+    #     return False
     return result.min() < const.mse_feature_match_threshold
 
 def check_feature_exists(
         image: np.ndarray,
-        features: Sequence[np.ndarray]
+        features: Sequence[dict]
     ) -> bool:
     for feature in features:
         if match_feature(image, feature):
+            return True
+    return False
+
+def check_text_exists(
+        images: np.ndarray,
+        texts: Sequence[str]
+    ):
+    pred = "".join(ocr_text.predict(images)).lower()
+    for text in texts:
+        if text in pred:
             return True
     return False
 
