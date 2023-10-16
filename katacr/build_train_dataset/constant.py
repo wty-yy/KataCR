@@ -4,8 +4,8 @@ image_size = (592, 1280)
 path_logs = Path.cwd().joinpath("logs")
 path_logs.mkdir(exist_ok=True)
 path_features = Path.cwd().joinpath("katacr/features")
-path_videos = Path("/home/wty/Coding/datasets/CR/fast_pig_2.6")
-assert(path_videos.exists())
+# path_videos = Path("/home/wty/Coding/datasets/CR/fast_pig_2.6")
+# assert(path_videos.exists())
 
 split_bbox_params = {
     'part1': {  # number ocr
@@ -30,3 +30,4 @@ fps_voc_train_data = 3
 
 mse_feature_match_threshold = 0.03
 text_features_episode_end = ['match', 'over', 'break']
+text_confidence_threshold = 0.005

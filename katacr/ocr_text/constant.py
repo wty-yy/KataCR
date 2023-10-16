@@ -9,4 +9,5 @@ character_set = {
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
 }
 
-path_weights = "/home/wty/Coding/models/OCR/OCR-CRNN-0020-lite"
+# path_weights = "/home/wty/Coding/models/OCR/OCR-CRNN-0020-lite"
+path_weights = "/home/yy/Coding/models/OCR/OCR-CRNN-0020-lite"

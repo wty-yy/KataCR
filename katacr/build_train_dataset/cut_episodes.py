@@ -73,24 +73,7 @@ def split_episodes(path_video: Path):
     clip.close()
 
 def match_feature(image, feature: dict):
-    # assert(image.shape[-1] == feature.shape[-1])
-    # print(image.shape, feature.shape)
     result = cv2.matchTemplate(image, feature['feature'], cv2.TM_SQDIFF_NORMED)
-
-    # _, _, min_loc, _ = cv2.minMaxLoc(result)
-    # loc_mid = min_loc + np.array(feature['feature'].shape[::-1]) // 2
-    # # x_mid = min_loc[0] + feature.shape[1] // 2
-    # rate = loc_mid / np.array(image.shape[::-1])
-    # if (
-    #     feature['x_loc_rate'] is not None and 
-    #     abs(rate[0] - feature['x_loc_rate']) > 0.1
-    # ):
-    #     return False
-    # if (
-    #     feature['y_loc_rate'] is not None and
-    #     abs(rate[1] - feature['y_loc_rate']) > 0.1
-    # ):
-    #     return False
     return result.min() < const.mse_feature_match_threshold
 
 def check_feature_exists(
@@ -102,11 +85,15 @@ def check_feature_exists(
             return True
     return False
 
+import cv2
 def check_text_exists(
         images: np.ndarray,
         texts: Sequence[str]
     ):
-    pred = "".join(ocr_text.predict(images)).lower()
+    pred_list, conf = ocr_text.predict(images)
+    pred = "".join(pred_list).lower()
+    if np.max(conf) < const.text_confidence_threshold:
+        return False  # no text
     for text in texts:
         if text in pred:
             return True

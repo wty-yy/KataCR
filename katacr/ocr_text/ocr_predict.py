@@ -27,7 +27,8 @@ def predict(state: TrainState, x, blank_id=0) -> Tuple[jax.Array, jax.Array]:
         (pred_idxs != jnp.pad(pred_idxs[:,:-1], ((0,0),(1,0)))) &
         (pred_idxs != blank_id)
     )
-    return pred_idxs, mask
+    conf = jnp.prod(pred_probs.max(-1), -1)  # (B,) confidence
+    return pred_idxs, mask, conf
 
 import numpy as np
 def apply_mask(pred_idxs, mask, max_len=23) -> jax.Array:
@@ -44,7 +45,7 @@ def predict_result(
         max_len: int,
         idx2ch: dict
     ) -> Sequence[str]:
-    pred_idx, mask = predict(state, x)
+    pred_idx, mask, conf = jax.device_get(predict(state, x))
     y_pred = apply_mask(pred_idx, mask, max_len)
     pred_seq = []
     for i in range(y_pred.shape[0]):
@@ -53,7 +54,7 @@ def predict_result(
             if y_pred[i,j] == 0: break
             seq.append(chr(idx2ch[y_pred[i,j]]))
         pred_seq.append("".join(seq))
-    return pred_seq
+    return pred_seq, conf
 
 from katacr.ocr_text.parser import OCRArgs
 from katacr.ocr_text.parser import get_args_and_writer
@@ -80,6 +81,8 @@ class OCRText:
             image = cv2.resize(image, (self.args.image_width, self.args.image_height))
             if image.ndim == 3 and image.shape[-1] == 3:
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)[...,None]
+            if image.ndim == 3 and image.shape[-1] == 4:
+                image = cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)[...,None]
             if image.ndim == 2:
                 image = image[...,None]
             x[i] = image
@@ -92,9 +95,14 @@ if __name__ == '__main__':
     # from katacr.ocr_text.parser import get_args_and_writer
     ocr_text = OCRText()
 
-    path = Path("/home/wty/Coding/GitHub/KataCR/logs/extract_frames/OYASSU_20230211/end_episode1.jpg")
+    path1 = Path("/home/yy/Coding/GitHub/KataCR/test1.png")
+    path2 = Path("/home/yy/Coding/GitHub/KataCR/test2.png")
+    path3 = Path("/home/yy/Coding/GitHub/KataCR/test3.png")
     from katacr.utils import load_image_array
-    image = load_image_array(path)
-    from katacr.build_train_dataset.split_frame_parts import process_part4
-    part4 = list(process_part4(image).values())
+    image1 = load_image_array(path1)
+    image2 = load_image_array(path2)
+    image3 = load_image_array(path3)
+    # from katacr.build_train_dataset.split_frame_parts import process_part4
+    # part4 = list(process_part4(image).values())
+    part4 = [image1, image2, image3]
     print(ocr_text.predict(part4))
