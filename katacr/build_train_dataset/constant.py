@@ -4,7 +4,7 @@ image_size = (592, 1280)
 path_logs = Path.cwd().joinpath("logs")
 path_logs.mkdir(exist_ok=True)
 path_features = Path.cwd().joinpath("katacr/features")
-# path_videos = Path("/home/wty/Coding/datasets/CR/fast_pig_2.6")
+path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
 # assert(path_videos.exists())
 
 split_bbox_params = {

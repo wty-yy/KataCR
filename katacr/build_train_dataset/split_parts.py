@@ -44,13 +44,13 @@ if __name__ == '__main__':
     path_logs = const.path_logs
     path_extract = path_logs.joinpath("extract_frames")
     # path_frame = path_extract.joinpath("OYASSU_20230201")
-    path_frame = path_extract.joinpath("OYASSU_20230211")
+    path_frame = path_extract.joinpath("OYASSU_20230917")
     # path_frame = path_extract.joinpath("OYASSU_20210528")
 
     # image = Image.open(str(path_logs.joinpath("start_frame.jpg")))
     # image = Image.open(str(path_logs.joinpath("show_king_tower_hp.jpg")))
     # image = Image.open(str(path_logs.joinpath("start_setting_behind_king_tower.jpg")))
-    image = Image.open(str(path_frame.joinpath("end_episode1.jpg")))
+    image = Image.open(str(path_frame.joinpath("show_king_tower_hp.jpg")))
     image = np.array(image)
     print("Image shape:", image.shape)
 
@@ -69,6 +69,6 @@ if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
     plt.figure(figsize=(5,20))
-    # plt.imshow(image)
-    plt.imshow(part4['mid'])
+    plt.imshow(image)
+    # plt.imshow(part4['mid'])
     plt.show()
