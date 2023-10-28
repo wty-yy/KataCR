@@ -52,7 +52,6 @@ def split_episodes(path_video: Path):
 
   start_features = get_features(const.path_features.joinpath("start_episode"))
 
-<<<<<<< HEAD
   episode_num, start_idx = 0, -1
   bar = tqdm(clip.iter_frames(), total=int(fps*duration)+1)
   for idx, image in enumerate(bar):
@@ -62,7 +61,7 @@ def split_episodes(path_video: Path):
     if start_idx == -1 and check_feature_exists(image_gray, start_features):
       episode_num += 1
       start_idx = idx
-    from katacr.build_train_dataset.split_frame_parts import process_part4
+    from katacr.build_train_dataset.split_parts import process_part4
     if start_idx != -1 and check_text_exists(
       list(process_part4(image_gray).values()),  # images
       const.text_features_episode_end  # texts
@@ -72,27 +71,6 @@ def split_episodes(path_video: Path):
       start_idx = -1
     bar.set_description(f"Process {episode_num} episode")
   clip.close()
-=======
-    episode_num, start_idx = 0, -1
-    bar = tqdm(clip.iter_frames(), total=int(fps*duration)+1)
-    for idx, image in enumerate(bar):
-        if image.shape[0] != const.image_size[0]:
-            image = cv2.resize(image, const.image_size)
-        image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        if start_idx == -1 and check_feature_exists(image_gray, start_features):
-            episode_num += 1
-            start_idx = idx
-        from katacr.build_train_dataset.split_parts import process_part4
-        if start_idx != -1 and check_text_exists(
-            list(process_part4(image_gray).values()),  # images
-            const.text_features_episode_end  # texts
-        ):
-            path = path_episodes.joinpath(f"{episode_num}.mp4")
-            ffmpeg_extract_subclip(str(path_video), start_idx/fps, idx/fps+1, str(path))
-            start_idx = -1
-        bar.set_description(f"Process {episode_num} episode")
-    clip.close()
->>>>>>> bee3c706026012d240688c1fc3d1ca27182436c9
 
 def match_feature(image, feature: dict):
   result = cv2.matchTemplate(image, feature['feature'], cv2.TM_SQDIFF_NORMED)

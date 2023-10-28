@@ -45,7 +45,6 @@ def extract_frames(path_video: Path, target_idxs: dict):
     if i == max_idx: break
 
 def videos1():
-<<<<<<< HEAD
   path_video = Path("/home/wty/Coding/datasets/CR/fast_pig_2.6/OYASSU_20230917.mp4")
   target_idxs = {
     4 * 30: "start_episode",
@@ -56,18 +55,6 @@ def videos1():
     406 * 30 + 22: "end_setting_behind_king_tower",
   }
   extract_frames(path_video, target_idxs)
-=======
-    path_video = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6/OYASSU_20230917.mp4")
-    target_idxs = {
-        4 * 30: "start_episode",
-        192 * 30: "end_episode",
-        180: "start_frame",
-        368 * 30 + 16: "show_king_tower_hp",
-        405 * 30 + 22: "start_setting_behind_king_tower",
-        406 * 30 + 22: "end_setting_behind_king_tower",
-    }
-    extract_frames(path_video, target_idxs)
->>>>>>> bee3c706026012d240688c1fc3d1ca27182436c9
 
 def videos2():
   path_video = Path("/home/wty/Coding/datasets/CR/fast_pig_2.6/OYASSU_20230201.mp4")
@@ -86,7 +73,6 @@ def videos3():
   extract_frames(path_video, target_idxs)
 
 def videos4():
-<<<<<<< HEAD
   path_video = Path("/home/wty/Coding/datasets/CR/fast_pig_2.6/OYASSU_20230211.mp4")
   target_idxs = {
     (7*60+42) * 30 + 15: "end_episode1",
@@ -96,14 +82,3 @@ def videos4():
 
 if __name__ == '__main__':
   videos4()
-=======
-    path_video = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6/OYASSU_20230211.mp4")
-    target_idxs = {
-        (7*60+42) * 30 + 15: "end_episode1",
-        (12*60+9) * 30 + 15: "end_episode2",
-    }
-    extract_frames(path_video, target_idxs)
-
-if __name__ == '__main__':
-    videos1()
->>>>>>> bee3c706026012d240688c1fc3d1ca27182436c9
