@@ -41,6 +41,7 @@ def process_part4(image):
   return images
 
 if __name__ == '__main__':
+<<<<<<< HEAD:katacr/build_train_dataset/split_frame_parts.py
   path_logs = const.path_logs
   path_extract = path_logs.joinpath("extract_frames")
   # path_frame = path_extract.joinpath("OYASSU_20230201")
@@ -53,6 +54,20 @@ if __name__ == '__main__':
   image = Image.open(str(path_frame.joinpath("end_episode1.jpg")))
   image = np.array(image)
   print("Image shape:", image.shape)
+=======
+    path_logs = const.path_logs
+    path_extract = path_logs.joinpath("extract_frames")
+    # path_frame = path_extract.joinpath("OYASSU_20230201")
+    path_frame = path_extract.joinpath("OYASSU_20230917")
+    # path_frame = path_extract.joinpath("OYASSU_20210528")
+
+    # image = Image.open(str(path_logs.joinpath("start_frame.jpg")))
+    # image = Image.open(str(path_logs.joinpath("show_king_tower_hp.jpg")))
+    # image = Image.open(str(path_logs.joinpath("start_setting_behind_king_tower.jpg")))
+    image = Image.open(str(path_frame.joinpath("show_king_tower_hp.jpg")))
+    image = np.array(image)
+    print("Image shape:", image.shape)
+>>>>>>> bee3c706026012d240688c1fc3d1ca27182436c9:katacr/build_train_dataset/split_parts.py
 
   path_image_save = path_logs.joinpath("split_image")
   path_image_save.mkdir(exist_ok=True)
@@ -67,8 +82,16 @@ if __name__ == '__main__':
   for key, value in part4.items():
     Image.fromarray(value).save(str(path_image_save.joinpath(f"part4_{key}.jpg")))
 
+<<<<<<< HEAD:katacr/build_train_dataset/split_frame_parts.py
   import matplotlib.pyplot as plt
   plt.figure(figsize=(5,20))
   # plt.imshow(image)
   plt.imshow(part4['mid'])
   plt.show()
+=======
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(5,20))
+    plt.imshow(image)
+    # plt.imshow(part4['mid'])
+    plt.show()
+>>>>>>> bee3c706026012d240688c1fc3d1ca27182436c9:katacr/build_train_dataset/split_parts.py
