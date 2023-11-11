@@ -5,9 +5,9 @@
 @Author  : wty-yy
 @Version : 1.0
 @Blog  : https://wty-yy.space/
-@Desc  : 提取视频中的所有回合，按照帧中出现的特征来判断回合的开始与结束，利用OCR识别文字：
+@Desc  : 提取视频中的所有回合，基于OCR识别文字来判断回合的开始和结束，并对视频文件进行划分：
 |  Start episode  |  End episode  |
-|   card table  |  center word  |
+|   card table    |  center word  |
 '''
 import os, sys
 sys.path.append(os.getcwd())

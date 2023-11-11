@@ -1,3 +1,17 @@
+# -*- coding: utf-8 -*-
+'''
+@File    : extract_frames.py
+@Time    : 2023/11/09 10:52:36
+@Author  : wty-yy
+@Version : 1.0
+@Blog    : https://wty-yy.space/
+@Desc    : 
+This script is used to extract and save the special frame to image file in one video.
+'''
+
+if __name__ == '__main__':
+  pass
+
 from pathlib import Path
 import moviepy.editor as mp
 import numpy as np

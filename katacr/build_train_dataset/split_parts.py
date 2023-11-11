@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+'''
+@File    : split_parts.py
+@Time    : 2023/11/11 09:47:12
+@Author  : wty-yy
+@Version : 1.0
+@Blog    : https://wty-yy.space/
+@Desc    : 
+This script is used to split different part from the origin image.
+'''
 from PIL import Image
 import numpy as np
 from pathlib import Path
@@ -20,25 +30,16 @@ def extract_bbox(image, x, y, w, h):
 def to_gray(image):
   return np.array(Image.fromarray(image).convert('L'))
 
-def process_part1(image):
-  images = {}
-  for key, value in const.split_bbox_params['part1'].items():
-    images[key] = extract_bbox(image, *value)
-  return images
-
-def process_part2(image):
-  image = extract_bbox(image, *const.split_bbox_params['part2'])
-  return image
-
-def process_part3(image):
-  image = extract_bbox(image, *const.split_bbox_params['part3'])
-  return image
-
-def process_part4(image):
-  images = {}
-  for key, value in const.split_bbox_params['part4'].items():
-    images[key] = extract_bbox(image, *value)
-  return images
+def process_part(image, part_id=1):
+  part = f"part{part_id}"
+  bbox_params = const.split_bbox_params[part]
+  if type(bbox_params) == dict:
+    ret = {}
+    for key, value in bbox_params.items():
+      ret[key] = extract_bbox(image, *value)
+  else:
+    ret = extract_bbox(image, *bbox_params)
+  return ret
 
 if __name__ == '__main__':
   path_logs = const.path_logs
@@ -56,14 +57,15 @@ if __name__ == '__main__':
 
   path_image_save = path_logs.joinpath("split_image")
   path_image_save.mkdir(exist_ok=True)
-  part1 = process_part1(image)
-  for key, value in part1.items():
-    Image.fromarray(value).save(str(path_image_save.joinpath(f"part1_{key}.jpg")))
-  part2 = process_part2(image)
+  part1 = process_part(image, 1)
+  Image.fromarray(part1).save(str(path_image_save.joinpath("part1.jpg")))
+  # for key, value in part1.items():
+  #   Image.fromarray(value).save(str(path_image_save.joinpath(f"part1_{key}.jpg")))
+  part2 = process_part(image, 2)
   Image.fromarray(part2).save(str(path_image_save.joinpath("part2.jpg")))
-  part3 = process_part3(image)
+  part3 = process_part(image, 3)
   Image.fromarray(part3).save(str(path_image_save.joinpath("part3.jpg")))
-  part4 = process_part4(image)
+  part4 = process_part(image, 4)
   for key, value in part4.items():
     Image.fromarray(value).save(str(path_image_save.joinpath(f"part4_{key}.jpg")))
 

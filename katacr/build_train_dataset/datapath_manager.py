@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+'''
+@File    : datapath_manager.py
+@Time    : 2023/11/09 10:41:40
+@Author  : wty-yy
+@Version : 1.0
+@Blog    : https://wty-yy.space/
+@Desc    : 
+This script defines the `PathManger` class for the CR dataset,
+this class is used to recursively reading the file path in the directory
+that matches the regular expression.
+'''
 from katacr.utils.related_pkgs.utility import *
 import re
 
