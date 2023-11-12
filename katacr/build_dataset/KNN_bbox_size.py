@@ -1,5 +1,6 @@
 from katacr.utils.related_pkgs.utility import *
 from katacr.build_dataset.utils.datapath_manager import PathManager
+from katacr.build_dataset.constant import path_logs
 
 def get_bbox_size():
   path_manager = PathManager()
@@ -10,9 +11,39 @@ def get_bbox_size():
       params = file.read().split('\n')[:-1]
     for param in params:
       parts = param.split(' ')
-      ret.append(np.array((parts[3], parts[4])))
+      w, h = float(parts[3]), float(parts[4])
+      ret.append(np.array((w, h), dtype=np.float32))
     # print(path)
   return np.array(ret)
 
+def knn_calc_bbox_size(data, k=9, verbose=False):
+  from sklearn.cluster import KMeans
+  kmeans = KMeans(n_clusters=k)
+  kmeans.fit(data)
+  cluster_centroids = kmeans.cluster_centers_
+  
+  if verbose:
+    anchors = list(cluster_centroids)
+    anchors = sorted(anchors, key=lambda x: np.prod(x))
+    print("anchors = [")
+    for i in range(3):
+      print("  ", end="")
+      for j in range(3):
+        cluster = anchors[i*3+j]
+        print(f"({cluster[0]:.4f}, {cluster[1]:.4f}), ", end="")
+      print("")
+    print("]")
+
+    import matplotlib.pyplot as plt
+    # data_sample = data[:1000, ...]
+    plt.scatter(data[:, 0], data[:, 1], c=kmeans.labels_, cmap='viridis', label='Data')
+    plt.scatter(cluster_centroids[:, 0], cluster_centroids[:, 1], c='red', marker='*', s=200, label='Cluster Centroid')
+    plt.title("KMeans Clustering")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(str(path_logs.joinpath("KNN_bbox.jpg")), dpi=200)
+    plt.show()
+
 if __name__ == '__main__':
-  print(get_bbox_size().shape)
+  data = get_bbox_size()
+  knn_calc_bbox_size(data, verbose=True)

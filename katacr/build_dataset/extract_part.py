@@ -16,8 +16,6 @@ The path tree struct seems like:
 '''
 from katacr.utils.related_pkgs.utility import *
 
-path_dataset = Path("/home/wty/Coding/datasets/CR")
-
 import moviepy.editor as mp
 from PIL import Image
 from katacr.build_dataset.utils.split_part import process_part
@@ -52,8 +50,8 @@ def extract_part(
 
 if __name__ == '__main__':
   from katacr.build_dataset.utils.datapath_manager import PathManager
-  path_manager = PathManager(path_dataset)
-  paths = path_manager.sample('video', regex="^\d+.mp4$")
+  path_manager = PathManager()
+  paths = path_manager.sample('videos', regex="^\d+.mp4$")
   for path in paths:
     parts = list(path.parts)
     parts[-4] = 'images'

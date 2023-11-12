@@ -1,6 +1,6 @@
 """
-2023/11/01: Total unit numbers: 127
-2023/11/11: Add little-prince, royal-guradian and archer-evolution
+2023/11/01: Total unit numbers: 125 + 9 = 134
+2023/11/11: Add little-prince, royal-guradian and archer-evolution, total: 137
 """
 unit_list = [
   # object
