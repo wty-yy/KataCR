@@ -1,14 +1,24 @@
 """
 2023/11/01: Total unit numbers: 127
+2023/11/11: Add little-prince, royal-guradian and archer-evolution
 """
 unit_list = [
+  # object
+  'king-tower',
   'queen-tower',
-  'king-tower'
+  'tower-bar',
+  'bar',
+  'selected',
+  'clock',
+  'emote',
+  'text',
+  'elixir',
+  # ==========
   'skeleton',
   'skeleton-evolution',
   'electro-spirit',  # add 'freeze' state
   'fire-spirit',
-  'icr-spirit',  # add 'freeze' state
+  'ice-spirit',  # add 'freeze' state
   'heal-spirit',  # add 'heal' state
   'goblin',
   'spear-goblin',
@@ -34,8 +44,8 @@ unit_list = [
   'firecracker',
   'firecracker-evolution',
   'royal-delivery',
-  'royal-recruit'  # 'bare/shield'
-  'royal-recruit-evolution'  # 'bare/shield', new 'dash'
+  'royal-recruit',  # 'bare/shield'
+  'royal-recruit-evolution',  # 'bare/shield', new 'dash'
   'tombstone',
   'mega-minion',
   'dart-goblin',
@@ -129,4 +139,11 @@ unit_list = [
   'lava-pup',
   'golem',
   'golemite',
+  # 2023/11/11: add
+  'little-prince',
+  'royal-guardian',
+  'archer-evolution'
 ]
+
+idx2unit = dict(enumerate(unit_list))
+unit2idx = {name: idx for idx, name in enumerate(unit_list)}

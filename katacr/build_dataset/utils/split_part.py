@@ -11,7 +11,7 @@ This script is used to split different part from the origin image.
 from PIL import Image
 import numpy as np
 from pathlib import Path
-import katacr.build_train_dataset.constant as const
+import katacr.build_dataset.constant as const
 
 def extract_bbox(image, x, y, w, h):
   """

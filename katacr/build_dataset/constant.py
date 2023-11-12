@@ -15,6 +15,7 @@ path_logs = Path.cwd().joinpath("logs")
 path_logs.mkdir(exist_ok=True)
 path_features = Path.cwd().joinpath("katacr/features")
 path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
+path_dataset = Path("/home/wty/Coding/datasets/CR")
 # assert(path_videos.exists())
 
 split_bbox_params = {

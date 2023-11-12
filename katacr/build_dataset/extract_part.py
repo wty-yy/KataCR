@@ -20,7 +20,7 @@ path_dataset = Path("/home/wty/Coding/datasets/CR")
 
 import moviepy.editor as mp
 from PIL import Image
-from katacr.build_train_dataset.split_parts import process_part
+from katacr.build_dataset.utils.split_part import process_part
 from tqdm import tqdm
 def extract_part(
     path_video: Path,
@@ -42,7 +42,7 @@ def extract_part(
     t = i * split_time
     origin_image = clip.get_frame(t)
     for id in part_ids:
-      path_save_file = path_saves[id-1].joinpath(f"{int(t*fps)}.jpg")
+      path_save_file = path_saves[id-1].joinpath(f"{int(t*fps):05}.jpg")
       if path_save_file.exists():
         print(f"the file '{path_save_file}' exists, skip processing it.")
         continue
@@ -51,7 +51,7 @@ def extract_part(
       image.save(str(path_save_file))
 
 if __name__ == '__main__':
-  from datapath_manager import PathManager
+  from katacr.build_dataset.utils.datapath_manager import PathManager
   path_manager = PathManager(path_dataset)
   paths = path_manager.sample('video', regex="^\d+.mp4$")
   for path in paths:

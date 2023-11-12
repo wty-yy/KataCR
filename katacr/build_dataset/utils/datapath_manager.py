@@ -11,11 +11,11 @@ this class is used to recursively reading the file path in the directory
 that matches the regular expression.
 '''
 from katacr.utils.related_pkgs.utility import *
+import katacr.build_dataset.constant as const
 import re
 
 class PathManager:
-  
-  def __init__(self, path_dataset: Path):
+  def __init__(self, path_dataset: Path = const.path_dataset):
     self.path = path_dataset
   
   def sample(
@@ -31,11 +31,11 @@ class PathManager:
     The file names will be filtered by regular expression `regex`.
     """
     path = self.path
-    if subset is not None: path.joinpath(subset)
-    if part is not None: path.joinpath("part"+str(part))
-    if video_name is not None: path.joinpath(video_name)
+    if subset is not None: path = path.joinpath(subset)
+    if part is not None: path = path.joinpath("part"+str(part))
+    if video_name is not None: path = path.joinpath(video_name)
     if len(last_names) != 0:
-      for name in last_names: path.joinpath(name)
+      for name in last_names: path = path.joinpath(name)
     if not path.exists(): raise Exception(f"The sample path `{path}` don't exist.")
     matcher = re.compile(regex)
     paths = []

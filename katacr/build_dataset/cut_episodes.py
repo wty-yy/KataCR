@@ -61,9 +61,9 @@ def split_episodes(path_video: Path):
     if start_idx == -1 and check_feature_exists(image_gray, start_features):
       episode_num += 1
       start_idx = idx
-    from katacr.build_train_dataset.split_parts import process_part4
+    from katacr.build_dataset.utils.split_part import process_part
     if start_idx != -1 and check_text_exists(
-      list(process_part4(image_gray).values()),  # images
+      list(process_part(image_gray, 4).values()),  # images
       const.text_features_episode_end  # texts
     ):
       path = path_episodes.joinpath(f"{episode_num}.mp4")
