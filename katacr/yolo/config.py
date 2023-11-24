@@ -5,8 +5,8 @@ from katacr.constants.state_list import num_state_classes
 # path_darknet_weights = Path("/home/yy/Coding/models/YOLOv4/CSPDarkNet53-0050-lite")
 
 dataset_name = 'ClashRoyale'
-# path_dataset = Path("/home/wty/Coding/datasets/CR")
-path_dataset = Path("/home/yy/Coding/datasets/CR")
+path_dataset = Path("/home/wty/Coding/datasets/CR")
+# path_dataset = Path("/home/yy/Coding/datasets/CR")
 num_classes = 200 + num_state_classes  # 200 is the maximum unit classes number
 num_data_workers = 8
 repeat = 10

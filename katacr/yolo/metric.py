@@ -6,18 +6,18 @@ def logits2prob(logits):  # (..., (x,y,w,h,c,num_classes))
   cls = jnp.argmax(logits[...,4+1+13:], axis=-1, keepdims=True)
   states = logits[...,5:18]
   s1 = (states[...,0:1] >= 0).astype(jnp.float32)
-  s2 = jnp.argmax(states[...,1:6], axis=-1) - 1
+  s2 = jnp.argmax(states[...,1:6], axis=-1, keepdims=True)
   s3 = (states[...,6:7] >= 0).astype(jnp.float32)
   s4 = (states[...,7:8] >= 0).astype(jnp.float32)
   s5 = (states[...,8:9] >= 0).astype(jnp.float32)
   s6 = (states[...,9:10] >= 0).astype(jnp.float32)
-  s7 = jnp.argmax(states[...,10:13], axis=-1) - 10
+  s7 = jnp.argmax(states[...,10:13], axis=-1, keepdims=True)
   states = [s1, s2, s3, s4, s5, s6, s7]
   return jnp.concatenate([logits[...,:4], conf, *states, cls], axis=-1)
 
 def logits2prob_from_list(pred_pixel):
   N = pred_pixel[0].shape[0]
-  return jnp.concatenate([logits2prob(pred_pixel[i]).reshape(N, -1, 6) for i in range(3)], axis=1)
+  return jnp.concatenate([logits2prob(pred_pixel[i]).reshape(N, -1, 13) for i in range(3)], axis=1)
 
 from katacr.utils.detection import iou, iou_multiply
 @partial(jax.jit, static_argnums=[3,4])

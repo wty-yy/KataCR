@@ -5,7 +5,6 @@ sys.path.append(str(Path.cwd().parent.parent))
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.yolo.yolov4 import logits2cell
 from katacr.yolo.yolov4_model import TrainState
-from katacr.yolo.dataset import show_bbox
 from katacr.yolo.build_yolo_target import cell2pixel
 from katacr.yolo.metric import logits2prob_from_list, get_pred_bboxes, calc_AP50_AP75_AP, mAP, coco_mAP
 
@@ -22,6 +21,33 @@ def predict(state: TrainState, images: jax.Array):
   ]
   pred_pixel_prob = logits2prob_from_list(pred_pixel)
   return pred_pixel_prob
+
+from PIL import Image
+def show_bbox(image, bboxes, draw_center_point=False):
+  """
+  Show the image with bboxes use PIL.
+
+  Args:
+    image: Shape=(H,W,3)
+    bboxes: Shape=(N,13), last dim means: (x,y,w,h,c,states*7,label)
+    draw_center_point: Whether to draw the center point of all the bboxes
+  """
+  from katacr.utils.detection import plot_box_PIL, build_label2color
+  from katacr.constants.label_list import idx2unit
+  from katacr.constants.state_list import idx2state
+  if type(image) != Image.Image:
+    image = Image.fromarray((image*255).astype('uint8'))
+  if len(bboxes):
+    label2color = build_label2color(range(200))  # same color
+  for bbox in bboxes:
+    unitid = int(bbox[12])
+    text = idx2unit[unitid] + idx2state[int(bbox[5])]
+    for i in range(6, 12):
+      if bbox[i] != 0:
+        text += ' ' + idx2state[int((i-5)*10 + bbox[i])]
+    image = plot_box_PIL(image, bbox[:4], text=text, box_color=label2color[unitid], format='yolo', draw_center_point=draw_center_point)
+    # print(label, label2name[label], label2color[label])
+  image.show()
 
 if __name__ == '__main__':
   from katacr.yolo.parser import get_args_and_writer

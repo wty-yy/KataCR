@@ -130,13 +130,14 @@ def show_bbox(image, bboxes, draw_center_point=False):
   if type(image) != Image.Image:
     image = Image.fromarray((image*255).astype('uint8'))
   if len(bboxes):
-    label2color = build_label2color(bboxes[:,11])
+    label2color = build_label2color(range(200))  # same color
+    # label2color = build_label2color(bboxes[:,11])
   for bbox in bboxes:
     unitid = int(bbox[11])
-    text = idx2unit[unitid] + idx2state[bbox[4]]
+    text = idx2unit[unitid] + idx2state[int(bbox[4])]
     for i in range(5, 11):
       if bbox[i] != 0:
-        text += ' ' + idx2state[(i-4)*10 + bbox[i]]
+        text += ' ' + idx2state[int((i-4)*10 + bbox[i])]
     image = plot_box_PIL(image, bbox[:4], text=text, box_color=label2color[unitid], format='yolo', draw_center_point=draw_center_point)
     # print(label, label2name[label], label2color[label])
   image.show()
