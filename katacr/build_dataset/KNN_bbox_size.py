@@ -1,6 +1,7 @@
 from katacr.utils.related_pkgs.utility import *
 from katacr.build_dataset.utils.datapath_manager import PathManager
 from katacr.build_dataset.constant import path_logs
+from katacr.yolo.constant import image_shape
 
 def get_bbox_size():
   path_manager = PathManager()
@@ -11,7 +12,7 @@ def get_bbox_size():
       params = file.read().split('\n')[:-1]
     for param in params:
       parts = param.split(' ')
-      w, h = float(parts[3]), float(parts[4])
+      w, h = float(parts[3]) * image_shape[1], float(parts[4]) * image_shape[0]
       ret.append(np.array((w, h), dtype=np.float32))
     # print(path)
   return np.array(ret)
@@ -30,7 +31,7 @@ def knn_calc_bbox_size(data, k=9, verbose=False):
       print("  ", end="")
       for j in range(3):
         cluster = anchors[i*3+j]
-        print(f"({cluster[0]:.4f}, {cluster[1]:.4f}), ", end="")
+        print(f"({cluster[0]:.1f}, {cluster[1]:.1f}), ", end="")
       print("")
     print("]")
 

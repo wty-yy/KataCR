@@ -17,7 +17,7 @@ Based on `Clash Royale dataset annotation.md`, we define all the state with spec
 | visible       | 2 |
 | rage          | 2 |
 | slow          | 2 |
-| heal/clone    | 2 |
+| heal/clone    | 3 |
 
 # Need predict:
 blong:				0/1  # firend/enermy after card name
@@ -34,22 +34,23 @@ object:				unit/object
 '''
 
 state2idx = {  # key: (class, id)
-  '0': (0, 0),
+  '0': (0, 0),  # Class 1: Belong (binary: 1 variable)
   '1': (0, 1),
-  'attack': (1, 1),
+  'attack': (1, 1),  # Class 2: Movement (mutli classes: 5 variables)
   'deploy': (1, 2),
   'freeze': (1, 3),
   'dash':   (1, 4),
   'destory':(1, 4),
-  'charge': (2, 0),
+  'charge': (2, 0),  # Class 3: Shield/Charge (binary: 1 variable)
   'over':   (2, 1),
   'shield': (2, 1),
-  'invisible': (3, 1),
-  'rage':  (4, 1),
-  'slow':  (5, 1),
-  'heal':  (6, 1),
+  'invisible': (3, 1),  # Class 4: Visible (binary: 1 variable)
+  'rage':  (4, 1),  # Class 5: Rage (binary: 1 variable)
+  'slow':  (5, 1),  # Class 6: Slow (binary: 1 variable)
+  'heal':  (6, 1),  # Class 7: Heal/Clone (multi classes: 3 variables)
   'clone': (6, 2),
 }
+num_state_classes = 1 * 5 + 5 + 3  # 13
 idx2state = {
   0: '0',
   1: '1',
