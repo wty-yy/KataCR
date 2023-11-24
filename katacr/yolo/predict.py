@@ -8,8 +8,11 @@ from katacr.yolo.yolov4_model import TrainState
 from katacr.yolo.build_yolo_target import cell2pixel
 from katacr.yolo.metric import logits2prob_from_list, get_pred_bboxes, calc_AP50_AP75_AP, mAP, coco_mAP
 
-@jax.jit
+# @jax.jit
 def predict(state: TrainState, images: jax.Array):
+  wh_rate = jnp.stack([images.shape[2]/args.image_shape[1], images.shape[1]/args.image_shape[0]], dtype=jnp.float32)
+  print(wh_rate)
+  images = jax.image.resize(images, (images.shape[0], *args.image_shape), method='bilinear')
   logits = state.apply_fn(
     {'params': state.params, 'batch_stats': state.batch_stats},
     images, train=False
@@ -19,8 +22,11 @@ def predict(state: TrainState, images: jax.Array):
     pred_cell[i], 2**(i+3), args.anchors[i]
   ) for i in range(3)
   ]
-  pred_pixel_prob = logits2prob_from_list(pred_pixel)
-  return pred_pixel_prob
+  ret = logits2prob_from_list(pred_pixel)
+  ret = ret.at[...,:4].set(
+    ret[...,:4] * jnp.concatenate([wh_rate, wh_rate], axis=0)[None, None, ...]
+  )
+  return ret
 
 from PIL import Image
 def show_bbox(image, bboxes, draw_center_point=False):
@@ -57,7 +63,7 @@ if __name__ == '__main__':
 
   from katacr.yolo.dataset import DatasetBuilder
   ds_builder = DatasetBuilder(args)
-  ds = ds_builder.get_dataset()
+  ds = ds_builder.get_dataset(subset='val')
   args.steps_per_epoch = len(ds)
 
   from katacr.yolo.yolov4_model import get_yolov4_state
@@ -66,7 +72,7 @@ if __name__ == '__main__':
   from katacr.utils.model_weights import load_weights
   state = load_weights(state, args)
 
-  test_num = 10
+  test_num = 5
   for images, bboxes, num_bboxes in ds:
     images, bboxes, num_bboxes = images.numpy(), bboxes.numpy(), num_bboxes.numpy()
     pred = predict(state, images)

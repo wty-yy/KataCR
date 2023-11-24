@@ -22,6 +22,7 @@ import warnings
 class YOLODataset(Dataset):
   args: YOLOArgs
   shuffle: bool
+  no_resize: bool
   path_manager: PathManager
   path_bboxes: List[Path]
   max_num_bboxes: int
@@ -92,20 +93,26 @@ class DatasetBuilder:
   def __init__(self, args: YOLOArgs):
     self.args = args
   
-  def get_transform(self):
+  def get_transform(self, subset: str):
     train_transform = A.Compose(
       [
         A.Resize(height=self.args.image_shape[0], width=self.args.image_shape[1]),
         A.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.5, hue=0.015, p=0.4),
         A.Normalize(mean=[0, 0, 0], std=[1, 1, 1]),
       ],
-      bbox_params=A.BboxParams(format='yolo', min_visibility=0.4)
+      bbox_params=A.BboxParams(format='yolo')
     )
-    return train_transform
+    val_transform = A.Compose(
+      [
+        A.Normalize(mean=[0, 0, 0], std=[1, 1, 1]),
+      ],
+      bbox_params=A.BboxParams(format='yolo')
+    )
+    return train_transform if subset=='train' else val_transform
   
-  def get_dataset(self, shuffle: bool = True):
+  def get_dataset(self, subset='train', shuffle: bool = True):
     dataset = YOLODataset(
-      self.args, shuffle, self.get_transform()
+      self.args, shuffle, self.get_transform(subset)
     )
     ds = DataLoader(
       dataset, batch_size=self.args.batch_size,
