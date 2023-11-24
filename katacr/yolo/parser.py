@@ -7,6 +7,7 @@ class YOLOArgs(CVArgs):
   ### Dataset ###
   num_classes: int
   num_data_workers: int
+  repeat: int
   ### Model ###
   anchors: jax.Array
   ### Training ###
@@ -31,7 +32,9 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOArgs, Sum
   parser.add_argument("--num-classes", type=int, default=cfg.num_classes,
     help="the number of the classes in dataset")
   parser.add_argument("--num-data-workers", type=int, default=cfg.num_data_workers,
-    help="the number of the subprocesses to use for data loading.")
+    help="the number of the subprocesses to use for data loading")
+  parser.add_argument("--repeat", type=int, default=cfg.repeat,
+    help="the repeat number of the dataset")
   ### Training ###
   parser.add_argument("--total-epochs", type=int, default=cfg.total_epochs,
     help="the total epochs for training")
