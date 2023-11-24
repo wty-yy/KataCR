@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-'''
-@File  : model_weights.py
-@Time  : 2023/11/20 16:25:49
-@Author  : wty-yy
-@Version : 1.0
-@Blog  : https://wty-yy.space/
-@Desc  : 
-Model weight manager.
-'''
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.utils.related_pkgs.utility import *
 

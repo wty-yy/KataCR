@@ -148,6 +148,7 @@ def get_yolov4_state(args: YOLOArgs, verbose=False):
 if __name__ == '__main__':
   from katacr.yolo.parser import get_args_and_writer
   args = get_args_and_writer(no_writer=True)
+  args.steps_per_epoch = 10
   state = get_yolov4_state(args, verbose=True)
   print(state.params.keys(), state.batch_stats.keys())
   # 'CSPDarkNet_0', 'PANet_0'

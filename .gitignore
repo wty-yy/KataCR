@@ -3,3 +3,4 @@ old*
 test*
 _DEBUG
 logs
+wandb

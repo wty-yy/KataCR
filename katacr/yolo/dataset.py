@@ -37,7 +37,7 @@ class YOLODataset(Dataset):
 
     self.max_num_bboxes = MAX_NUM_BBOXES
     self.path_manager = PathManager(self.args.path_dataset)
-    self.path_bboxes = self.path_manager.sample(subset='images', part=2, regex=r'^\d+.txt')
+    self.path_bboxes = self.path_manager.sample(subset='images', part=2, regex=r'^\d+.txt') * self.args.repeat
   
   def __len__(self):
     return len(self.path_bboxes)
@@ -151,11 +151,11 @@ if __name__ == '__main__':
   # image, bboxes, num_bboxes = next(iterator)
   # image, bboxes, num_bboxes = image.numpy(), bboxes.numpy(), num_bboxes.numpy()
   # print(image.shape, bboxes.shape, num_bboxes.shape)
-  # for image, bboxes, num_bboxes in tqdm(ds):
-  #   image, bboxes, num_bboxes = image.numpy(), bboxes.numpy(), num_bboxes.numpy()
-  for i in range(3):
-    image, bboxes, num_bboxes = next(iterator)
+  for image, bboxes, num_bboxes in tqdm(ds):
     image, bboxes, num_bboxes = image.numpy(), bboxes.numpy(), num_bboxes.numpy()
-    # print(image.shape, bboxes.shape, num_bboxes.shape)
-    show_bbox(image[0], bboxes[0][np.arange(num_bboxes[0])])
+  # for i in range(3):
+  #   image, bboxes, num_bboxes = next(iterator)
+  #   image, bboxes, num_bboxes = image.numpy(), bboxes.numpy(), num_bboxes.numpy()
+  #   # print(image.shape, bboxes.shape, num_bboxes.shape)
+  #   show_bbox(image[0], bboxes[0][np.arange(num_bboxes[0])])
   

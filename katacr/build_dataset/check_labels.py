@@ -27,6 +27,7 @@ from katacr.utils.related_pkgs.utility import *
 from katacr.build_dataset.utils.datapath_manager import PathManager
 from katacr.constants.label_list import unit_list, unit2idx
 from katacr.constants.state_list import state2idx
+import math
 
 def build_label_txt(path: Path):  # with VOC bbox parameters and bbox states
     with open(path, 'r') as file:
@@ -52,9 +53,15 @@ def build_label_txt(path: Path):  # with VOC bbox parameters and bbox states
       (x1, y1), (x2, y2) = bbox['points']
       bx, by = (x1+x2)/2/w, (y1+y2)/2/h
       bw, bh = abs(x1-x2)/w, abs(y1-y2)/h
+
+      foo = lambda x, fn, pow: fn(x*10**pow) / (10**pow)
+      bx = foo(bx, round, 6)
+      by = foo(by, round, 6)
+      bw = min(foo(bw, math.floor, 6), min(bx, w-bx) * 2)  # keep bbox inside the image
+      bh = min(foo(bh, math.floor, 6), min(by, h-by) * 2)
       label[1:5] = bx, by, bw, bh
 
-      file.write(" ".join([f"{x}" if type(x) == int else f"{x:.4f}" for x in label]) + "\n")
+      file.write(" ".join([f"{x}" if type(x) == int else f"{x:.6f}" for x in label]) + "\n")
     file.close()
     return len(d['shapes'])
 

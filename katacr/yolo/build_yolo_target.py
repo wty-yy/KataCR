@@ -60,10 +60,10 @@ def build_target(
 
 @jax.jit
 def cell2pixel_coord(xy: jax.Array, scale: int):
-  assert(xy.shape[-1] == 2 and xy.shape[-2] == xy.shape[-3])
+  assert(xy.shape[-1] == 2)
   origin_shape, W, H = xy.shape, xy.shape[-2], xy.shape[-3]
   if xy.ndim == 3: xy = xy.reshape(-1, H, W, 2)
-  dx, dy = [jnp.repeat(x[None,...], xy.shape[0], 0) for x in jnp.meshgrid(jnp.arange(H), jnp.arange(W))]
+  dx, dy = [jnp.repeat(x[None,...], xy.shape[0], 0) for x in jnp.meshgrid(jnp.arange(W), jnp.arange(H))]
   return jnp.stack([(xy[...,0]+dx)*scale, (xy[...,1]+dy)*scale], -1).reshape(origin_shape)
 
 @jax.jit

@@ -23,7 +23,7 @@ def model_step(
   def single_loss_fn(logits, target, mask_noobj, anchors):
     """
     pred.shape = (N, 3, H, W, 5 + num_classes)
-    target.shape = (N, 3, H, W, 6)
+    target.shape = (N, 3, H, W, 13)
     mask_noobj.shape = (N, 3, H, W, 1)
     anchors.shape = (3, 2)
     """
@@ -67,14 +67,14 @@ def model_step(
     classes = logits[...,4+1+13:]
     states = logits[...,5:18]
     loss_class = (
-      bce(states[...,0:1], target[...,5], mask_obj) +
+      bce(states[...,0:1], target[...,5:6], mask_obj) +
       ce(states[...,1:6], target[..., 6], mask_obj) +
-      bce(states[...,6:7], target[...,7], mask_obj) +
-      bce(states[...,7:8], target[...,8], mask_obj) +
-      bce(states[...,8:9], target[...,9], mask_obj) +
-      bce(states[...,9:10], target[...,10], mask_obj) +
+      bce(states[...,6:7], target[...,7:8], mask_obj) +
+      bce(states[...,7:8], target[...,8:9], mask_obj) +
+      bce(states[...,8:9], target[...,9:10], mask_obj) +
+      bce(states[...,9:10], target[...,10:11], mask_obj) +
       ce(states[...,10:13], target[..., 11], mask_obj) +
-      ce(classes, target[..., 11], mask_obj)
+      ce(classes, target[..., 12], mask_obj)
     )
 
     loss = (
@@ -134,7 +134,7 @@ if __name__ == '__main__':
   from katacr.yolo.dataset import DatasetBuilder
   ds_builder = DatasetBuilder(args)
   train_ds = ds_builder.get_dataset()
-  args.steps_per_epoch = len(train_ds) // args.batch_size
+  args.steps_per_epoch = len(train_ds)
 
   ### Initialize model state ###
   from katacr.yolo.yolov4_model import get_yolov4_state
@@ -163,7 +163,7 @@ if __name__ == '__main__':
         state, (loss, pred_pixel, other_losses) = model_step(state, images, bboxes, num_bboxes, train=True)
         # num_objs.append(int(num_obj))
         logs.update(
-          ['loss_train', 'loss_noobj_train', 'loss_coord_train', 'loss_obj_train', 'loss_class_train'],
+          ['loss', 'loss_noobj', 'loss_coord', 'loss_obj', 'loss_class'],
           [loss, *other_losses]
         )
         bar.set_description(f"loss={loss:.4f}, lr={args.learning_rate_fn(state.step):.8f}")
