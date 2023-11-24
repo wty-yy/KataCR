@@ -8,10 +8,10 @@
 @Desc  : 
 Model weight manager.
 '''
-from katacv.utils.related_pkgs.jax_flax_optax_orbax import *
-from katacv.utils.related_pkgs.utility import *
+from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
+from katacr.utils.related_pkgs.utility import *
 
-from katacv.utils.parser import CVArgs
+from katacr.utils.parser import CVArgs
 def load_weights(
     state: train_state.TrainState, args: CVArgs
   ) -> train_state.TrainState:
