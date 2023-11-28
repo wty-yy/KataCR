@@ -51,7 +51,7 @@ def extract_part(
 if __name__ == '__main__':
   from katacr.build_dataset.utils.datapath_manager import PathManager
   path_manager = PathManager()
-  paths = path_manager.sample('videos', regex="^\d+.mp4$")
+  paths = path_manager.sample('videos', video_name="fast_pig_2.6/OYASSU_20230212_episodes/4.mp4", regex="^\d+.mp4$")
   for path in paths:
     parts = list(path.parts)
     parts[-4] = 'images'

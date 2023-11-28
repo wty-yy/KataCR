@@ -4,7 +4,7 @@ sys.path.append(os.getcwd())
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.utils.related_pkgs.utility import *
 from katacr.yolo.predict import predict, show_bbox
-from katacr.yolo.metric import get_pred_bboxes
+from katacr.yolo.metric import nms_boxes_and_mask
 from katacr.build_dataset.utils.split_part import process_part
 
 from PIL import Image
@@ -39,11 +39,16 @@ def main(args):
   processed_frames = []
 
   print("Compile XLA...")
-  def predict_and_nms(image: jax.Array):
+  @jax.jit
+  def preprocess(image):
     x = jnp.array(image)[None, ...]
-    pred = predict(state, x, state_args.anchors, state_args.image_shape)
-    pred_bboxes = get_pred_bboxes(pred, conf_threshold=0.2, iou_threshold=0.5)[0]
-    return pred_bboxes
+    pred = predict(state, x, state_args.anchors, state_args.image_shape)[0]
+    bboxes_pred, mask = nms_boxes_and_mask(pred, iou_threshold=0.4, conf_threshold=0.2)
+    return bboxes_pred, mask
+  def predict_and_nms(image: jax.Array):
+    bboxes_pred, mask = jax.device_get(preprocess(image))
+    bboxes_pred = bboxes_pred[mask]
+    return bboxes_pred
   predict_and_nms(jnp.zeros((896,568,3), dtype='float32'))
   print("Compile complete!")
 
@@ -53,9 +58,9 @@ def main(args):
     x = process_part(frame, 2)
     x = (x / np.max(x, axis=(0,1), keepdims=True)).astype(np.float32)
     start_time = time.time()
-    pred_bboxes = predict_and_nms(x)
+    bboxes_pred = predict_and_nms(x)
     SPS_avg += (1/(time.time() - start_time) - SPS_avg) / (idx+1)
-    image = show_bbox(x, pred_bboxes, show_image=False, use_overlay=True)
+    image = show_bbox(x, bboxes_pred, show_image=False, use_overlay=True)
     processed_frames.append(np.array(image))
     fps_avg += (1/(time.time() - start_time) - fps_avg) / (idx+1)
     bar.set_description(f"SPS:{SPS_avg:.2f} fps:{fps_avg:.2f}")
@@ -70,8 +75,8 @@ def main(args):
 def parse_args():
   from katacr.utils.parser import cvt2Path
   parser = argparse.ArgumentParser()
-  # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4"),
-  parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/2.mp4"),
+  parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4"),
+  # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/2.mp4"),
     help="The path of the input video.")
   parser.add_argument("--path-output-video", type=cvt2Path, default=None,
     help="The path of the output video, default 'logs/processed_videos/fname_yolo.mp4'")
