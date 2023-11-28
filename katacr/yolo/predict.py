@@ -8,18 +8,17 @@ from katacr.yolo.yolov4_model import TrainState
 from katacr.yolo.build_yolo_target import cell2pixel
 from katacr.yolo.metric import logits2prob_from_list, get_pred_bboxes, calc_AP50_AP75_AP, mAP, coco_mAP
 
-# @jax.jit
-def predict(state: TrainState, images: jax.Array):
-  wh_rate = jnp.stack([images.shape[2]/args.image_shape[1], images.shape[1]/args.image_shape[0]], dtype=jnp.float32)
-  print(wh_rate)
-  images = jax.image.resize(images, (images.shape[0], *args.image_shape), method='bilinear')
+@partial(jax.jit, static_argnames=['input_shape'])
+def predict(state: TrainState, images: jax.Array, anchors: jax.Array, input_shape: jax.Array):
+  wh_rate = jnp.stack([images.shape[2]/input_shape[1], images.shape[1]/input_shape[0]], dtype=jnp.float32)
+  images = jax.image.resize(images, (images.shape[0], *input_shape), method='bilinear')
   logits = state.apply_fn(
     {'params': state.params, 'batch_stats': state.batch_stats},
     images, train=False
   )
   pred_cell = [logits2cell(logits[i]) for i in range(3)]
   pred_pixel = [jax.vmap(cell2pixel, in_axes=(0,None,None), out_axes=0)(
-    pred_cell[i], 2**(i+3), args.anchors[i]
+    pred_cell[i], 2**(i+3), anchors[i]
   ) for i in range(3)
   ]
   ret = logits2prob_from_list(pred_pixel)
@@ -29,7 +28,7 @@ def predict(state: TrainState, images: jax.Array):
   return ret
 
 from PIL import Image
-def show_bbox(image, bboxes, draw_center_point=False):
+def show_bbox(image, bboxes, draw_center_point=False, show_image=True, use_overlay=True):
   """
   Show the image with bboxes use PIL.
 
@@ -45,21 +44,32 @@ def show_bbox(image, bboxes, draw_center_point=False):
     image = Image.fromarray((image*255).astype('uint8'))
   if len(bboxes):
     label2color = build_label2color(range(200))  # same color
+  if use_overlay:
+    overlay = Image.new('RGBA', image.size, (0,0,0,0))  # build a RGBA overlay
   for bbox in bboxes:
     unitid = int(bbox[12])
     text = idx2unit[unitid] + idx2state[int(bbox[5])]
     for i in range(6, 12):
       if bbox[i] != 0:
         text += ' ' + idx2state[int((i-5)*10 + bbox[i])]
-    image = plot_box_PIL(image, bbox[:4], text=text, box_color=label2color[unitid], format='yolo', draw_center_point=draw_center_point)
+    # update overlay
+    if use_overlay:
+      overlay = plot_box_PIL(overlay, bbox[:4], text=text, box_color=label2color[unitid], format='yolo', draw_center_point=draw_center_point)
+    else:
+      image = plot_box_PIL(image, bbox[:4], text=text, box_color=label2color[unitid], format='yolo', draw_center_point=draw_center_point)
     # print(label, label2name[label], label2color[label])
-  image.show()
+  # composite to origin image
+  if use_overlay:
+    image = Image.alpha_composite(image.convert('RGBA'), overlay).convert('RGB')
+  if show_image:
+    image.show()
+  return image
 
 if __name__ == '__main__':
   from katacr.yolo.parser import get_args_and_writer
-  args = get_args_and_writer(no_writer=True, input_args="--model-name YOLOv4 --load-id 75".split())
+  args = get_args_and_writer(no_writer=True, input_args="--model-name YOLOv4 --load-id 100".split())
   args.batch_size = 1
-  args.path_cp = Path("/home/wty/Coding/GitHub/KataCR/logs/YOLOv4-checkpoints")
+  args.path_cp = Path("/home/yy/Coding/GitHub/KataCR/logs/YOLOv4-checkpoints")
 
   from katacr.yolo.dataset import DatasetBuilder
   ds_builder = DatasetBuilder(args)
@@ -72,16 +82,16 @@ if __name__ == '__main__':
   from katacr.utils.model_weights import load_weights
   state = load_weights(state, args)
 
-  test_num = 5
+  test_num = 1
   for images, bboxes, num_bboxes in ds:
     images, bboxes, num_bboxes = images.numpy(), bboxes.numpy(), num_bboxes.numpy()
-    pred = predict(state, images)
+    pred = predict(state, images, args.anchors, args.image_shape)
 
     import numpy as np
     np.set_printoptions(suppress=True)
     pred_bboxes = get_pred_bboxes(pred, conf_threshold=0.1, iou_threshold=0.5)
     for i in range(len(pred_bboxes)):
-      show_bbox(images[i], pred_bboxes[i], args.path_dataset.name)
+      show_bbox(images[i], pred_bboxes[i])
       AP50 = mAP(pred_bboxes[i], bboxes[i][:num_bboxes[i]], iou_threshold=0.5)
       AP75 = mAP(pred_bboxes[i], bboxes[i][:num_bboxes[i]], iou_threshold=0.75)
       AP = coco_mAP(pred_bboxes[i], bboxes[i][:num_bboxes[i]])

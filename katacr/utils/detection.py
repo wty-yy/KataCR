@@ -7,10 +7,11 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 def plot_box_PIL(
     image:Image.Image, box_params: tuple | np.ndarray,
-    text="", fontsize=10, box_color='red',
+    text="", fontsize=12, box_color='red',
     fontpath="./fonts/Consolas.ttf",
     format='yolo',
     draw_center_point=False,
+    alpha_channel=150,
   ):
   """
   (PIL) Plot the bounding box with `box_params` in `image`.
@@ -25,6 +26,7 @@ def plot_box_PIL(
       and `(w, h)` is the width and height of the bbox. \
       - `voc` (pixel): `(x1, y1, x2, y2)`, `(x1, y1)` is the left top of the bbox, \
       and `(x2, y2)` is the rigth bottom of the bbox.
+    alpha_channel: If the image type is RGBA, the alpha channel will be used.
   """
   fontpath = str(Path(__file__).parent.joinpath(fontpath).resolve())
   draw = ImageDraw.Draw(image)
@@ -50,6 +52,7 @@ def plot_box_PIL(
     w = int(params[2] - params[0])
     h = int(params[3] - params[1])
   if type(box_color) == str and box_color == 'red': box_color = (255, 0, 0)
+  box_color = box_color + (alpha_channel,)
   draw.rectangle([x_min, y_min, x_min+w, y_min+h], outline=box_color, width=2)
 
   font_color = (255,255,255)  # white
