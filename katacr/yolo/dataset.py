@@ -131,13 +131,13 @@ def show_bbox(image, bboxes, draw_center_point=False):
     bboxes: Shape=(N,12), last dim means: (x,y,w,h,states*7,label)
     draw_center_point: Whether to draw the center point of all the bboxes
   """
-  from katacr.utils.detection import plot_box_PIL, build_label2color
+  from katacr.utils.detection import plot_box_PIL, build_label2colors
   from katacr.constants.label_list import idx2unit
   from katacr.constants.state_list import idx2state
   if type(image) != Image.Image:
     image = Image.fromarray((image*255).astype('uint8'))
   if len(bboxes):
-    label2color = build_label2color(range(200))  # same color
+    label2color = build_label2colors(range(200))  # same color
     # label2color = build_label2color(bboxes[:,11])
   for bbox in bboxes:
     unitid = int(bbox[11])

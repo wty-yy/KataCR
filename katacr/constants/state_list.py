@@ -36,7 +36,7 @@ object:				unit/object
 state2idx = {  # key: (class, id)
   '0': (0, 0),  # Class 1: Belong (binary: 1 variable)
   '1': (0, 1),
-  'attack': (1, 1),  # Class 2: Movement (mutli classes: 5 variables)
+  'attack': (1, 1),  # Class 2: Movement (mutli classes: 5 variables, default 0)
   'deploy': (1, 2),
   'freeze': (1, 3),
   'dash':   (1, 4),

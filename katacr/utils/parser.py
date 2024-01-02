@@ -50,7 +50,7 @@ class Parser(argparse.ArgumentParser):
         self.add_argument("--wandb-track", type=str2bool, default=False, const=True, nargs='?',
             help="if taggled, track with wandb")
         self.add_argument("--wandb-project-name", type=str, default=wandb_project_name)
-        self.add_argument("--path-logs", type=cvt2Path, default=Path.cwd().joinpath("logs"),
+        self.add_argument("--path-logs", type=cvt2Path, default=Path(__file__).parents[2] / "logs",
             help="the path of the logs")
         self.add_argument("--write-tensorboard-freq", type=int, default=100,
             help="the frequeny of writing the tensorboard")

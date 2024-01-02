@@ -1,19 +1,24 @@
 from katacr.utils.related_pkgs.utility import *
 from katacr.build_dataset.utils.datapath_manager import PathManager
 from katacr.build_dataset.constant import path_logs
-from katacr.yolo.constant import image_shape
+from katacr.detection.cfg import image_shape
 
 def get_bbox_size():
   path_manager = PathManager()
-  paths = path_manager.sample('images', part=2, regex=r".txt")
+  paths = path_manager.sample('images', part=2, regex=r"^\d+.txt")
   ret = []
   for path in paths:
-    with open(path, 'r') as file:
+    with path.open('r') as file:
       params = file.read().split('\n')[:-1]
     for param in params:
-      parts = param.split(' ')
-      w, h = float(parts[3]) * image_shape[1], float(parts[4]) * image_shape[0]
-      ret.append(np.array((w, h), dtype=np.float32))
+      try:
+        parts = param.split(' ')
+        w, h = float(parts[3]) * image_shape[1], float(parts[4]) * image_shape[0]
+        ret.append(np.array((w, h), dtype=np.float32))
+      except:
+        print(f"{path=}")
+        # print(params)
+        raise("Error")
     # print(path)
   return np.array(ret)
 

@@ -143,6 +143,8 @@ unit_list = [
   'little-prince',
   'royal-guardian',
   'archer-evolution'
+  # 2023/11/29: add
+  'ice-spirit-evolution'
 ]
 
 idx2unit = dict(enumerate(unit_list))

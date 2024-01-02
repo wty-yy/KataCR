@@ -11,12 +11,12 @@ This file is used to define the clip rate for each part.
 from pathlib import Path
 
 image_size = (592, 1280)
-path_logs = Path.cwd().joinpath("logs")
+path_logs = Path(__file__).parents[2].joinpath("logs")
 path_logs.mkdir(exist_ok=True)
-path_features = Path.cwd().joinpath("katacr/features")
+path_features = Path(__file__) / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
-# path_dataset = Path("/home/wty/Coding/datasets/CR")
-path_dataset = Path("/home/yy/Coding/datasets/CR")
+path_dataset = Path("/home/wty/Coding/datasets/CR")
+# path_dataset = Path("/home/yy/Coding/datasets/CR")
 
 split_bbox_params = {
   'part1': (0.835, 0.074, 0.165, 0.025),  # just time
@@ -40,4 +40,4 @@ split_bbox_params = {
 mse_feature_match_threshold = 0.03
 text_features_episode_end = ['match', 'over', 'break']
 text_confidence_threshold = 0.005
-MAX_NUM_BBOXES = 100  # 36 in OYASSU_20210528
+MAX_NUM_BBOXES = 100  # 36 in OYASSU_20210528, 42 in OYASSU_20230305

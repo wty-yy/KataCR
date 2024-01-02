@@ -37,13 +37,13 @@ def show_bbox(image, bboxes, draw_center_point=False, show_image=True, use_overl
     bboxes: Shape=(N,13), last dim means: (x,y,w,h,c,states*7,label)
     draw_center_point: Whether to draw the center point of all the bboxes
   """
-  from katacr.utils.detection import plot_box_PIL, build_label2color
+  from katacr.utils.detection import plot_box_PIL, build_label2colors
   from katacr.constants.label_list import idx2unit
   from katacr.constants.state_list import idx2state
   if type(image) != Image.Image:
     image = Image.fromarray((image*255).astype('uint8'))
   if len(bboxes):
-    label2color = build_label2color(range(200))  # same color
+    label2color = build_label2colors(range(200))  # same color
   if use_overlay:
     overlay = Image.new('RGBA', image.size, (0,0,0,0))  # build a RGBA overlay
   for bbox in bboxes:
