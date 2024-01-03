@@ -106,7 +106,8 @@ def show_box(img, box, draw_center_point=False, verbose=True, format='yolo'):
   if isinstance(img, np.ndarray):
     if img.max() <= 1.0: img *= 255
     img = Image.fromarray(img.astype('uint8'))
-  label_idx, conf_idx = (-1, None) if box.shape[1] == 13 else (-1, 4)
+  # label_idx, conf_idx = (-1, None) if box.shape[1] == 13 else (-1, 4)
+  label_idx, conf_idx = -1, 4
   if len(box):
     label2color = build_label2colors(box[:,label_idx])
   for b in box:

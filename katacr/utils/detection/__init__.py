@@ -183,7 +183,7 @@ def nms(box, iou_threshold=0.3, conf_threshold=0.2, max_num_box=100, iou_format=
   Compute the predicted bounding boxes and the number of bounding boxes.
   
   Args:
-    box: The predicted result by the model.  [shape=(N,6), elem=(x,y,w,h,conf,cls)]
+    box: The predicted result by the model.  [shape=(N,13), elem=(x,y,w,h,conf,*state,cls)]
     iou_threshold: The IOU threshold of NMS.
     conf_threshold: The confidence threshold of NMS.
     max_num_box: The maximum number of the bounding boxes.

@@ -7,7 +7,7 @@ dataset_name = 'ClashRoyale'
 path_dataset = Path(path_dataset)
 num_classes = 200 + num_state_classes
 num_data_workers = 8
-repeat = 10
+repeat = 5
 train_datasize = train_datasize * repeat
 
 image_shape = (896, 576, 3)  # origin shape = (896, 568, 3)
@@ -22,13 +22,13 @@ fliplr = 0.5  # flip left-right (probability)
 #   [(47.5, 58.3), (62.8, 79.0), (220.6, 37.8)],  # scale: 32
 # ], dtype=jnp.float32)
 anchors = jnp.array([  # Update: 2024.1.3
-  (57.9, 18.1), (39.1, 42.3), (96.3, 27.8), 
-  (51.5, 64.4), (141.0, 35.6), (75.3, 77.8), 
-  (95.4, 101.7), (122.7, 138.9), (402.3, 63.1), 
+  [(57.9, 18.1), (39.2, 42.4), (96.3, 27.8), ],
+  [(51.5, 64.5), (141.0, 35.6), (75.1, 77.5), ],
+  [(95.4, 101.7), (122.7, 138.9), (402.3, 63.1), ],
 ], dtype=jnp.float32)
 
 ### Training ###
-batch_size = 16
+batch_size = 8
 total_epochs = 100
 coef_box = 0.05
 coef_obj = 1.0

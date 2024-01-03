@@ -33,11 +33,11 @@ def knn_calc_bbox_size(data, k=9, verbose=False):
     anchors = sorted(anchors, key=lambda x: np.prod(x))
     print("anchors = [")
     for i in range(3):
-      print("  ", end="")
+      print("  [", end="")
       for j in range(3):
         cluster = anchors[i*3+j]
         print(f"({cluster[0]:.1f}, {cluster[1]:.1f}), ", end="")
-      print("")
+      print("],")
     print("]")
 
     import matplotlib.pyplot as plt

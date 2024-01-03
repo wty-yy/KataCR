@@ -15,8 +15,8 @@ path_logs = Path(__file__).parents[2].joinpath("logs")
 path_logs.mkdir(exist_ok=True)
 path_features = Path(__file__) / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
-path_dataset = Path("/home/wty/Coding/datasets/CR")
-# path_dataset = Path("/home/yy/Coding/datasets/CR")
+# path_dataset = Path("/home/wty/Coding/datasets/CR")
+path_dataset = Path("/home/yy/Coding/datasets/CR")
 
 split_bbox_params = {
   'part1': (0.835, 0.074, 0.165, 0.025),  # just time
@@ -34,7 +34,8 @@ split_bbox_params = {
   'part4': {  # center word ocr
     'up': (0.100, 0.340, 0.800, 0.070),
     'mid': (0.180, 0.410, 0.650, 0.050),
-  }
+  },
+  'part2_watch': (0.024, 0.205, 0.954, 0.676)
 }
 
 mse_feature_match_threshold = 0.03

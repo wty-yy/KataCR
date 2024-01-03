@@ -40,6 +40,7 @@ class LabelBuilder:
     path_const_dataset = Path(__file__).parents[1] / 'constants/dataset.py'
     self.dfile = path_const_dataset.open('w')
     self.path_part2 = self.path_dataset / "images/part2"
+    print(f"Write train/val annotation files to {self.path_part2},\ndataset infomations to {path_const_dataset}")
     self.dfile.write(f"path_dataset = \"{str(self.path_part2.resolve())}\"\n")
 
   @staticmethod

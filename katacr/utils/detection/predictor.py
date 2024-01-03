@@ -41,7 +41,7 @@ class BasePredictor:
         just predict the bounding boxes for `x`), \
         `B` is the number of the batch size.
       x: The input of the model. [shape=(B,H,W,C) or (H,W,C)]
-      tbox: The target bounding boxes. [shape=(B,M,5), or (M,5)]
+      tbox: The target bounding boxes. [shape=(B,M,12), or (M,12)]
       tnum: The number of the target bounding boxes. [shape=(B,) or int]
       nms_iou: The threshold of the iou in NMS.
       nms_conf: The threshold of the confidence in NMS.
@@ -59,7 +59,7 @@ class BasePredictor:
     for i in range(x.shape[0]):
       self.pbox.append(pbox[i][:pnum[i]])
       if tbox is not None:
-        self.tcls.append(tbox[i][:tnum[i],4].astype(np.int32))
+        self.tcls.append(tbox[i][:tnum[i],-1].astype(np.int32))
         self.tp.append(tp[i][:pnum[i]])
     return pbox
   
@@ -79,7 +79,7 @@ class BasePredictor:
     return ap_per_class(
       tp=np.concatenate(self.tp, axis=0),
       conf=pbox[:,4],
-      pcls=pbox[:,5],
+      pcls=pbox[:,-1],
       tcls=np.concatenate(self.tcls, axis=0)
     )
   
@@ -107,11 +107,11 @@ class BasePredictor:
       state: TrainState `self.state`
       x: Input image. [shape=(N,H,W,3)]
     Return:
-      y: All predict box. [shape=(N,num_pbox,6), elem:(x,y,w,h,conf,cls)]
+      y: All predict box. [shape=(N,num_pbox,13), elem:(x,y,w,h,conf,*state,cls)]
     """
     pass
 
-  @partial(jax.jit, static_argnums=[0,3,4])
+  # @partial(jax.jit, static_argnums=[0,3,4])
   def pred_and_nms(
     self, state: train_state.TrainState, x: jax.Array,
     iou_threshold: float, conf_threshold: float
@@ -141,9 +141,9 @@ class BasePredictor:
     Compute the true positive for each `pbox`. Time complex: O(NM)
 
     Args:
-      pbox: The predicted bounding boxes. [shape=(N,6), elem=(x,y,w,h,conf,cls)]
+      pbox: The predicted bounding boxes. [shape=(N,13), elem=(x,y,w,h,conf,*state,cls)]
       pnum: The number of available `pbox`. [int]
-      tbox: The target bounding boxes. [shape=(M,5), elem=(x,y,w,h,cls)]
+      tbox: The target bounding boxes. [shape=(M,12), elem=(x,y,w,h,*state,cls)]
       tnum: The number of available `tbox`. [int]
       iout: The iou thresholds of deciding true positive. [shape=(1,) or (10,)]
       num_classes: The number of all classes. [int]
@@ -162,7 +162,7 @@ class BasePredictor:
       def loop_i_fn(i, value):  # i=0,...,pnum-1
         tp, bel = value
         iou = ious[i]
-        j = jnp.argmax((tbox[:,4]==pbox[i,5]) * iou)  # belong to tbox[j]
+        j = jnp.argmax((tbox[:,-1]==pbox[i,-1]) * iou)  # belong to tbox[j]
         # Round to 0.01, https://github.com/rafaelpadilla/Object-Detection-Metrics
         tp = tp.at[i].set((iou[j].round(2) >= iout - 1e-5) & (j < tnum))
         bel = bel.at[i].set(j)

@@ -22,7 +22,7 @@ class PathManager:
       self, subset: str = None,
       part: int = None,
       video_name: str = None,
-      last_names: Sequence = (),
+      name: str = None,
       regex: str = ""
     ) -> List[Path]:
     """
@@ -31,11 +31,10 @@ class PathManager:
     The file names will be filtered by regular expression `regex`.
     """
     path = self.path
-    if subset is not None: path = path.joinpath(subset)
-    if part is not None: path = path.joinpath("part"+str(part))
-    if video_name is not None: path = path.joinpath(video_name)
-    if len(last_names) != 0:
-      for name in last_names: path = path.joinpath(name)
+    if subset is not None: path = path / subset
+    if part is not None: path = path / ("part"+str(part))
+    if video_name is not None: path = path / video_name
+    if name is not None: path = path / name
     if not path.exists(): raise Exception(f"The sample path `{path}` don't exist.")
     matcher = re.compile(regex)
     paths = []
