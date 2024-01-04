@@ -56,12 +56,13 @@ class BasePredictor:
       pbox, pnum, tp = jax.device_get(self.pred_and_nms_and_tp(
         self.state, x, nms_iou, nms_conf, tbox, tnum
       ))
-    for i in range(x.shape[0]):
+    n = x.shape[0]
+    for i in range(n):
       self.pbox.append(pbox[i][:pnum[i]])
       if tbox is not None:
         self.tcls.append(tbox[i][:tnum[i],-1].astype(np.int32))
         self.tp.append(tp[i][:pnum[i]])
-    return pbox
+    return self.pbox[-n:]
   
   def ap_per_class(self):
     """

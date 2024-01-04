@@ -193,7 +193,7 @@ def nms(box, iou_threshold=0.3, conf_threshold=0.2, max_num_box=100, iou_format=
     box: The bounding boxes after NMS.  [shape=(max_num_box, 6)]
     pnum: The number of the predicted bounding boxes. [int]
   """
-  M = max_num_box * 30  # BUG FIX: The M must bigger than max_num_box, since iou threshold will remove many boxes beside.
+  M = max_num_box * 10  # BUG FIX: The M must bigger than max_num_box, since iou threshold will remove many boxes beside.
   sort_idxs = jnp.argsort(-box[:,4])[:M]  # only consider the first `max_num_box`
   box = box[sort_idxs]
   ious = iou_multiply(box[:,:4], box[:,:4], format=iou_format)

@@ -99,26 +99,36 @@ def transform_pad(img, target_shape):
   img = np.pad(img, ((top, bottom), (left, right), (0, 0)), mode="constant", constant_values=114)
   return img, (top, left)
 
-def show_box(img, box, draw_center_point=False, verbose=True, format='yolo'):
+def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use_overlay=True):
   from katacr.utils.detection import plot_box_PIL, build_label2colors
   from katacr.constants.label_list import idx2unit
+  from katacr.constants.state_list import idx2state
   img = img.copy()
   if isinstance(img, np.ndarray):
     if img.max() <= 1.0: img *= 255
     img = Image.fromarray(img.astype('uint8'))
   # label_idx, conf_idx = (-1, None) if box.shape[1] == 13 else (-1, 4)
-  label_idx, conf_idx = -1, 4
+  if use_overlay:
+    overlay = Image.new('RGBA', img.size, (0,0,0,0))  # build a RGBA overlay
   if len(box):
-    label2color = build_label2colors(box[:,label_idx])
+    label2color = build_label2colors(box[:,12])
   for b in box:
-    conf = float(b[conf_idx]) if conf_idx != None else None
-    label = int(b[label_idx])
-    img = plot_box_PIL(
-      img, b[:4],
-      text=f"{idx2unit[label]}{f' {conf:.3f}' if conf else ''}",
-      box_color=label2color[label],
-      format=format, draw_center_point=draw_center_point
-    )
+    conf = float(b[4])
+    label = int(b[12])
+    text = idx2unit[label] + idx2state[int(b[5])]
+    for i in range(6, 12):
+      if b[i] != 0:
+        text += ' ' + idx2state[int((i-5)*10 + b[i])]
+    plot_box = lambda x: plot_box_PIL(
+        x, b[:4],
+        text=text,
+        box_color=label2color[label],
+        format=format, draw_center_point=draw_center_point
+      )
+    if use_overlay: overlay = plot_box(overlay)
+    else: img = plot_box(img)
+  if use_overlay:
+    img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
   if verbose:
     img.show()
   return img
