@@ -31,10 +31,10 @@ class PathManager:
     The file names will be filtered by regular expression `regex`.
     """
     path = self.path
-    if subset is not None: path = path.joinpath(subset)
-    if part is not None: path = path.joinpath("part"+str(part))
-    if video_name is not None: path = path.joinpath(video_name)
-    if name is not None: path = path.joinpath(name)
+    if subset is not None: path = path / subset
+    if part is not None: path = path / ("part"+str(part))
+    if video_name is not None: path = path / video_name
+    if name is not None: path = path / name
     if not path.exists(): raise Exception(f"The sample path `{path}` don't exist.")
     matcher = re.compile(regex)
     paths = []

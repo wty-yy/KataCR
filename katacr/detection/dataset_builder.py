@@ -22,7 +22,10 @@ class YOLODataset(Dataset):
     self.max_num_box = MAX_NUM_BBOXES
     path_annotation = self.path_dataset.joinpath(f"{subset}_annotation.txt")
     paths = np.genfromtxt(str(path_annotation), dtype=np.str_)
-    self.paths_img, self.paths_box = paths[:, 0].repeat(repeat), paths[:, 1].repeat(repeat)
+    self.paths_img, self.paths_box = paths[:, 0], paths[:, 1]
+    if self.subset == 'train':
+      self.paths_img = self.paths_img.repeat(repeat)
+      self.paths_box = self.paths_box.repeat(repeat)
   
   def __len__(self):
     return len(self.paths_img)

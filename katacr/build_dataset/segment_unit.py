@@ -55,7 +55,8 @@ class SegmentUnit:
     Process the images in part_id with video_name and episode.
     """
     if episode is not None:
-    name = epi
+      # TODO
+      pass
     paths = self.path_manager.sample(part=part_suffix, video_name=video_name, name=str(episode))
     for path in paths:
       print(path)

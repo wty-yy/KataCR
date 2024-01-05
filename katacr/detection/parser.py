@@ -78,7 +78,7 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
   args = parser.get_args(input_args)
   args.input_shape = (args.batch_size, *args.image_shape)
 
-  nbc = 64  # nominal batch size
+  nbc = 32  # nominal batch size
   if args.accumulate:
     args.accumulate = max(round(nbc / args.batch_size), 1)
     args.weight_decay /= args.accumulate

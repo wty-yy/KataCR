@@ -9,7 +9,7 @@
 The utility functions for compute AP@[.5:.05:.95], mAP.
 Reference: https://github.com/WongKinYiu/ScaledYOLOv4/blob/yolov4-large/utils/general.py
 '''
-from katacv.utils.related_pkgs.utility import *
+from katacr.utils.related_pkgs.utility import *
 import numpy as np
 import matplotlib.pyplot as plt
 
