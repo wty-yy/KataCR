@@ -20,13 +20,13 @@ class PathManager:
   
   def sample(
       self, subset: str = None,
-      part: int = None,
+      part: int | str = None,
       video_name: str = None,
-      last_names: Sequence = (),
+      name: str = None,
       regex: str = ""
     ) -> List[Path]:
     """
-    Sample a path from `path_dataset/subset/part/video_name/*last_names`,
+    Sample a path from `path_dataset/subset/part/video_name/name`,
     if any key word is `None`, then it will return all the sub files.
     The file names will be filtered by regular expression `regex`.
     """
@@ -34,8 +34,7 @@ class PathManager:
     if subset is not None: path = path.joinpath(subset)
     if part is not None: path = path.joinpath("part"+str(part))
     if video_name is not None: path = path.joinpath(video_name)
-    if len(last_names) != 0:
-      for name in last_names: path = path.joinpath(name)
+    if name is not None: path = path.joinpath(name)
     if not path.exists(): raise Exception(f"The sample path `{path}` don't exist.")
     matcher = re.compile(regex)
     paths = []

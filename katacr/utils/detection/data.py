@@ -106,16 +106,20 @@ def show_box(img, box, draw_center_point=False, verbose=True, format='yolo'):
   if isinstance(img, np.ndarray):
     if img.max() <= 1.0: img *= 255
     img = Image.fromarray(img.astype('uint8'))
-  label_idx, conf_idx = (-1, None) if box.shape[1] == 13 else (-1, 4)
+  label_idx, conf_idx = (-1, 4) if box.shape[-1] > 4 else (None, None)
   if len(box):
     label2color = build_label2colors(box[:,label_idx])
   for b in box:
     conf = float(b[conf_idx]) if conf_idx != None else None
-    label = int(b[label_idx])
+    label = int(b[label_idx]) if label_idx != None else None
+    if conf and label:
+      text =  f"{idx2unit[label]}{f' {conf:.3f}' if conf else ''}"
+    else:
+      text = ""
     img = plot_box_PIL(
       img, b[:4],
-      text=f"{idx2unit[label]}{f' {conf:.3f}' if conf else ''}",
-      box_color=label2color[label],
+      text=text,
+      box_color=label2color[label] if label else 'red',
       format=format, draw_center_point=draw_center_point
     )
   if verbose:

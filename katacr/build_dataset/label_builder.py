@@ -111,6 +111,7 @@ class LabelBuilder:
     paths = self.path_manager.sample(subset='images', part=2, regex=r'^\d+.json')
     max_path, max_box_num = None, 0
     for path in paths:
+      if 'background' in str(path): continue  # Don't build background to dataset
       num = self.build_label_txt(path)
       if num > max_box_num:
         max_box_num = num
@@ -127,10 +128,17 @@ class LabelBuilder:
       print("Train datasize:", train_size)
       print("Val datasize:", val_size)
   
+  def build_background(self):
+    paths = self.path_manager.sample(subset='images', part=2, name='background', regex=r'background\d+.json')
+    for path in paths:
+      self.build_label_txt(path)
+    print("background num:", len(paths))
+  
   def close(self):
     self.dfile.close()
 
 if __name__ == '__main__':
   label_builder = LabelBuilder()
-  label_builder.build()
-  label_builder.close()
+  # label_builder.build()
+  # label_builder.close()
+  label_builder.build_background()
