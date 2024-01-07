@@ -94,22 +94,31 @@ class LabelBuilder:
       file.close()
       return len(d['shapes'])
 
-  def build_annotation(self, paths: List[Path], subset='train'):
+  def build_annotation(self, paths: List[Path], subset=None):
     train_size = int(len(paths) * (1 - self.val_ratio))
     p2 = self.path_part2
-    path_annotation = p2 / f"{subset}_annotation.txt"
+    if subset is not None:
+      path_annotation = p2 / f"{subset}_annotation.txt"
+    else:
+      path_annotation = p2 / f"annotation.txt"
     file = path_annotation.open('w')
-    for path in paths[:train_size] if subset == 'train' else paths[train_size:]:
+    n = len(paths)
+    if subset == 'train': paths = paths[:train_size]
+    elif subset == 'val': paths = paths[train_size:]
+    for path in paths:
       path_img = str(path.relative_to(p2)).rsplit('.', 1)[0] + '.jpg'
       path_box = str(path.relative_to(p2)).rsplit('.', 1)[0] + '.txt'
       file.write(str(path_img) + ' ' + str(path_box) + '\n')
-    size = train_size if subset == 'train' else len(paths) - train_size
-    self.dfile.write(f"{subset}_datasize = {size}\n")
+    size = train_size if subset == 'train' else (n - train_size if subset == 'val' else n)
+    if subset is not None:
+      self.dfile.write(f"{subset}_datasize = {size}\n")
+    else:
+      self.dfile.write(f"datasize = {size}\n")
     file.close()
     return size
   
   def build(self, verbose=True):
-    paths = self.path_manager.sample(subset='images', part=2, regex=r'^\d+.json')
+    paths = self.path_manager.search(subset='images', part=2, regex=r'^\d+.json')
     max_path, max_box_num = None, 0
     for path in paths:
       if 'background' in str(path): continue  # Don't build background to dataset
@@ -121,6 +130,7 @@ class LabelBuilder:
     random.shuffle(paths)
     train_size = self.build_annotation(paths, subset='train')
     val_size = self.build_annotation(paths, subset='val')
+    total_size = self.build_annotation(paths)
     if verbose:
       print("Dataset size:", len(paths))
       print("Maximum bbox number:", max_box_num)
@@ -130,7 +140,7 @@ class LabelBuilder:
       print("Val datasize:", val_size)
   
   def build_background(self):
-    paths = self.path_manager.sample(subset='images', part=2, name='background', regex=r'background\d+.json')
+    paths = self.path_manager.search(subset='images', part=2, name='background', regex=r'background\d+.json')
     for path in paths:
       self.build_label_txt(path)
     print("background num:", len(paths))
@@ -140,6 +150,6 @@ class LabelBuilder:
 
 if __name__ == '__main__':
   label_builder = LabelBuilder()
-  # label_builder.build()
+  label_builder.build()
   # label_builder.close()
-  label_builder.build_background()
+  # label_builder.build_background()

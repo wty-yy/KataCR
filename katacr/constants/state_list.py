@@ -41,9 +41,12 @@ state2idx = {  # key: (class, id)
   'freeze': (1, 3),
   'dash':   (1, 4),
   'destory':(1, 4),
+  'dash|destory':(1, 4),
   'charge': (2, 0),  # Class 3: Shield/Charge (binary: 1 variable)
-  'over':   (2, 1),
+  'bare|charge': (2, 0),  # Class 3: Shield/Charge (binary: 1 variable)
   'shield': (2, 1),
+  'over':   (2, 1),
+  'shield|over': (2, 1),
   'invisible': (3, 1),  # Class 4: Visible (binary: 1 variable)
   'rage':  (4, 1),  # Class 5: Rage (binary: 1 variable)
   'slow':  (5, 1),  # Class 6: Slow (binary: 1 variable)
@@ -57,9 +60,9 @@ idx2state = {
   11: 'attack',
   12: 'deploy',
   13: 'freeze',
-  14: 'dash/destory',
-  20: 'bare/charge',
-  21: 'shield/over',
+  14: 'dash|destory',
+  20: 'bare|charge',
+  21: 'shield|over',
   31: 'invisible',
   41: 'rage',
   51: 'slow',

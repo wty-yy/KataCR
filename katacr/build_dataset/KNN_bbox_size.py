@@ -5,7 +5,7 @@ from katacr.detection.cfg import image_shape
 
 def get_bbox_size():
   path_manager = PathManager()
-  paths = path_manager.sample('images', part=2, regex=r"^\d+.txt")
+  paths = path_manager.search('images', part=2, regex=r"^\d+.txt")
   ret = []
   for path in paths:
     with path.open('r') as file:

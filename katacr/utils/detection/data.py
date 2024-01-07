@@ -111,14 +111,17 @@ def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use
   if use_overlay:
     overlay = Image.new('RGBA', img.size, (0,0,0,0))  # build a RGBA overlay
   if len(box):
-    label2color = build_label2colors(box[:,12])
+    label2color = build_label2colors(box[:,-1])
   for b in box:
-    conf = float(b[4])
-    label = int(b[12])
-    text = idx2unit[label] + idx2state[int(b[5])]
-    for i in range(6, 12):
-      if b[i] != 0:
-        text += ' ' + idx2state[int((i-5)*10 + b[i])]
+    states = b[5:11] if len(b) == 13 else b[4:10]
+    # conf = float(b[4])
+    label = int(b[-1])
+    text = idx2unit[label]
+    for i, s in enumerate(states):
+      if i == 0:
+        text += idx2state[int(s)]
+      elif int(s) != 0:
+        text += ' ' + idx2state[int(i*10 + s)]
     plot_box = lambda x: plot_box_PIL(
         x, b[:4],
         text=text,

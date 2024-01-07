@@ -44,7 +44,7 @@ def process_part(image, part_id: int | str):
 
 def preprocess_background():
   path_manager = PathManager()
-  paths = path_manager.sample('images', name="background", regex=r"\d+.jpg")
+  paths = path_manager.search('images', name="background", regex=r"\d+.jpg")
   path_save = path_manager.path / "images/part2/background"
   path_save.mkdir(exist_ok=True)
   for path in paths:

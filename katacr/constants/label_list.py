@@ -144,8 +144,48 @@ unit_list = [
   'royal-guardian',
   'archer-evolution'
   # 2023/11/29: add
-  'ice-spirit-evolution'
+  'ice-spirit-evolution',
+  # 2024/1/1: add
+  'cannoneer-tower',
+  'valkyrie-evolution',
 ]
 
 idx2unit = dict(enumerate(unit_list))
 unit2idx = {name: idx for idx, name in enumerate(unit_list)}
+
+ground_unit_list = [
+  'barbarian',
+  'barbarian-barrel',
+  'cannon',
+  'electro-spirit',
+  'goblin-brawler',
+  'goblin-cage',
+  'hog-rider',
+  'ice-golem',
+  'ice-spirit',
+  'musketeer',
+  'royal-hog',
+  'royal-recruit',
+  'skeleton',
+  'the-log',
+  'zappy',
+]
+
+tower_unit_list = [
+  'king-tower',
+  'queen-tower',
+]
+
+flying_unit_list = [
+  'flying-machine',
+  'fireball',
+]
+
+other_unit_list = [
+  'bar',
+  'tower-bar',
+  'clock',
+  'text',
+  'elixir',
+  'emote',
+]

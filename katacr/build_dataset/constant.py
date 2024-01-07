@@ -29,7 +29,7 @@ split_bbox_params = {
   #   'hp4':  (0.756, 0.617, 0.090, 0.020),
   #   'hp5':  (0.511, 0.753, 0.090, 0.020),
   # },
-  'part2': (0.021, 0.073, 0.960, 0.700),  # battle field
+  'part2': (0.021, 0.073, 0.960, 0.700),  # battle field, image size: (568, 896)
   'part3': (0.000, 0.821, 1.000, 0.179),  # card table
   'part4': {  # center word ocr
     'up': (0.100, 0.340, 0.800, 0.070),
@@ -42,3 +42,13 @@ mse_feature_match_threshold = 0.03
 text_features_episode_end = ['match', 'over', 'break']
 text_confidence_threshold = 0.005
 MAX_NUM_BBOXES = 100  # 36 in OYASSU_20210528, 42 in OYASSU_20230305
+
+xyxy_grids = (6, 64, 580, 864)
+bottom_center_grid_position = {
+  'king1': (9, 4.7),
+  'queen1_0': (3.5, 7.7),
+  'queen1_1': (14.5, 7.7),
+  'king0': (9, 30.5),
+  'queen0_0': (3.5, 26.7),
+  'queen0_1': (14.5, 26.7),
+}

@@ -3,37 +3,32 @@ from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.detection.parser import YOLOv5Args, get_args_and_writer
 from katacr.build_dataset.constant import MAX_NUM_BBOXES
 from torch.utils.data import Dataset, DataLoader
-from katacr.build_dataset.generator import Generator
 import cv2
 import numpy as np
 from PIL import Image
 import warnings
 import random
 
-train_datasize = 20000
-
 from katacr.utils.detection.data import (
   transform_hsv, transform_pad, show_box
 )
 
 class YOLODataset(Dataset):
-  def __init__(self, image_shape: int, subset: str, path_dataset: Path):
+  def __init__(self, image_shape: int, subset: str, path_dataset: Path, repeat: int):
     self.img_shape = image_shape
     self.subset = subset
     self.path_dataset = path_dataset
     self.augment = False if subset == 'val' else True
     self.max_num_box = MAX_NUM_BBOXES
-    if subset == 'val':
-      path_annotation = self.path_dataset.joinpath(f"annotation.txt")
-      paths = np.genfromtxt(str(path_annotation), dtype=np.str_)
-      self.paths_img, self.paths_box = paths[:, 0], paths[:, 1]
-      self.datasize = len(self.paths_img)
-    else:
-      self.generator = Generator()
-      self.datasize = train_datasize
+    path_annotation = self.path_dataset.joinpath(f"{subset}_annotation.txt")
+    paths = np.genfromtxt(str(path_annotation), dtype=np.str_)
+    self.paths_img, self.paths_box = paths[:, 0], paths[:, 1]
+    if self.subset == 'train':
+      self.paths_img = self.paths_img.repeat(repeat)
+      self.paths_box = self.paths_box.repeat(repeat)
   
   def __len__(self):
-    return self.datasize
+    return len(self.paths_img)
   
   @staticmethod
   def _check_bbox_need_placeholder(bboxes):
@@ -42,21 +37,15 @@ class YOLODataset(Dataset):
     return bboxes
   
   def load_file(self, idx):
-    if self.subset == 'val':
-      path_img, path_box = self.paths_img[idx], self.paths_box[idx]
-      img = np.array(Image.open(str(self.path_dataset.joinpath(path_img))).convert('RGB')).astype('uint8')
-      with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        box = np.loadtxt(self.path_dataset.joinpath(path_box))
-      if len(box):
-        box = np.roll(box.reshape(-1, 12), -1, axis=1)  # (x,y,w,h,*states,cls)
-      else:
-        box = box.reshape(0, 12)
+    path_img, path_box = self.paths_img[idx], self.paths_box[idx]
+    img = np.array(Image.open(str(self.path_dataset.joinpath(path_img))).convert('RGB')).astype('uint8')
+    with warnings.catch_warnings():
+      warnings.simplefilter("ignore")
+      box = np.loadtxt(self.path_dataset.joinpath(path_box))
+    if len(box):
+      box = np.roll(box.reshape(-1, 12), -1, axis=1)  # (x,y,w,h,*states,cls)
     else:
-      self.generator.reset()
-      self.generator.add_tower()
-      self.generator.add_unit(80)
-      img, box = self.generator.build()
+      box = box.reshape(0, 12)
 
     h0, w0 = img.shape[:2]
     if box[:, :4].max() <= 1:  # ratio to pixel
@@ -73,17 +62,15 @@ class YOLODataset(Dataset):
 
   def __getitem__(self, idx):
     img, box = self.load_file(idx)
-
     img, (dh, dw) = transform_pad(img, self.img_shape)
     box[:, 0] += dw
     box[:, 1] += dh
     if self.augment:
-      pass
-      # img = transform_hsv(img)
-      # if random.random() < 0.5:  # Flip left-right
-      #   img = np.fliplr(img)
-      #   if len(box):
-      #     box[:, 0] = img.shape[1] - box[:, 0]
+      img = transform_hsv(img)
+      if random.random() < 0.5:  # Flip left-right
+        img = np.fliplr(img)
+        if len(box):
+          box[:, 0] = img.shape[1] - box[:, 0]
     pbox = np.zeros((self.max_num_box, 12))  # faster than np.pad
     if len(box):
       pbox[:len(box)] = box
@@ -98,7 +85,7 @@ class DatasetBuilder:
   def get_dataset(self, subset: str = 'val'):
     dataset = YOLODataset(
       image_shape=self.args.image_shape, subset=subset,
-      path_dataset=self.args.path_dataset
+      path_dataset=self.args.path_dataset, repeat=self.args.repeat
     )
     ds = DataLoader(
       dataset, batch_size=self.args.batch_size,
@@ -112,8 +99,8 @@ if __name__ == '__main__':
   args = get_args_and_writer(no_writer=True)
   ds_builder = DatasetBuilder(args)
   # args.batch_size = 1
-  # ds = ds_builder.get_dataset(subset='train')
-  ds = ds_builder.get_dataset(subset='val')
+  ds = ds_builder.get_dataset(subset='train')
+  # ds = ds_builder.get_dataset(subset='val')
   print("Dataset size:", len(ds))
   iterator = iter(ds)
   # image, bboxes, num_bboxes = next(iterator)

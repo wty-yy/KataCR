@@ -1,14 +1,16 @@
 from pathlib import Path
 import jax.numpy as jnp
 from katacr.constants.state_list import num_state_classes
-from katacr.constants.dataset import path_dataset, train_datasize
+from katacr.constants.dataset import path_dataset
+from katacr.detection.dataset_builder import train_datasize
 
 dataset_name = 'ClashRoyale'
 path_dataset = Path(path_dataset)
 num_classes = 200 + num_state_classes
 num_data_workers = 8
-repeat = 5
-train_datasize = train_datasize * repeat
+repeat = 1
+# train_datasize = train_datasize * repeat
+train_datasize = train_datasize
 
 image_shape = (896, 576, 3)  # origin shape = (896, 568, 3)
 hsv_h = 0.015  # HSV-Hue augmentation

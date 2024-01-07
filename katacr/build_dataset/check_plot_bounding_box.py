@@ -10,7 +10,7 @@ from PIL import Image
 if __name__ == '__main__':
   path_manager = PathManager()
   # paths = path_manager.sample(subset='images', part=2, regex=r'^\d+.txt')
-  paths = path_manager.sample(subset='images', part="2/OYASSU_20230305_episodes/4/", regex=r'07425.txt')
+  paths = path_manager.search(subset='images', part="2/OYASSU_20230305_episodes/4/", regex=r'07425.txt')
   # paths = path_manager.sample(subset='images', part=2, regex=r'^04275.txt')
   path_save = path_logs / "label_images"
   path_save.mkdir(exist_ok=True)
