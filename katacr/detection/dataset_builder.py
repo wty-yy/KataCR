@@ -9,8 +9,7 @@ import numpy as np
 from PIL import Image
 import warnings
 import random
-
-train_datasize = 20000
+from katacr.detection.cfg import train_datasize
 
 from katacr.utils.detection.data import (
   transform_hsv, transform_pad, show_box

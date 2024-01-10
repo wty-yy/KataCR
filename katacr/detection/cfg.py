@@ -2,7 +2,8 @@ from pathlib import Path
 import jax.numpy as jnp
 from katacr.constants.state_list import num_state_classes
 from katacr.constants.dataset import path_dataset
-from katacr.detection.dataset_builder import train_datasize
+
+train_datasize = 10000
 
 dataset_name = 'ClashRoyale'
 path_dataset = Path(path_dataset)
