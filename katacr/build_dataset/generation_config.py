@@ -5,6 +5,56 @@ level2units = {
   3: other_unit_list,
 }
 unit2level = {unit: level for level, units in level2units.items() for unit in units }
+drop_units = ['emote']
+
+background_size = (568, 896)
+xyxy_grids = (6, 64, 562, 864)
+bottom_center_grid_position = {
+  'king1': (9, 4.7),
+  'queen1_0': (3.5, 7.7),
+  'queen1_1': (14.5, 7.7),
+  'king0': (9, 30.5),
+  'queen0_0': (3.5, 26.7),
+  'queen0_1': (14.5, 26.7),
+}
+
+background_augment = {
+  'xyxy': (0,56,568,490),
+  'prob': 0.2
+}
+aug2prob = {
+  'red': 0.05,
+  'blue': 0.05,
+  'golden': 0.05,
+  'white': 0.05,
+  'trans': 0.05,
+}
+aug2unit = {
+  'red': ground_unit_list + tower_unit_list + flying_unit_list,
+  'blue': ground_unit_list + tower_unit_list + flying_unit_list,
+  'golden': ['text'] + ground_unit_list + flying_unit_list,
+  'white': ['clock'] + ground_unit_list + flying_unit_list + tower_unit_list,
+  'trans': ground_unit_list + flying_unit_list
+}
+alpha_tranparency = 150
+color2RGB = {
+  'red': (255, 0, 0),
+  'blue': (0, 0, 255),
+  'golden': (255, 215, 0),
+  'white': (255, 255, 255)
+}
+color2alpha = {
+  'red': 80,
+  'blue': 80,
+  'golden': 150,
+  'white': 150
+}
+color2bright = {  # brightness range
+  'red': (30, 50),
+  'blue': (30, 50),
+  'golden': (30, 80),
+  'white': (30, 80),
+}
 
 grid_size = (18, 32)  # (x, y)
 map_ground = [
@@ -18,7 +68,7 @@ map_ground = [
   [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -29,7 +79,7 @@ map_ground = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],  # queen tower

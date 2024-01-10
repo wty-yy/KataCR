@@ -15,8 +15,8 @@ path_logs = Path(__file__).parents[2].joinpath("logs")
 path_logs.mkdir(exist_ok=True)
 path_features = Path(__file__) / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
-# path_dataset = Path("/home/wty/Coding/datasets/CR")
-path_dataset = Path("/home/yy/Coding/datasets/CR")
+path_dataset = Path("/home/wty/Coding/datasets/CR")
+# path_dataset = Path("/home/yy/Coding/datasets/CR")
 
 split_bbox_params = {
   'part1': (0.835, 0.074, 0.165, 0.025),  # just time
@@ -42,13 +42,3 @@ mse_feature_match_threshold = 0.03
 text_features_episode_end = ['match', 'over', 'break']
 text_confidence_threshold = 0.005
 MAX_NUM_BBOXES = 100  # 36 in OYASSU_20210528, 42 in OYASSU_20230305
-
-xyxy_grids = (6, 64, 580, 864)
-bottom_center_grid_position = {
-  'king1': (9, 4.7),
-  'queen1_0': (3.5, 7.7),
-  'queen1_1': (14.5, 7.7),
-  'king0': (9, 30.5),
-  'queen0_0': (3.5, 26.7),
-  'queen0_1': (14.5, 26.7),
-}

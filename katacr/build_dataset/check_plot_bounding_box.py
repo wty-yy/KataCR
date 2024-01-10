@@ -9,9 +9,9 @@ from PIL import Image
 
 if __name__ == '__main__':
   path_manager = PathManager()
-  # paths = path_manager.sample(subset='images', part=2, regex=r'^\d+.txt')
-  paths = path_manager.search(subset='images', part="2/OYASSU_20230305_episodes/4/", regex=r'07425.txt')
-  # paths = path_manager.sample(subset='images', part=2, regex=r'^04275.txt')
+  # paths = path_manager.search(subset='images', part=2, regex=r'^\d+.txt')
+  paths = path_manager.search(subset='images', part=2, name="OYASSU_20230305_episodes/4/", regex=r'04875.txt')
+  # paths = path_manager.search(subset='images', part=2, regex=r'^04275.txt')
   path_save = path_logs / "label_images"
   path_save.mkdir(exist_ok=True)
   fliplr = False
@@ -45,11 +45,11 @@ if __name__ == '__main__':
     # image = plot_cells_PIL(image, 18, 28)  # scale 32
     # image = plot_cells_PIL(image, 36, 56)  # scale 16
     # image = plot_cells_PIL(image, 72, 112)  # scale 8
-    scale = 8
-    cw = int(image.size[0]/scale)
-    ch = int(image.size[1]/scale)
-    print("Cell:", cw, ch)
-    image = plot_cells_PIL(image, cw, ch)
+    # scale = 8
+    # cw = int(image.size[0]/scale)
+    # ch = int(image.size[1]/scale)
+    # print("Cell:", cw, ch)
+    # image = plot_cells_PIL(image, cw, ch)
     save_image_name = path_image.name
     save_image_name = save_image_name[:-4] + "_label" + ("_fliplr" if fliplr else "") + save_image_name[-4:]
     image.save(path_save.joinpath(save_image_name))
