@@ -8,6 +8,7 @@ unit_list = [
   'queen-tower',
   'tower-bar',
   'bar',
+  'king-tower-bar',
   'selected',
   'clock',
   'emote',
@@ -184,6 +185,7 @@ flying_unit_list = [
 other_unit_list = [
   'bar',
   'tower-bar',
+  'king-tower-bar',
   'clock',
   'text',
   'elixir',

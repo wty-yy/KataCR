@@ -10,7 +10,8 @@ from katacr.constants.state_list import state2idx, idx2state
 from katacr.build_dataset.generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size,
   drop_units, xyxy_grids, bottom_center_grid_position,
-  color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_tranparency, background_augment  # augmentation
+  color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
+  component_prob, component2unit, component_cfg  # component configs
 )
 import random
 
@@ -150,7 +151,6 @@ class Unit:
           break
         p -= val
 
-
   def get_name(self, show_state=False):
     name = idx2unit[self.cls]
     if not show_state: return name
@@ -166,7 +166,7 @@ class Unit:
     if self.augment is not None:
       if self.augment == 'trans':  # Transparency augmentation
         subimg = img[self.xyxy[1]:self.xyxy[3],self.xyxy[0]:self.xyxy[2],:]
-        alpha = ((self.mask != 0) * alpha_tranparency).astype(np.uint8)
+        alpha = ((self.mask != 0) * alpha_transparency).astype(np.uint8)
         upimg = Image.fromarray(np.concatenate([self.img, alpha[...,None]], -1))
         upimg = np.array(Image.alpha_composite(Image.fromarray(subimg).convert('RGBA'), upimg).convert('RGB'))
         subimg[self.mask] = upimg[self.mask]
@@ -301,8 +301,21 @@ class Generator:
     assert isinstance(unit, Unit), "The join element must be the instance of Unit"
     self.unit_list.append(unit)
   
-  def build_unit_from_path(self, path: str | Path, xy_bottom_center: tuple, level: int, join: bool = True):
-    img = np.array(Image.open(path))
+  def _build_unit_from_path(
+      self, path: str | Path,
+      xy_bottom_center: tuple,
+      level: int,
+      max_width: float | tuple = None,  # relative to cell
+      join: bool = True,
+    ):
+    img = Image.open(path)
+    if max_width is not None:
+      if isinstance(max_width, tuple): max_width = self._sample_range(*max_width)
+      max_width = round(max_width * cell_size[0])  # convert to pixel
+      if img.size[0] > max_width:
+        ratio = max_width / img.size[0]
+        img = img.resize((round(img.size[i]*ratio) for i in range(2)))
+    img = np.array(img)
     name = path.name.rsplit('.',1)[0]
     name = name.rsplit('_',1)[0]
     unit = Unit(img=img, xy_bottom_center=xy_bottom_center, level=level, background_size=self.background_size, name=name, augment=self.augment)
@@ -326,12 +339,18 @@ class Generator:
     r_idx = np.random.choice(np.arange((a!=0).sum()), size, replace=replace, p=a[a!=0] / a[a!=0].sum())
     return np.argwhere(a)[r_idx]
   
+  @staticmethod
+  def _sample_range(l, r):
+    return random.random() * (r - l) + l
+  
   def add_tower(self, king=True, queen=True):
     if king:
       king0 = self._sample_one(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
-      self.build_unit_from_path(king0, self.bc_pos['king0'], 1)
+      unit = self._build_unit_from_path(king0, self.bc_pos['king0'], 1)
+      self._add_component(unit)
       king1 = self._sample_one(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
-      self.build_unit_from_path(king1, self.bc_pos['king1'], 1)
+      unit = self._build_unit_from_path(king1, self.bc_pos['king1'], 1)
+      self._add_component(unit)
     if queen:
       for i in range(2):  # is enermy?
         for j in range(2):  # left or right
@@ -339,7 +358,8 @@ class Generator:
             self.path_manager.search(subset='images', part='segment', name='queen-tower', regex=f'queen-tower_{i}') +
             self.path_manager.search(subset='images', part='segment', name='cannoneer-tower', regex=f'cannoneer-tower_{i}')
           )
-          self.build_unit_from_path(queen, self.bc_pos[f'queen{i}_{j}'], 1)
+          unit = self._build_unit_from_path(queen, self.bc_pos[f'queen{i}_{j}'], 1)
+          unit = self._add_component(unit)
           
   @staticmethod
   def _update_map(
@@ -406,6 +426,36 @@ class Generator:
       xy += np.clip(np.random.randn(2) * 0.2, -0.5, 0.5)
       xy = np.array([np.clip(xy[0], 0, grid_size[0]), np.clip(xy[1], 0, grid_size[1])])
     return xy
+
+  def _sample_from_center(self, center, dx_range, dy_range):
+    dx = self._sample_range(*dx_range)
+    dy = self._sample_range(*dy_range)
+    if not isinstance(center, np.ndarray): center = np.array(center, np.float32)
+    center += np.array([dx, dy])
+    return center
+  
+  def _add_component(self, unit: Unit):
+    p = random.random()
+    if p > component_prob: return
+    components = [key for key, val in component2unit.items() if idx2unit[unit.cls] in val]
+    print(idx2unit[unit.cls])
+    print(components)
+    if len(components) == 0: return
+    c = self._sample_one(components)
+    if c in component_cfg: cfg = component_cfg[c]
+    else: cfg = component_cfg[c+str(unit.states[0])]
+    center, dx_range, dy_range, max_width = cfg
+    if center == 'bottom_center': center = unit.xy_cell
+    elif center == 'top_center': center = (unit.xy_cell[0], (unit.xyxy[1]-xyxy_grids[1])/cell_size[1])
+    xy = self._sample_from_center(center, dx_range, dy_range)
+    path = self.path_manager.path / "images/segment" / c
+    if 'bar' in c:  # determine the side 0/1
+      paths = list(path.glob(f"{c}_{unit.states[0]}*"))
+    else:
+      paths = list(path.glob('*'))
+    if len(paths) == 0: return
+    level = unit2level[c]
+    self._build_unit_from_path(self._sample_one(paths), xy, level, max_width)
   
   def add_unit(self, n=1):
     """
@@ -420,8 +470,14 @@ class Generator:
     for _ in range(n):
       p: Path = self._sample_one(paths)
       level = unit2level[p.name]  # [1, 2, 3]
-      xy = self._sample_from_map(level)
-      self.build_unit_from_path(self._sample_one(list(p.glob('*'))), xy, level)
+      if p.name == 'big-text':
+        cfg = component_cfg['big-text']
+        center = cfg[0]
+        xy = self._sample_from_center(center, *cfg[1:3])
+      else:
+        xy = self._sample_from_map(level)
+      unit = self._build_unit_from_path(self._sample_one(list(p.glob('*'))), xy, level)
+      self._add_component(unit)
   
   def reset(self):
     self.build_background()

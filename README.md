@@ -11,7 +11,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 4. 在YOLO上训练，20000example/epoch，训练100epoch，但还是没有收敛，
    并且在验证集上（手工标记数据集）没有性能。
 
-### v0.2 (2024.1.9-2024.1.10)
+### v0.2 (2024.1.9-2024.1.11)
 1. 单位的生成扰动修改为$\mathcal{N}(0,0.2^2)$裁剪到$[-0.5,0.5]$
 2. 加入动态调整生成位置的概率分布。
 3. 加入相关单位的关联性生成，例如bar和unit，elixir和unit
@@ -22,3 +22,6 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    3. 所有单位随机大小缩放。
    4. （非others类）水平翻转
 6. 加入17种背景板，共25种。
+7. 不再考虑对emote的生成与识别
+FIX BUG:
+1. 重新定义nms计算，只考虑图层在自己之上的，对`unit_list`，按照图层级别，从高到低求

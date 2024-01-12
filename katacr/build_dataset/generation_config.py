@@ -4,8 +4,9 @@ level2units = {
   2: flying_unit_list,
   3: other_unit_list,
 }
-unit2level = {unit: level for level, units in level2units.items() for unit in units }
-drop_units = ['emote']
+unit2level = {unit: level for level, units in level2units.items() for unit in units}
+unit2level['small-text'] = unit2level['big-text'] = unit2level['text']
+drop_units = ['emote', 'small-text', 'elixir', 'bar', 'tower-bar', 'king-tower-bar', 'clock']
 
 background_size = (568, 896)
 xyxy_grids = (6, 64, 562, 864)
@@ -18,6 +19,31 @@ bottom_center_grid_position = {
   'queen0_1': (14.5, 26.7),
 }
 
+component_prob = 0.2  # the probability of adding a component
+component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_range, max_width
+  'big-text': [(9, 13), (0, 0), (0, 5), None],
+  'small-text': ['top_center', (0, 0), (-1, -0.5), None],
+  'elixir': ['bottom_center', (0, 0), (-2, 0), None],
+  'bar': ['top_center', (0, 0), (-0.5, 0), None],
+  'tower-bar0': ['bottom_center', (0, 0), (-2.5, -1.5), (2.5, 3)],
+  'tower-bar1': ['top_center', (0, 0), (0, 0), (2.5, 3)],
+  'king-tower-bar0': ['bottom_center', (0, 0), (1, 1.5), (4.5, 5.5)],
+  'king-tower-bar1': ['top_center', (0, 0), (0, 0), (4.5, 5.5)],
+  'clock': ['bottom_center', (0, 0), (2, 1.5), None]
+}
+except_king_tower_unit_list = tower_unit_list.copy()
+except_king_tower_unit_list.remove('king-tower')
+component2unit = {
+  'big-text': [],
+  'small-text': ground_unit_list + flying_unit_list,
+  'elixir': ground_unit_list + flying_unit_list,
+  'bar': ground_unit_list + flying_unit_list,
+  'tower-bar': except_king_tower_unit_list,
+  'king-tower-bar': ['king-tower'],
+  'clock': ground_unit_list + flying_unit_list,
+}
+
+# Augmentation (mask and transparency)
 background_augment = {
   'xyxy': (0,56,568,490),
   'prob': 0.2
@@ -36,7 +62,7 @@ aug2unit = {
   'white': ['clock'] + ground_unit_list + flying_unit_list + tower_unit_list,
   'trans': ground_unit_list + flying_unit_list
 }
-alpha_tranparency = 150
+alpha_transparency = 150
 color2RGB = {
   'red': (255, 0, 0),
   'blue': (0, 0, 255),
