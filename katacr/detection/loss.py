@@ -37,15 +37,15 @@ class ComputeLoss:
     Args:
       state: Flax TrainState
       x: Input images. [shape=(N,H,W,C)]
-      box: Target boxes. [shape=(N,M,5)]
+      box: Target boxes. [shape=(N,M,6), elem=(x,y,w,h,side,cls)]
       nb: Number of boxes. [shape=(N,)]
       train: Update state if train.
     """
     def single_loss_fn(p, t, anchors):
       """
       Args:
-        p (logits): [shape=(N,3,H,W,5+nc)]
-        t (target): [shape=(N,3,H,W,6)]
+        p (logits): [shape=(N,3,H,W,5+1+nc)]
+        t (target): [shape=(N,3,H,W,7)]
         anchors: [shape=(3,2)]
       """
       mask = t[..., 4:5] == 1  # positive mask
@@ -57,18 +57,24 @@ class ComputeLoss:
       tobj = jnp.zeros_like(ious)
       tobj += mask * jnp.clip(ious, 0.0)
       lobj = BCE(p[..., 4:5], tobj, jnp.ones_like(mask))
-      s = p[..., 5:18]
-      cls = p[..., 18:]
+      s = p[..., 5:6]  # side
+      cls = p[..., 6:]
       lcls = (
-        BCE(s[..., 0:1], t[..., 5:6], mask) + 
-        BCE(s[..., 1:6], t[..., 6], mask) + 
-        BCE(s[..., 6:7], t[..., 7:8], mask) + 
-        BCE(s[..., 7:8], t[..., 8:9], mask) + 
-        BCE(s[..., 8:9], t[..., 9:10], mask) + 
-        BCE(s[..., 9:10], t[..., 10:11], mask) + 
-        BCE(s[..., 10:13], t[..., 11], mask) +
-        BCE(cls, t[..., 12], mask)
+        BCE(s[..., 0:1], t[...,5:6], mask) +
+        BCE(cls, t[..., 6], mask)
       )
+      # s = p[..., 5:18]
+      # cls = p[..., 18:]
+      # lcls = (
+      #   BCE(s[..., 0:1], t[..., 5:6], mask) + 
+      #   BCE(s[..., 1:6], t[..., 6], mask) + 
+      #   BCE(s[..., 6:7], t[..., 7:8], mask) + 
+      #   BCE(s[..., 7:8], t[..., 8:9], mask) + 
+      #   BCE(s[..., 8:9], t[..., 9:10], mask) + 
+      #   BCE(s[..., 9:10], t[..., 10:11], mask) + 
+      #   BCE(s[..., 10:13], t[..., 11], mask) +
+      #   BCE(cls, t[..., 12], mask)
+      # )
       return lbox, lobj, lcls
     
     def loss_fn(params):
@@ -104,13 +110,13 @@ class ComputeLoss:
     Args:
       p (logits): list[shape=(3,Hi,Wi,5+ns+nc)], i=0,1,2, \
         [elem: (x,y,w,h,conf,*prob)]
-      box: Target boxes with YOLO format. [shape=(M,5)]
+      box: Target boxes with YOLO format. [shape=(M,6)]
       nb: Number of the target box.
     Return:
       target: Target for `p` cell format. \
-        list[shape=(3,Hi,Wi,13)], i=0,1,2, [elem: (x,y,w,h,conf,*state,cls)]
+        list[shape=(3,Hi,Wi,7)], i=0,1,2, [elem: (x,y,w,h,conf,side,cls)]
     """
-    target = [jnp.zeros((*p[i].shape[:3],13)) for i in range(3)]
+    target = [jnp.zeros((*p[i].shape[:3],7)) for i in range(3)]
     def loop_i_fn(i, target):  # box[i]
       b, sc = box[i, :4], box[i, 4:]  # sc: states and class
       rate = b[None,None,2:4] / self.anchors  # anchors.shape=(3,3,2)

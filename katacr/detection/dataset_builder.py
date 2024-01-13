@@ -48,13 +48,14 @@ class YOLODataset(Dataset):
         warnings.simplefilter("ignore")
         box = np.loadtxt(self.path_dataset.joinpath(path_box))
       if len(box):
-        box = np.roll(box.reshape(-1, 12), -1, axis=1)  # (x,y,w,h,*states,cls)
+        box = box.reshape(-1, 12)[:, :6]  # just consider `side` state
+        box = np.roll(box, -1, axis=1)
       else:
-        box = box.reshape(0, 12)
+        box = box.reshape(0, 6)
     else:
       self.generator.reset()
       self.generator.add_tower()
-      self.generator.add_unit(80)
+      self.generator.add_unit(30)
       img, box = self.generator.build()
 
     h0, w0 = img.shape[:2]
@@ -83,7 +84,7 @@ class YOLODataset(Dataset):
       #   img = np.fliplr(img)
       #   if len(box):
       #     box[:, 0] = img.shape[1] - box[:, 0]
-    pbox = np.zeros((self.max_num_box, 12))  # faster than np.pad
+    pbox = np.zeros((self.max_num_box, 6))  # faster than np.pad
     if len(box):
       pbox[:len(box)] = box
     return img.copy(), pbox.copy(), len(box)

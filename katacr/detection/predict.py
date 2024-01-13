@@ -28,13 +28,14 @@ class Predictor(BasePredictor):
       cls = jnp.argmax(cls, axis=-1, keepdims=True)
       states = logits[i][...,5:5+num_state_classes]
       s1 = (states[...,0:1] >= 0).astype(jnp.float32)
-      s2 = jnp.argmax(states[...,1:6], axis=-1, keepdims=True)
-      s3 = (states[...,6:7] >= 0).astype(jnp.float32)
-      s4 = (states[...,7:8] >= 0).astype(jnp.float32)
-      s5 = (states[...,8:9] >= 0).astype(jnp.float32)
-      s6 = (states[...,9:10] >= 0).astype(jnp.float32)
-      s7 = jnp.argmax(states[...,10:13], axis=-1, keepdims=True)
-      states = [s1, s2, s3, s4, s5, s6, s7]
+      # s2 = jnp.argmax(states[...,1:6], axis=-1, keepdims=True)
+      # s3 = (states[...,6:7] >= 0).astype(jnp.float32)
+      # s4 = (states[...,7:8] >= 0).astype(jnp.float32)
+      # s5 = (states[...,8:9] >= 0).astype(jnp.float32)
+      # s6 = (states[...,9:10] >= 0).astype(jnp.float32)
+      # s7 = jnp.argmax(states[...,10:13], axis=-1, keepdims=True)
+      # states = [s1, s2, s3, s4, s5, s6, s7]
+      states = [s1]
       y.append(jnp.concatenate([xy,wh,conf,*states,cls], -1).reshape(batch_size,-1,13))
     y = jnp.concatenate(y, 1)  # shape=(batch_size,all_pbox_num,5+7+1)
     return y

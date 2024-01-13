@@ -53,7 +53,8 @@ state2idx = {  # key: (class, id)
   'heal':  (6, 1),  # Class 7: Heal/Clone (multi classes: 3 variables)
   'clone': (6, 2),
 }
-num_state_classes = 1 * 5 + 5 + 3  # 13
+# num_state_classes = 1 * 5 + 5 + 3  # 13
+num_state_classes = 1  # just consider side
 idx2state = {
   0: '0',
   1: '1',

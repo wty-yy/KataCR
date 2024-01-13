@@ -80,7 +80,7 @@ class Unit:
       background_size (Tuple[int]): The image size of the background.
       name (str | None): The label name of the unit.
       cls (str | int | None): The class of the unit.
-      states (str | np.ndarray): The states of the unit.
+      states (str | np.ndarray): The states of the unit. (Side)
       background (bool): The image is the background.
       fliplr (float): The probability of flip the image left and right.
       augment (bool): If true, augment the image in probability.
@@ -92,10 +92,11 @@ class Unit:
       if isinstance(states, np.ndarray):
         self.states = states
       else:
-        self.states = np.zeros(7, np.int32)
-        for s in states:
-          c, i = state2idx[s]
-          self.states[c] = i
+        self.states = np.array((int(states[0]),), np.int32)
+        # self.states = np.zeros(7, np.int32)
+        # for s in states:
+        #   c, i = state2idx[s]
+        #   self.states[c] = i
     else:
       raise "Error: You must give the label of the unit (when not background)."
     self.level = level
@@ -151,7 +152,7 @@ class Unit:
           break
         p -= val
 
-  def get_name(self, show_state=False):
+  def get_name(self, show_state=True):
     name = idx2unit[self.cls]
     if not show_state: return name
     for i, s in enumerate(self.states):
@@ -438,8 +439,8 @@ class Generator:
     p = random.random()
     if p > component_prob: return
     components = [key for key, val in component2unit.items() if idx2unit[unit.cls] in val]
-    print(idx2unit[unit.cls])
-    print(components)
+    # print(idx2unit[unit.cls])
+    # print(components)
     if len(components) == 0: return
     c = self._sample_one(components)
     if c in component_cfg: cfg = component_cfg[c]
@@ -447,6 +448,7 @@ class Generator:
     center, dx_range, dy_range, max_width = cfg
     if center == 'bottom_center': center = unit.xy_cell
     elif center == 'top_center': center = (unit.xy_cell[0], (unit.xyxy[1]-xyxy_grids[1])/cell_size[1])
+    # elif center == 'top_center': center = (unit.xy_cell[0], unit.xyxy[1]/cell_size[1])
     xy = self._sample_from_center(center, dx_range, dy_range)
     path = self.path_manager.path / "images/segment" / c
     if 'bar' in c:  # determine the side 0/1
@@ -484,13 +486,13 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.6, augment=True)
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(5):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=50)
+    generator.add_unit(n=30)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
     print('box num:', box.shape[0])
