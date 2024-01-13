@@ -41,7 +41,7 @@ class BasePredictor:
         just predict the bounding boxes for `x`), \
         `B` is the number of the batch size.
       x: The input of the model. [shape=(B,H,W,C) or (H,W,C)]
-      tbox: The target bounding boxes. [shape=(B,M,12), or (M,12)]
+      tbox: The target bounding boxes. [shape=(B,M,6), or (M,6)]
       tnum: The number of the target bounding boxes. [shape=(B,) or int]
       nms_iou: The threshold of the iou in NMS.
       nms_conf: The threshold of the confidence in NMS.
@@ -108,7 +108,7 @@ class BasePredictor:
       state: TrainState `self.state`
       x: Input image. [shape=(N,H,W,3)]
     Return:
-      y: All predict box. [shape=(N,num_pbox,13), elem:(x,y,w,h,conf,*state,cls)]
+      y: All predict box. [shape=(N,num_pbox,7), elem:(x,y,w,h,conf,side,cls)]
     """
     pass
 
@@ -142,9 +142,9 @@ class BasePredictor:
     Compute the true positive for each `pbox`. Time complex: O(NM)
 
     Args:
-      pbox: The predicted bounding boxes. [shape=(N,13), elem=(x,y,w,h,conf,*state,cls)]
+      pbox: The predicted bounding boxes. [shape=(N,7), elem=(x,y,w,h,conf,side,cls)]
       pnum: The number of available `pbox`. [int]
-      tbox: The target bounding boxes. [shape=(M,12), elem=(x,y,w,h,*state,cls)]
+      tbox: The target bounding boxes. [shape=(M,6), elem=(x,y,w,h,side,cls)]
       tnum: The number of available `tbox`. [int]
       iout: The iou thresholds of deciding true positive. [shape=(1,) or (10,)]
       num_classes: The number of all classes. [int]

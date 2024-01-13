@@ -9,7 +9,7 @@ from katacr.constants.label_list import unit2idx, idx2unit
 from katacr.constants.state_list import state2idx, idx2state
 from katacr.build_dataset.generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size,
-  drop_units, xyxy_grids, bottom_center_grid_position,
+  drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, big_text_prob,
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
   component_prob, component2unit, component_cfg  # component configs
 )
@@ -132,7 +132,7 @@ class Unit:
     if size / (h * w) < 0.3 or self.xyxy[2] - self.xyxy[0] < 6 or self.xyxy[3] - self.xyxy[1] < 6:
       self.xyxy = np.zeros(4)
 
-    if random.uniform(0, 1) < fliplr and self.cls != unit2idx['text']:
+    if random.uniform(0, 1) < fliplr and idx2unit[self.cls] not in drop_fliplr:
       img = np.fliplr(img)
 
     if img.shape[-1] == 4:
@@ -324,8 +324,10 @@ class Generator:
     return unit
   
   @staticmethod
-  def _sample_one(x):
-    return random.sample(x, k=1)[0]
+  def _sample_elem(x, k=1, get_elem=True):
+    ret = random.sample(x, k=k)
+    if k == 1 and get_elem: return ret[0]
+    return ret
 
   @staticmethod
   def _sample_prob(a: np.ndarray, size: int = 1, replace: bool = False) -> np.ndarray:
@@ -346,16 +348,16 @@ class Generator:
   
   def add_tower(self, king=True, queen=True):
     if king:
-      king0 = self._sample_one(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
+      king0 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
       unit = self._build_unit_from_path(king0, self.bc_pos['king0'], 1)
       self._add_component(unit)
-      king1 = self._sample_one(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
+      king1 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
       unit = self._build_unit_from_path(king1, self.bc_pos['king1'], 1)
       self._add_component(unit)
     if queen:
       for i in range(2):  # is enermy?
         for j in range(2):  # left or right
-          queen = self._sample_one(
+          queen = self._sample_elem(
             self.path_manager.search(subset='images', part='segment', name='queen-tower', regex=f'queen-tower_{i}') +
             self.path_manager.search(subset='images', part='segment', name='cannoneer-tower', regex=f'cannoneer-tower_{i}')
           )
@@ -442,22 +444,24 @@ class Generator:
     # print(idx2unit[unit.cls])
     # print(components)
     if len(components) == 0: return
-    c = self._sample_one(components)
-    if c in component_cfg: cfg = component_cfg[c]
-    else: cfg = component_cfg[c+str(unit.states[0])]
-    center, dx_range, dy_range, max_width = cfg
-    if center == 'bottom_center': center = unit.xy_cell
-    elif center == 'top_center': center = (unit.xy_cell[0], (unit.xyxy[1]-xyxy_grids[1])/cell_size[1])
-    # elif center == 'top_center': center = (unit.xy_cell[0], unit.xyxy[1]/cell_size[1])
-    xy = self._sample_from_center(center, dx_range, dy_range)
-    path = self.path_manager.path / "images/segment" / c
-    if 'bar' in c:  # determine the side 0/1
-      paths = list(path.glob(f"{c}_{unit.states[0]}*"))
-    else:
-      paths = list(path.glob('*'))
-    if len(paths) == 0: return
-    level = unit2level[c]
-    self._build_unit_from_path(self._sample_one(paths), xy, level, max_width)
+    k = random.randint(1, len(components))
+    cs = self._sample_elem(components, k=k, get_elem=False)
+    for c in cs:
+      if c in component_cfg: cfg = component_cfg[c]
+      else: cfg = component_cfg[c+str(unit.states[0])]
+      center, dx_range, dy_range, max_width = cfg
+      if center == 'bottom_center': center = unit.xy_cell
+      elif center == 'top_center': center = (unit.xy_cell[0], (unit.xyxy[1]-xyxy_grids[1])/cell_size[1])
+      # elif center == 'top_center': center = (unit.xy_cell[0], unit.xyxy[1]/cell_size[1])
+      xy = self._sample_from_center(center, dx_range, dy_range)
+      path = self.path_manager.path / "images/segment" / c
+      if 'bar' in c:  # determine the side 0/1
+        paths = list(path.glob(f"{c}_{unit.states[0]}*"))
+      else:
+        paths = list(path.glob('*'))
+      if len(paths) == 0: return
+      level = unit2level[c]
+      self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width)
   
   def add_unit(self, n=1):
     """
@@ -465,20 +469,23 @@ class Generator:
     Unit list looks at `katacr/constants/label_list.py`
     """
     paths = []
-    for p in (self.path_manager.path / "images/segment").glob('*'):
-      if p.name in ['backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower'] + drop_units:
+    path_segment = self.path_manager.path / "images/segment"
+    for p in (path_segment).glob('*'):
+      if p.name in ['backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower', 'big-text'] + drop_units:
         continue
       paths.append(p)
-    for _ in range(n):
-      p: Path = self._sample_one(paths)
+    if random.random() < big_text_prob:  # add big-text
+      p = path_segment / 'big-text'
       level = unit2level[p.name]  # [1, 2, 3]
-      if p.name == 'big-text':
-        cfg = component_cfg['big-text']
-        center = cfg[0]
-        xy = self._sample_from_center(center, *cfg[1:3])
-      else:
-        xy = self._sample_from_map(level)
-      unit = self._build_unit_from_path(self._sample_one(list(p.glob('*'))), xy, level)
+      cfg = component_cfg['big-text']
+      center = cfg[0]
+      xy = self._sample_from_center(center, *cfg[1:3])
+      self._build_unit_from_path(self._sample_elem(list(p.glob('*'))), xy, level)
+    for _ in range(n):
+      p: Path = self._sample_elem(paths)
+      level = unit2level[p.name]  # [1, 2, 3]
+      xy = self._sample_from_map(level)
+      unit = self._build_unit_from_path(self._sample_elem(list(p.glob('*'))), xy, level)
       self._add_component(unit)
   
   def reset(self):
@@ -493,8 +500,8 @@ if __name__ == '__main__':
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)
-    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
-    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
+    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{10+2*i}.jpg"))
+    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{10+2*i+1}.jpg"))
     print('box num:', box.shape[0])
     # print(generator.map_cfg['ground'])
     generator.reset()

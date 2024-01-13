@@ -36,7 +36,7 @@ class Predictor(BasePredictor):
       # s7 = jnp.argmax(states[...,10:13], axis=-1, keepdims=True)
       # states = [s1, s2, s3, s4, s5, s6, s7]
       states = [s1]
-      y.append(jnp.concatenate([xy,wh,conf,*states,cls], -1).reshape(batch_size,-1,13))
-    y = jnp.concatenate(y, 1)  # shape=(batch_size,all_pbox_num,5+7+1)
+      y.append(jnp.concatenate([xy,wh,conf,*states,cls], -1).reshape(batch_size,-1,7))
+    y = jnp.concatenate(y, 1)  # shape=(batch_size,all_pbox_num,5+1+1)
     return y
   

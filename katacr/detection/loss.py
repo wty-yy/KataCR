@@ -62,7 +62,7 @@ class ComputeLoss:
       lcls = (
         BCE(s[..., 0:1], t[...,5:6], mask) +
         BCE(cls, t[..., 6], mask)
-      )
+      ) / 2
       # s = p[..., 5:18]
       # cls = p[..., 18:]
       # lcls = (

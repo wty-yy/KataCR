@@ -157,6 +157,7 @@ unit2idx = {name: idx for idx, name in enumerate(unit_list)}
 ground_unit_list = [
   'barbarian',
   'barbarian-barrel',
+  'barbarian-hut',
   'cannon',
   'electro-spirit',
   'goblin-brawler',
@@ -180,6 +181,11 @@ tower_unit_list = [
 flying_unit_list = [
   'flying-machine',
   'fireball',
+  'arrows',
+]
+spell_unit_list = [
+  'fireball',
+  'arrows',
 ]
 
 other_unit_list = [

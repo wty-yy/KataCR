@@ -1,4 +1,4 @@
-from katacr.constants.label_list import ground_unit_list, flying_unit_list, tower_unit_list, other_unit_list
+from katacr.constants.label_list import ground_unit_list, flying_unit_list, tower_unit_list, other_unit_list, spell_unit_list
 level2units = {
   1: ground_unit_list + tower_unit_list,
   2: flying_unit_list,
@@ -7,6 +7,8 @@ level2units = {
 unit2level = {unit: level for level, units in level2units.items() for unit in units}
 unit2level['small-text'] = unit2level['big-text'] = unit2level['text']
 drop_units = ['emote', 'small-text', 'elixir', 'bar', 'tower-bar', 'king-tower-bar', 'clock']
+drop_fliplr = ['text', 'bar', 'king-tower-bar', 'tower-bar', 'elixir']
+big_text_prob = 0.01
 
 background_size = (568, 896)
 xyxy_grids = (6, 64, 562, 864)
@@ -34,14 +36,15 @@ component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_
 }
 except_king_tower_unit_list = tower_unit_list.copy()
 except_king_tower_unit_list.remove('king-tower')
+except_spell_flying_unit_list = list(set(flying_unit_list) - set(spell_unit_list))
 component2unit = {
   'big-text': [],
   'small-text': ground_unit_list + flying_unit_list,
   'elixir': ground_unit_list + flying_unit_list,
-  'bar': ground_unit_list + flying_unit_list,
+  'bar': ground_unit_list + except_spell_flying_unit_list,
   'tower-bar': except_king_tower_unit_list,
   'king-tower-bar': ['king-tower'],
-  'clock': ground_unit_list + flying_unit_list,
+  'clock': ground_unit_list + except_spell_flying_unit_list,
 }
 
 # Augmentation (mask and transparency)
@@ -57,11 +60,11 @@ aug2prob = {
   'trans': 0.05,
 }
 aug2unit = {
-  'red': ground_unit_list + tower_unit_list + flying_unit_list,
-  'blue': ground_unit_list + tower_unit_list + flying_unit_list,
-  'golden': ['text'] + ground_unit_list + flying_unit_list,
-  'white': ['clock'] + ground_unit_list + flying_unit_list + tower_unit_list,
-  'trans': ground_unit_list + flying_unit_list
+  'red': ground_unit_list + tower_unit_list + except_spell_flying_unit_list,
+  'blue': ground_unit_list + tower_unit_list + except_spell_flying_unit_list,
+  'golden': ['text'] + ground_unit_list + except_spell_flying_unit_list,
+  'white': ['clock'] + ground_unit_list + except_spell_flying_unit_list + tower_unit_list,
+  'trans': ground_unit_list + except_spell_flying_unit_list
 }
 alpha_transparency = 150
 color2RGB = {
@@ -86,36 +89,36 @@ color2bright = {  # brightness range
 grid_size = (18, 32)  # (x, y)
 map_ground = [
   [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],  # king tower
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],  # queen tower
-  [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],
-  [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],  # river
-  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],  # river
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-  [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],  # queen tower
-  [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],
-  [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],  # king tower
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+  [0.5, 0.5, 0.5, 0.5, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0.5, 0.5, 0.5, 0.5],  # king tower
+  [0.5, 0.5, 0.5, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0.5, 0.5, 0.5],
+  [0.5, 0.5, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0.5, 0.5],
+  [0.5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0.5],
+  [1, 1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1],  # queen tower
+  [1, 1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1],
+  [1, 1, 0, 0, 0, 2, 2, 1, 1, 1, 1, 2, 2, 0, 0, 0, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1, 1],
+  [0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0],  # river
+  [0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0],  # river
+  [1, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1, 1],
+  [1, 1, 0, 0, 0, 2, 2, 1, 1, 1, 1, 2, 2, 0, 0, 0, 1, 1],  # queen tower
+  [1, 1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1],
+  [1, 1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1],
+  [0.5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0.5],  # king tower
+  [0.5, 0.5, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0.5, 0.5],
+  [0.5, 0.5, 0.5, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0.5, 0.5, 0.5],
+  [0.5, 0.5, 0.5, 0.5, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0.5, 0.5, 0.5, 0.5],
   [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
 ]
 

@@ -112,8 +112,8 @@ if __name__ == '__main__':
   args = get_args_and_writer(no_writer=True)
   ds_builder = DatasetBuilder(args)
   # args.batch_size = 1
-  # ds = ds_builder.get_dataset(subset='train')
-  ds = ds_builder.get_dataset(subset='val')
+  ds = ds_builder.get_dataset(subset='train')
+  # ds = ds_builder.get_dataset(subset='val')
   print("Dataset size:", len(ds))
   iterator = iter(ds)
   # image, bboxes, num_bboxes = next(iterator)
