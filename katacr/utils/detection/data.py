@@ -113,7 +113,7 @@ def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use
   if len(box):
     label2color = build_label2colors(box[:,-1])
   for b in box:
-    states = b[5:5+num_state] if len(b) == 13 else b[4:4+num_state]
+    states = b[5:5+num_state] if len(b) == 7 else b[4:4+num_state]
     # conf = float(b[4])
     label = int(b[-1])
     text = idx2unit[label]
