@@ -178,7 +178,7 @@ def iou_multiply(boxes1, boxes2, format='iou'):
     return result
 
 @partial(jax.jit, static_argnums=[3,4])
-def nms(box, iou_threshold=0.3, conf_threshold=0.2, max_num_box=100, iou_format='iou'):
+def nms(box, iou_threshold=0.3, conf_threshold=0.2, nms_multi=30, max_num_box=100, iou_format='iou'):
   """
   Compute the predicted bounding boxes and the number of bounding boxes.
   
@@ -193,7 +193,7 @@ def nms(box, iou_threshold=0.3, conf_threshold=0.2, max_num_box=100, iou_format=
     box: The bounding boxes after NMS.  [shape=(max_num_box, 6)]
     pnum: The number of the predicted bounding boxes. [int]
   """
-  M = max_num_box * 10  # BUG FIX: The M must bigger than max_num_box, since iou threshold will remove many boxes beside.
+  M = min(max_num_box * nms_multi, box.shape[0])  # BUG FIX: The M must bigger than max_num_box, since iou threshold will remove many boxes beside.
   sort_idxs = jnp.argsort(-box[:,4])[:M]  # only consider the first `max_num_box`
   box = box[sort_idxs]
   ious = iou_multiply(box[:,:4], box[:,:4], format=iou_format)

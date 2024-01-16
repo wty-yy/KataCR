@@ -44,7 +44,7 @@ class CSP(nn.Module):
   @nn.compact
   def __call__(self, x):
     neck = partial(BottleNeck, conv=self.conv, shortcut=self.shortcut)
-    n = x.shape[-1] // 2
+    n = self.output_channel // 2
     route = self.conv(filters=n, kernel=(1,1))(x)
     x = self.conv(filters=n, kernel=(1,1))(x)
     for _ in range(self.n_bottleneck):
@@ -57,7 +57,7 @@ class CSPDarkNet(nn.Module):
 
   @nn.compact
   def __call__(self, x, train: bool):
-    stage_size = [3, 6, 9, 6]
+    stage_size = [3, 6, 9, 3]
     norm = partial(nn.BatchNorm, use_running_average=not train)
     conv = partial(ConvBlock, norm=norm, act=self.act)
     csp = partial(CSP, conv=conv)

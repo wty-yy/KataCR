@@ -3,17 +3,18 @@ from katacr.utils.detection.predictor import BasePredictor
 from katacr.detection.loss import cell2pixel
 from katacr.detection.parser import YOLOv5Args
 from katacr.constants.state_list import num_state_classes
+from katacr.detection.train_state import TrainState
 
 class Predictor(BasePredictor):
   
-  def __init__(self, args: YOLOv5Args, state: train_state.TrainState, iout=None):
-    super().__init__(state, iout)
+  def __init__(self, args: YOLOv5Args, state: TrainState, iout=None):
+    super().__init__(state, iout, args.image_shape)
     self.args = args
 
   @partial(jax.jit, static_argnums=0)
-  def predict(self, state: train_state.TrainState, x: jnp.ndarray):
+  def predict(self, state: TrainState, x: jnp.ndarray):
     logits = state.apply_fn(
-      {'params': state.params, 'batch_stats': state.batch_stats},
+      {'params': state.ema['params'], 'batch_stats': state.ema['batch_stats']},
       x, train=False
     )
     y, batch_size = [], x.shape[0]

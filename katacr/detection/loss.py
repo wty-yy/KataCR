@@ -92,8 +92,9 @@ class ComputeLoss:
       lbox *= self.coef_box
       lobj *= self.coef_obj
       lcls *= self.coef_cls
-      weight_l2 = 0.5 * sum(jnp.sum(x**2) for x in jax.tree_util.tree_leaves(params) if x.ndim > 1)
-      loss = self.batch_size * (lbox + lobj + lcls) + self.weight_decay * weight_l2
+      # weight_l2 = 0.5 * sum(jnp.sum(x**2) for x in jax.tree_util.tree_leaves(params) if x.ndim > 1)
+      # loss = self.batch_size * (lbox + lobj + lcls) + self.weight_decay * weight_l2
+      loss = self.batch_size * (lbox + lobj + lcls)
       return loss, (updates, lbox, lobj, lcls)
     if train:
       (loss, (updates, *metrics)), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)

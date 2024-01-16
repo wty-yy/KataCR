@@ -3,15 +3,11 @@ import jax.numpy as jnp
 from katacr.constants.state_list import num_state_classes
 from katacr.constants.dataset import path_dataset
 
-train_datasize = 10000
-
 dataset_name = 'ClashRoyale'
 path_dataset = Path(path_dataset)
 num_classes = 200 + num_state_classes
 num_data_workers = 8
-repeat = 1
-# train_datasize = train_datasize * repeat
-train_datasize = train_datasize
+train_datasize = 100000
 
 image_shape = (896, 576, 3)  # origin shape = (896, 568, 3)
 hsv_h = 0.015  # HSV-Hue augmentation
@@ -31,11 +27,11 @@ anchors = jnp.array([  # Update: 2024.1.3
 ], dtype=jnp.float32)
 
 ### Training ###
-batch_size = 8
+batch_size = 16
 total_epochs = 100
 coef_box = 0.05
-coef_obj = 1.0
-coef_cls = 0.5
+coef_obj = 1.0 * (image_shape[0] / 640) * (image_shape[1] / 640)  # scale image size
+coef_cls = 0.5 * 150 / 80  # scale class number
 learning_rate_init = 0.01
 learning_rate_final = 1e-4
 weight_decay = 5e-4
