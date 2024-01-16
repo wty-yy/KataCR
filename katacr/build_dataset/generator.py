@@ -392,7 +392,7 @@ class Generator:
     if not replace: a = a.copy()
     if not isinstance(xy, np.ndarray):
       xy = np.array(xy)
-    assert a[*xy] != 0 and xy.size == 2
+    assert a[xy[0],xy[1]] != 0 and xy.size == 2
 
     d = np.stack(np.meshgrid(np.arange(size), np.arange(size)), -1) - size // 2  # delta
     dxy = (d + xy.reshape(1,1,2)).reshape(-1, 2).T  # xy around indexs with sizexsize
@@ -404,8 +404,8 @@ class Generator:
     if n == 0: return
     dx, dy = dx[nonzero], dy[nonzero]
 
-    c = a[*xy]  # center value
-    a[*xy] = c / 2  # update center point
+    c = a[xy[0],xy[1]]  # center value
+    a[xy[0],xy[1]] = c / 2  # update center point
     a[dx, dy] += c / 2 / n  # update around point
     return a
 
