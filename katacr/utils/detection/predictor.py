@@ -169,27 +169,27 @@ class BasePredictor:
     tp = jnp.zeros((pbox.shape[0],iout.shape[0]), jnp.bool_)
     def solve(tp):  # If tnum > 0
       ious = iou_multiply(pbox[:,:4], tbox[:,:4])  # shape=(N,M)
-      bel = jnp.zeros((pbox.shape[0],))  # tbox index that pbox belong to
+      bel = jnp.zeros_like(tp, dtype=jnp.int32)  # calculate belong for each iou threshold
       # Get tp and belong
       def loop_i_fn(i, value):  # i=0,...,pnum-1
         tp, bel = value
         iou = ious[i]
-        j = jnp.argmax((tbox[:,-1]==pbox[i,-1]) * iou)  # belong to tbox[j]
+        j = jnp.argmax((tbox[:,4]==pbox[i,5]) * iou)  # belong to tbox[j]
         # Round to 0.01, https://github.com/rafaelpadilla/Object-Detection-Metrics
         tp = tp.at[i].set((iou[j].round(2) >= iout - 1e-5) & (j < tnum))
         bel = bel.at[i].set(j)
         return tp, bel
       tp, bel = jax.lax.fori_loop(0, pnum, loop_i_fn, (tp, bel))
       # Remove duplicate belong
-      bel = jnp.where(tp.sum(1) > 0, bel, -1)
+      bel = jnp.where(tp, bel, -1)
       mask = jnp.zeros_like(bel, jnp.bool_)
       def loop_j_fn(j, mask):  # j=0,...,tnum-1
         tmp = bel == j
-        tmp = tmp.at[jnp.argmax(tmp)].set(False)
+        tmp = tmp.at[jnp.argmax(tmp,0), jnp.arange(tmp.shape[1])].set(False)  # use argmax to get the first nonzero arg
         mask = mask | tmp
         return mask
       mask = jax.lax.fori_loop(0, tnum, loop_j_fn, mask)
-      tp = tp * (~mask[:,None])
+      tp = tp * (~mask)
       return tp
     tp = jax.lax.cond(tnum > 0, solve, lambda x: x, tp)
     return pbox, tp
