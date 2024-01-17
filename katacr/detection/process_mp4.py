@@ -13,12 +13,11 @@ import numpy as np
 
 def load_model_state():
   from katacr.detection.parser import get_args_and_writer
-  state_args = get_args_and_writer(no_writer=True, input_args="--model-name YOLOv5 --load-id 100".split())
-  state_args.batch_size = 1
+  state_args = get_args_and_writer(no_writer=True, input_args="--model-name YOLOv5_v0.3_b16_13000 --load-id 100 --batch-size 1".split())
 
   from katacr.detection.model import get_state
-  state_args.steps_per_epoch = 10  # any number
-  state = get_state(state_args, use_init=False)
+  state = get_state(state_args)
+  state = state.replace(params={}, batch_stats={}, grads={})
 
   from katacr.utils.model_weights import load_weights
   state = load_weights(state, state_args)
@@ -43,10 +42,10 @@ def main(args):
   @jax.jit
   def preprocess(x):
     w = jnp.array([x.shape[1] / state_args.image_shape[1], x.shape[0] / state_args.image_shape[0]])
-    w = jnp.r_[w, w, [1] * 9].reshape(1,1,13)
+    w = jnp.r_[w, w, [1] * 3].reshape(1,1,7)
     x = jnp.array(x, dtype=jnp.float32)[None, ...] / 255.
     x = jax.image.resize(x, (1,*state_args.image_shape), method='bilinear')
-    pbox, pnum = predictor.pred_and_nms(state, x, iou_threshold=0.4, conf_threshold=0.5)
+    pbox, pnum = predictor.pred_and_nms(state, x, iou_threshold=0.4, conf_threshold=0.5, nms_multi=10)
     pbox = pbox * w
     return pbox[0], pnum[0]
   def predict(x: jax.Array):
@@ -80,10 +79,10 @@ def main(args):
 def parse_args():
   from katacr.utils.parser import cvt2Path
   parser = argparse.ArgumentParser()
-  # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4"),
+  parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4"),
   # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20230212_episodes/4.mp4"),
   # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20230305_episodes/4.mp4"),
-  parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20230224_episodes/2.mp4"),
+  # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20230224_episodes/2.mp4"),
   # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/2.mp4"),
     help="The path of the input video.")
   parser.add_argument("--path-output-video", type=cvt2Path, default=None,
@@ -95,7 +94,7 @@ def parse_args():
     fname = fname[:-len(suffix)-1]
     args.path_processed_videos = Path(__file__).parents[2] / "logs/processed_videos"
     args.path_processed_videos.mkdir(exist_ok=True)
-    args.path_output_video = args.path_processed_videos / (fname + "_detection" + '.' + suffix)
+    args.path_output_video = args.path_processed_videos / (fname + "_yolov5_v0.3" + '.' + suffix)
   return args
 
 if __name__ == '__main__':
