@@ -1,3 +1,6 @@
+"""
+Reference: https://github.com/wty-yy/KataCV/tree/master/katacv/yolov5
+"""
 import sys, os
 sys.path.append(os.getcwd())
 from katacr.utils.related_pkgs.utility import *
@@ -14,7 +17,7 @@ if __name__ == '__main__':
 
   ### Initialize model state ###
   from katacr.detection.model import get_state
-  state = get_state(args, use_init=not args.load_id)
+  state = get_state(args)
 
   ### Load weights ###
   from katacr.utils.model_weights import load_weights
@@ -59,12 +62,13 @@ if __name__ == '__main__':
         bar.set_description(f"loss={metrics[0]:.4f}, lr={args.learning_rate_fn(state.step):.8f}")
         if global_step % args.write_tensorboard_freq == 0:
           logs.update(
-            ['SPS', 'SPS_avg', 'epoch', 'learning_rate'],
+            ['SPS', 'SPS_avg', 'epoch', 'learning_rate', 'learning_rate_bias'],
             [
               args.write_tensorboard_freq/logs.get_time_length(),
               global_step/(time.time()-start_time),
               epoch,
               args.learning_rate_fn(state.step),
+              args.learning_rate_bias_fn(state.step)
             ]
           )
           logs.writer_tensorboard(writer, global_step)
@@ -87,11 +91,13 @@ if __name__ == '__main__':
       logs.update(
         [
           'P@50_val', 'R@50_val', 'AP@50_val', 'AP@75_val', 'mAP_val',
-          'epoch', 'learning_rate'
+          'epoch', 'learning_rate', 'learning_rate_bias'
         ],
         [
           p50, r50, ap50, ap75, map,
-          epoch, args.learning_rate_fn(state.step)
+          epoch,
+          args.learning_rate_fn(state.step),
+          args.learning_rate_bias_fn(state.step)
         ]
       )
       logs.writer_tensorboard(writer, global_step)

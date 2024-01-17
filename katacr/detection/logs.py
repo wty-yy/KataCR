@@ -27,6 +27,7 @@ logs = Logs(
     'SPS': MeanMetric(),
     'SPS_avg': MeanMetric(),
     'learning_rate': 0,
+    'learning_rate_bias': 0,
   },
   folder2name={
     'metrics/train': [
@@ -54,7 +55,7 @@ logs = Logs(
     ],
     'charts': [
       'SPS', 'SPS_avg',
-      'epoch', 'learning_rate'
+      'epoch', 'learning_rate', 'learning_rate_bias'
     ]
   }
 )

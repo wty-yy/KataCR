@@ -9,14 +9,13 @@ import numpy as np
 from PIL import Image
 import warnings
 import random
-from katacr.detection.cfg import train_datasize
 
 from katacr.utils.detection.data import (
   transform_hsv, transform_pad, show_box
 )
 
 class YOLODataset(Dataset):
-  def __init__(self, image_shape: int, subset: str, path_dataset: Path):
+  def __init__(self, image_shape: int, subset: str, path_dataset: Path, train_datasize: int):
     self.img_shape = image_shape
     self.subset = subset
     self.path_dataset = path_dataset
@@ -98,7 +97,8 @@ class DatasetBuilder:
   def get_dataset(self, subset: str = 'val'):
     dataset = YOLODataset(
       image_shape=self.args.image_shape, subset=subset,
-      path_dataset=self.args.path_dataset
+      path_dataset=self.args.path_dataset,
+      train_datasize=self.args.train_datasize
     )
     ds = DataLoader(
       dataset, batch_size=self.args.batch_size,

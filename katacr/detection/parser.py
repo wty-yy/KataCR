@@ -6,7 +6,7 @@ class YOLOv5Args(CVArgs):
   ### Dataset ###
   num_classes: int
   num_data_workers: int
-  repeat: int
+  train_datasize: int
   ### Augmentation for train ###
   hsv_h: float  # HSV-Hue augmentation
   hsv_s: float  # HSV-Saturation augmentation
@@ -21,13 +21,14 @@ class YOLOv5Args(CVArgs):
   steps_per_epoch: int
   learning_rate_final: float
   learning_rate_fn: Callable
+  learning_rate_bias_fn: Callable
   momentum: float
   coef_box: float
   coef_obj: float
   coef_cls: float
 
 def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, SummaryWriter] | YOLOv5Args:
-  parser = Parser(model_name="YOLOv5_v0.2", wandb_project_name=cfg.dataset_name)
+  parser = Parser(model_name="YOLOv5_v0.3", wandb_project_name=cfg.dataset_name)
   ### Model ###
   parser.add_argument("--anchors", nargs='+', default=cfg.anchors,
     help="the anchors bounding boxes")
@@ -48,8 +49,8 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
     help="the probability of fliping image left and right augmentation")
   parser.add_argument("--num-data-workers", type=int, default=cfg.num_data_workers,
     help="the number of the subprocesses to use for data loading")
-  parser.add_argument("--repeat", type=int, default=cfg.repeat,
-    help="the repeat times of the training dataset")
+  parser.add_argument("--train-datasize", type=int, default=cfg.train_datasize,
+    help="the size of training dataset")
   ### Training ###
   parser.add_argument("--total-epochs", type=int, default=cfg.total_epochs,
     help="the total epochs for training")
@@ -71,21 +72,15 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
     help="the coef of the object loss")
   parser.add_argument("--coef-cls", type=float, default=cfg.coef_cls,
     help="the coef of the classification loss")
-  parser.add_argument("--accumulate", type=str2bool, default=True,
-    help="if taggled, accumulate the loss to nominal batch size 64")
   parser.add_argument("--use-cosine-decay", type=str2bool, default=False,
     help="if taggled, cosine learning rate decay will be used, else use the linear learning rate decay")
   args = parser.get_args(input_args)
   args.input_shape = (args.batch_size, *args.image_shape)
 
   nbc = 64  # nominal batch size
-  if args.accumulate:
-    args.accumulate = max(round(nbc / args.batch_size), 1)
-    args.weight_decay /= args.accumulate
-    args.steps_per_epoch = cfg.train_datasize // (args.accumulate * args.batch_size)
-  else:
-    args.accumulate = 1
-    args.steps_per_epoch = cfg.train_datasize // args.batch_size
+  args.accumulate = max(round(nbc / args.batch_size), 1)
+  args.weight_decay *= args.accumulate * args.batch_size / nbc
+  args.steps_per_epoch = args.train_datasize // (args.accumulate * args.batch_size)
 
   args.run_name = (
     f"{args.model_name}__load_{args.load_id}__warmup_lr_{args.learning_rate}"
