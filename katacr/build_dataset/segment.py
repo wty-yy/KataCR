@@ -8,8 +8,8 @@ from katacr.constants.label_list import idx2unit
 from katacr.constants.state_list import idx2state
 from tqdm import tqdm
 
-CHECKPOINT_PATH = r"/home/wty/Coding/models/sam_vit_h_4b8939.pth"
-# CHECKPOINT_PATH = r"/home/yy/Coding/models/sam_vit_h_4b8939.pth"
+# CHECKPOINT_PATH = r"/home/wty/Coding/models/sam_vit_h_4b8939.pth"
+CHECKPOINT_PATH = r"/home/yy/Coding/models/sam_vit_h_4b8939.pth"
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def cxcywh2xyxy(box, img):
@@ -126,7 +126,7 @@ class Segment:
 
 if __name__ == '__main__':
   segment = Segment()
-  segment.process(video_name="background")
+  # segment.process(video_name="background")
   # segment.process()
-  # segment.background()
+  segment.background()
 
