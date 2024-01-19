@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 from typing import Tuple
+import matplotlib.pyplot as plt
 
 # img = Image.open('/home/wty/Coding/datasets/CR/images/segment/king-tower/king-tower_1_attack_1024.png')
 img = Image.open('/home/wty/Coding/datasets/CR/images/segment/barbarian/barbarian_1_attack_40.png')
@@ -16,13 +17,13 @@ color2RGB = {
 }
 color2alpha = {
   'red': 80,
-  'blue': 80,
+  'blue': 100,
   'golden': 150,
   'white': 150
 }
 color2bright = {
   'red': (30, 50),
-  'blue': (30, 50),
+  'blue': (30, 80),
   'golden': (30, 80),
   'white': (30, 80),
 }
@@ -41,7 +42,7 @@ def add_filter(
   rgba = color2RGB[color] + (alpha,)
   if not isinstance(img, np.ndarray):
     img = np.array(img)
-  print("Alpha:", img[...,3].max(), img[...,3].min())
+  # print("Alpha:", img[...,3].max(), img[...,3].min())
   org_bright = img[...,:3].mean()
   assert img.dtype == np.uint8
   if xyxy is None: xyxy = (0, 0, img.shape[1], img.shape[0])
@@ -60,13 +61,22 @@ def add_filter(
   return proc_img
 
 import random
-color = 'blue'
-b = random.randint(*color2bright[color])
-# img = add_filter(img, 'red', alpha=80, xyxy=(0,56,568,490))
-print(b)
-img = add_filter(img, color, color2alpha[color], bright=b)
+# color = 'blue'
+for r in range(4):
+  for i, color in enumerate(color2bright.keys()):
+    plt.subplot(4,4,r*4+i+1)
+    bmin, bmax = color2bright[color]
+    b = bmin + (bmax - bmin) * (r + 1) / 4
+    # img = add_filter(img, 'red', alpha=80, xyxy=(0,56,568,490))
+    # print(b)
+    new_img = add_filter(img, color, color2alpha[color], bright=b, replace=False)
+    plt.title(color + f"({b}b)")
+    plt.axis('off')
+    plt.imshow(new_img)
+plt.tight_layout()
+plt.show()
 # img = add_filter(img, 'blue', alpha=80, bright=50)
 # img = add_filter(img, 'golden', alpha=150, bright=30)
 # img = add_filter(img, 'white', alpha=150, bright=50)
-img = Image.fromarray(img)
-img.show()
+# img = Image.fromarray(img)
+# img.show()

@@ -54,9 +54,9 @@ background_augment = {
 }
 aug2prob = {
   'red': 0.05,
-  'blue': 0.05,
-  'golden': 0.05,
-  'white': 0.05,
+  'blue': 0.10,
+  'golden': 0.10,
+  'white': 0.10,
   'trans': 0.05,
 }
 aug2unit = {
@@ -75,13 +75,13 @@ color2RGB = {
 }
 color2alpha = {
   'red': 80,
-  'blue': 80,
+  'blue': 100,
   'golden': 150,
   'white': 150
 }
 color2bright = {  # brightness range
   'red': (30, 50),
-  'blue': (30, 50),
+  'blue': (30, 80),
   'golden': (30, 80),
   'white': (30, 80),
 }
