@@ -37,11 +37,8 @@ class LabelBuilder:
     self.path_manager = PathManager(path_dataset)
     random.seed(seed)
     self.val_ratio = val_ratio
-    path_const_dataset = Path(__file__).parents[1] / 'constants/dataset.py'
-    self.dfile = path_const_dataset.open('w')
+    self.path_const_dataset = Path(__file__).parents[1] / 'constants/dataset.py'
     self.path_part2 = self.path_dataset / "images/part2"
-    print(f"Write train/val annotation files to {self.path_part2},\ndataset infomations to {path_const_dataset}")
-    self.dfile.write(f"path_dataset = \"{str(self.path_part2.resolve())}\"\n")
 
   @staticmethod
   def build_label_txt(path: Path, box_relative=True):
@@ -118,6 +115,10 @@ class LabelBuilder:
     return size
   
   def build(self, verbose=True):
+    self.dfile = self.path_const_dataset.open('w')
+    print(f"Write train/val annotation files to {self.path_part2},\ndataset infomations to {self.path_const_dataset}")
+    self.dfile.write(f"path_dataset = \"{str(self.path_part2.resolve())}\"\n")
+
     paths = self.path_manager.search(subset='images', part=2, regex=r'^\d+.json')
     max_path, max_box_num = None, 0
     for path in paths:
@@ -150,6 +151,6 @@ class LabelBuilder:
 
 if __name__ == '__main__':
   label_builder = LabelBuilder()
-  label_builder.build()
+  # label_builder.build()
   # label_builder.close()
-  # label_builder.build_background()
+  label_builder.build_background()
