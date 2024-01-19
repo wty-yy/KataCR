@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from segment_anything import sam_model_registry, SamPredictor
 from katacr.build_dataset.utils.datapath_manager import PathManager
-from katacr.build_dataset.constant import path_logs
+from katacr.build_dataset.constant import path_logs, image_size_part2
 from katacr.constants.label_list import idx2unit
 from katacr.constants.state_list import idx2state
 from tqdm import tqdm
@@ -74,7 +74,7 @@ class Segment:
       else:
         vn, episode, frame = path_box.parts[-3:]  # video_name, episode, frame
       path_img = path_box.parent / (path_box.name.rsplit('.',1)[0] + '.jpg')
-      img = np.array(Image.open(str(path_img)).convert('RGB'))
+      img = np.array(Image.open(str(path_img)).convert('RGB').resize(image_size_part2))
       box = np.loadtxt(str(path_box))
       for b in box:
         cls = idx2unit[int(b[0])]

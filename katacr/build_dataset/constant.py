@@ -19,6 +19,7 @@ path_features = Path(__file__) / "katacr/features"
 path_dataset = Path("/home/yy/Coding/datasets/CR")
 assert path_dataset.exists(), "Dataset not exist!"
 
+image_size_part2 = (568, 896)
 split_bbox_params = {
   'part1': (0.835, 0.074, 0.165, 0.025),  # just time
   # 'part1': {  # number ocr

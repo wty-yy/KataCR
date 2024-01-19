@@ -493,15 +493,15 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
+  generator = Generator(background_index=26, seed=42, intersect_ratio_thre=0.5, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(5):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)
-    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{10+2*i}.jpg"))
-    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{10+2*i+1}.jpg"))
+    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
+    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
     print('box num:', box.shape[0])
     # print(generator.map_cfg['ground'])
     generator.reset()
