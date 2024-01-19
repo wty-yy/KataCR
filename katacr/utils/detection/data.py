@@ -99,7 +99,7 @@ def transform_pad(img, target_shape):
   img = np.pad(img, ((top, bottom), (left, right), (0, 0)), mode="constant", constant_values=114)
   return img, (top, left)
 
-def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use_overlay=True, num_state=1):
+def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use_overlay=True, num_state=1, show_conf=False):
   from katacr.utils.detection import plot_box_PIL, build_label2colors
   from katacr.constants.label_list import idx2unit
   from katacr.constants.state_list import idx2state
@@ -114,7 +114,7 @@ def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use
     label2color = build_label2colors(box[:,-1])
   for b in box:
     states = b[5:5+num_state] if len(b) == 7 else b[4:4+num_state]
-    # conf = float(b[4])
+    conf = float(b[4])
     label = int(b[-1])
     text = idx2unit[label]
     for i, s in enumerate(states):
@@ -122,6 +122,8 @@ def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use
         text += idx2state[int(s)]
       elif int(s) != 0:
         text += ' ' + idx2state[int(i*10 + s)]
+    if show_conf:
+      text += ' ' + f'{conf:.3f}'
     plot_box = lambda x: plot_box_PIL(
         x, b[:4],
         text=text,

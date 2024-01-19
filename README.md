@@ -39,3 +39,6 @@ FIX BUG:
 5. 修改weight decay位置，避免梯度计算
 6. 加入EMA(Exponential Moving Average)
 7. 在NMS前将预测框限制到图像内
+
+### v0.4 (2024.1.17-)
+1. 对YOLOv5模型中判断tp（true positive）计算方法进行修正，原来按照0.5IOU阈值取最大置信度的框，导致对于更高IOU阈值的框可能没有被视为tp，导致mAP值偏低。
