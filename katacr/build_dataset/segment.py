@@ -126,7 +126,7 @@ class Segment:
 
 if __name__ == '__main__':
   segment = Segment()
-  # segment.process(video_name="background")
+  segment.process(video_name="background")
   # segment.process()
-  segment.background()
+  # segment.background()
 
