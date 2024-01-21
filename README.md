@@ -43,4 +43,4 @@ FIX BUG:
 ### v0.4 (2024.1.17-)
 1. 对YOLOv5模型中判断tp（true positive）计算方法进行修正，原来按照0.5IOU阈值取最大置信度的框，导致对于更高IOU阈值的框可能没有被视为tp，导致mAP值偏低。
 2. 上调蒙板增强中的金色、白色、蓝色的概率，蓝色亮度随机范围上调。
-3. 支持从background中提取切面，加入新版22个tower-bar，加入13个king-tower，15个queen-tower，2个背景版
+3. 支持从background中提取切面，加入新版22个tower-bar，加入13个king-tower，15个queen-tower，2个背景版（需要注意，新加入的女武神竞技场各方的横向增加了一行）

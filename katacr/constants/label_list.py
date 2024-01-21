@@ -190,10 +190,20 @@ spell_unit_list = [
 
 other_unit_list = [
   'bar',
+  'bar-level',
   'tower-bar',
   'king-tower-bar',
   'clock',
   'text',
   'elixir',
   'emote',
+]
+
+background_item_list = [
+  'blood',
+  'butterfly',
+  'flower',
+  'ribbon',
+  'skull',
+  'cup'
 ]
