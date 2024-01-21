@@ -11,7 +11,7 @@ from katacr.build_dataset.generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list,
   drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
-  component_prob, component2unit, component_cfg,  # component configs
+  component_prob, component2unit, component_cfg, important_components,  # component configs
   item_cfg, drop_box, background_item_list  # background item
 )
 import random
@@ -451,16 +451,23 @@ class Generator:
     return center
   
   def _add_component(self, unit: Unit):
-    p = random.random()
-    for ns, prob in component_prob.items():
-      if unit.cls_name in ns: break
-    if p > prob: return
     components = [key for key, val in component2unit.items() if unit.cls_name in val]
     if len(components) == 0: return
-    k = random.randint(1, len(components))
-    cs = self._sample_elem(components, k=k, get_elem=False)
+    cs = []
+    for c, prob in important_components:
+      if c in components and c not in cs and random.random() < prob:
+        components.remove(c)
+        cs.append(c)
+    for ns, prob in component_prob.items():
+      if unit.cls_name in ns: break
+    if random.random() < prob:
+      k = random.randint(1, len(components))
+      cs += self._sample_elem(components, k=k, get_elem=False)
+    if not len(cs): return  # low prob and no important components
     for c in cs:
-      if isinstance(c, tuple): c = self._sample_elem(c)  # 'bar' or 'bar-level'
+      if isinstance(c, tuple):
+        if random.random() < 0.8: c = c[0]  # 0.8 prob for 'bar'
+        else: c = c[1]  # 0.2 prob for 'bar-level'
       if c in component_cfg: cfg = component_cfg[c]
       else: cfg = component_cfg[c+str(unit.states[0])]
       center, dx_range, dy_range, max_width = cfg
@@ -525,15 +532,15 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=41, intersect_ratio_thre=0.5, augment=True)
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(5):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)
-    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
-    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
+    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{10+2*i}.jpg"))
+    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{10+2*i+1}.jpg"))
     print('box num:', box.shape[0])
     # print(generator.map_cfg['ground'])
     generator.reset()
