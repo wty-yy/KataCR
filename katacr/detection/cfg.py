@@ -7,7 +7,7 @@ dataset_name = 'ClashRoyale'
 path_dataset = Path(path_dataset)
 num_classes = 200 + num_state_classes
 num_data_workers = 8
-train_datasize = 100000
+train_datasize = 13000
 
 image_shape = (896, 576, 3)  # origin shape = (896, 568, 3)
 hsv_h = 0.015  # HSV-Hue augmentation
@@ -28,7 +28,7 @@ anchors = jnp.array([  # Update: 2024.1.3
 
 ### Training ###
 batch_size = 16
-total_epochs = 100
+total_epochs = 80
 coef_box = 0.05
 coef_obj = 1.0 * (image_shape[0] / 640) * (image_shape[1] / 640)  # scale image size
 coef_cls = 0.5 * 150 / 80  # scale class number

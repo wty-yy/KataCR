@@ -151,6 +151,6 @@ class LabelBuilder:
 
 if __name__ == '__main__':
   label_builder = LabelBuilder()
-  # label_builder.build()
+  label_builder.build()
   # label_builder.close()
-  label_builder.build_background()
+  # label_builder.build_background()
