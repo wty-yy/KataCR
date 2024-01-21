@@ -44,12 +44,15 @@ def process_part(image, part_id: int | str):
 
 def preprocess_background():
   path_manager = PathManager()
-  paths = path_manager.search('images', name="background", regex=r"\d+.jpg")
+  paths = sorted(path_manager.search('images', name="background", regex=r"\d+.jpg"))
   path_save = path_manager.path / "images/part2/background"
   path_save.mkdir(exist_ok=True)
-  for path in paths:
+  for i, path in enumerate(paths):
     img = np.array(Image.open(str(path)))
-    img = process_part(img, '2_watch')
+    if 1 <= i+1 <= 25:
+      img = process_part(img, '2_watch_2400p')
+    elif i+1 == 26:
+      img = process_part(img, '2_2400p')
     Image.fromarray(img).save(str(path_save / path.name))
 
 def test():
@@ -63,7 +66,7 @@ def test():
   # image = Image.open(str(path_logs.joinpath("show_king_tower_hp.jpg")))
   # image = Image.open(str(path_logs.joinpath("start_setting_behind_king_tower.jpg")))
   # image = Image.open(str(path_frame.joinpath("end_episode1.jpg")))
-  image = Image.open(str(const.path_dataset / "images/background/background01.jpg"))
+  image = Image.open(str(const.path_dataset / "images/background/background26.jpg"))
   image = np.array(image)
   print("Image shape:", image.shape)
 
@@ -80,8 +83,11 @@ def test():
   # part4 = process_part(image, 4)
   # for key, value in part4.items():
   #   Image.fromarray(value).save(str(path_image_save.joinpath(f"part4_{key}.jpg")))
-  part2_watch = process_part(image, '2_watch')
-  Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
+  # part2_watch = process_part(image, '2_watch')
+  # Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
+  part2_2400p = process_part(image, '2_2400p')
+  Image.fromarray(part2_2400p).save(str(path_image_save / "part2_2400p.jpg"))
+  Image.fromarray(part2_2400p).show()
 
   # import matplotlib.pyplot as plt
   # plt.figure(figsize=(5,20))

@@ -1,14 +1,19 @@
-from katacr.constants.label_list import ground_unit_list, flying_unit_list, tower_unit_list, other_unit_list, spell_unit_list
+from katacr.constants.label_list import ground_unit_list, flying_unit_list, tower_unit_list, other_unit_list, spell_unit_list, background_item_list
 level2units = {
+  0: ['blood', 'butterfly', 'flower', 'skull', 'cup'],
   1: ground_unit_list + tower_unit_list,
   2: flying_unit_list,
-  3: other_unit_list,
+  3: other_unit_list + ['ribbon'],
 }
 unit2level = {unit: level for level, units in level2units.items() for unit in units}
 unit2level['small-text'] = unit2level['big-text'] = unit2level['text']
-drop_units = ['emote', 'small-text', 'elixir', 'bar', 'tower-bar', 'king-tower-bar', 'clock']
-drop_fliplr = ['text', 'bar', 'king-tower-bar', 'tower-bar', 'elixir']
-big_text_prob = 0.01
+drop_units = [
+  'emote', 'small-text', 'elixir', 'bar', 'tower-bar',
+  'king-tower-bar', 'clock', 'big-text', 'background-items',
+  'bar-level'
+]
+drop_fliplr = ['text', 'bar', 'bar-level', 'king-tower-bar', 'tower-bar', 'elixir']
+drop_box = background_item_list + ['bar-level']
 
 background_size = (568, 896)
 xyxy_grids = (6, 64, 562, 864)
@@ -21,27 +26,46 @@ bottom_center_grid_position = {
   'queen0_1': (14.5, 26.7),
 }
 
-component_prob = 0.2  # the probability of adding a component
-component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_range, max_width
-  'big-text': [(9, 13), (0, 0), (0, 5), None],
+except_king_tower_unit_list = tower_unit_list.copy()
+except_king_tower_unit_list.remove('king-tower')
+component_prob = {x: 0.95 for x in except_king_tower_unit_list}
+component_prob.update({'king-tower': 0.5})  # king-tower-bar
+component_prob.update(  # the probability of adding a component
+  {x: 0.2 for x in (ground_unit_list + flying_unit_list)}
+)
+component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_range, width
   'small-text': ['top_center', (0, 0), (-1, -0.5), None],
   # 'small-text': ['bottom_center', (0, 0), (-0, -0.0), None],
   'elixir': ['bottom_center', (0, 0), (-2, 0), None],
   'bar': ['top_center', (0, 0), (-0.5, 0), None],
-  'tower-bar0': ['bottom_center', (0, 0), (-2.5, -1.5), (2.5, 3)],
-  'tower-bar1': ['top_center', (0, 0), (0, 0), (2.5, 3)],
+  'bar-level': ['top_center', (0, 0), (-0.5, 0), None],
+  'tower-bar0': ['bottom_center', (0, 0), (-2, -1), (2.5, 3)],
+  'tower-bar1': ['top_center', (0, 0), (0, 0.5), (2.5, 3)],
   'king-tower-bar0': ['bottom_center', (0, 0), (1, 1.5), (4.5, 5.5)],
   'king-tower-bar1': ['top_center', (0, 0), (0, 0), (4.5, 5.5)],
   'clock': ['bottom_center', (0, 0), (2, 1.5), None]
 }
-except_king_tower_unit_list = tower_unit_list.copy()
-except_king_tower_unit_list.remove('king-tower')
+# (prob, [center, dx_range, dy_range, width_range, max_num]*n)
+item_cfg = {
+  'big-text': (0.05, [[(9, 13), (0, 0), (0, 5), None, 1]]),
+  'emote': (0.1, [
+    [(1, 3), (0, 0), (0, 28), (1.5, 2), 4],  # left range
+    [(17, 3), (0, 0), (0, 28), (1.5, 2), 4],  # right range
+    [(13, 32), (0, 1), (0, 0), (2.5, 3.5), 1],  # bottom range
+    [(4.5, 2.5), (0, 1), (0, 0), (2.5, 3.5), 1],  # top range
+  ]),
+  'blood': (0.3, [[(9, 16), (-9, 9), (-8, 8), None, 30]]),  # center range
+  'butterfly': (0.1, [[(0, 0), (0, 18), (0, 32), None, 3]]),  # all
+  'flower': (0.3, [[(0, 0), (0, 18), (0, 32), None, 5]]),  # all
+  'ribbon': (0.5, [[(0, 0), (0, 18), (0, 32), None, 50]]),  # all
+  'skull': (0.05, [[(0, 0), (0, 18), (0, 32), None, 3]]),  # all
+  'cup': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
+}
 except_spell_flying_unit_list = list(set(flying_unit_list) - set(spell_unit_list))
 component2unit = {
-  'big-text': [],
   'small-text': ground_unit_list + flying_unit_list,
   'elixir': ground_unit_list + flying_unit_list,
-  'bar': ground_unit_list + except_spell_flying_unit_list,
+  ('bar', 'bar-level'): ground_unit_list + except_spell_flying_unit_list,
   'tower-bar': except_king_tower_unit_list,
   'king-tower-bar': ['king-tower'],
   'clock': ground_unit_list + except_spell_flying_unit_list,
@@ -54,9 +78,9 @@ background_augment = {
 }
 aug2prob = {
   'red': 0.05,
-  'blue': 0.05,
-  'golden': 0.05,
-  'white': 0.05,
+  'blue': 0.10,
+  'golden': 0.10,
+  'white': 0.10,
   'trans': 0.05,
 }
 aug2unit = {
@@ -75,14 +99,14 @@ color2RGB = {
 }
 color2alpha = {
   'red': 80,
-  'blue': 80,
+  'blue': 100,
   'golden': 150,
   'white': 150
 }
 color2bright = {  # brightness range
   'red': (30, 50),
-  'blue': (30, 50),
-  'golden': (30, 80),
+  'blue': (30, 80),
+  'golden': (50, 80),
   'white': (30, 80),
 }
 

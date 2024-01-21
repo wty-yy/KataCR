@@ -20,6 +20,7 @@ path_features = Path(__file__) / "katacr/features"
 path_dataset = Path("/data/user/wutianyang/dataset/CR")
 assert path_dataset.exists(), "Dataset not exist!"
 
+image_size_part2 = (568, 896)
 split_bbox_params = {
   'part1': (0.835, 0.074, 0.165, 0.025),  # just time
   # 'part1': {  # number ocr
@@ -37,7 +38,8 @@ split_bbox_params = {
     'up': (0.100, 0.340, 0.800, 0.070),
     'mid': (0.180, 0.410, 0.650, 0.050),
   },
-  'part2_watch': (0.024, 0.205, 0.954, 0.676)
+  'part2_watch_2400p': (0.024, 0.205, 0.954, 0.676),  # 1080x2400
+  'part2_2400p': (0.020, 0.090, 0.960, 0.680),
 }
 
 mse_feature_match_threshold = 0.03

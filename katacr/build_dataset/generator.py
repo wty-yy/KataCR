@@ -8,10 +8,11 @@ from katacr.build_dataset.constant import path_logs
 from katacr.constants.label_list import unit2idx, idx2unit
 from katacr.constants.state_list import state2idx, idx2state
 from katacr.build_dataset.generation_config import (
-  map_fly, map_ground, level2units, unit2level, grid_size, background_size,
-  drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, big_text_prob,
+  map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list,
+  drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
-  component_prob, component2unit, component_cfg  # component configs
+  component_prob, component2unit, component_cfg,  # component configs
+  item_cfg, drop_box, background_item_list  # background item
 )
 import random
 
@@ -64,7 +65,7 @@ class Unit:
       background_size: Tuple[int],
       name: str | None = None,
       cls: str | int | None = None,
-      states: str | np.ndarray = None,
+      states: list | np.ndarray = None,
       fliplr: float = 0.5,
       augment: bool = True,
     ):
@@ -88,10 +89,14 @@ class Unit:
     if name is not None or (cls is not None and states is not None):
       if name is not None:
         cls, *states = name.split('_')
-      self.cls = unit2idx[cls] if isinstance(cls, str) else cls
+      self.cls_name = cls if isinstance(cls, str) else idx2unit[cls]
+      if isinstance(cls, str):
+        if cls in drop_box: self.cls = -1
+        else: self.cls = unit2idx[cls]
+      else: self.cls = cls
       if isinstance(states, np.ndarray):
         self.states = states
-      else:
+      elif self.cls_name not in drop_box:
         self.states = np.array((int(states[0]),), np.int32)
         # self.states = np.zeros(7, np.int32)
         # for s in states:
@@ -129,10 +134,11 @@ class Unit:
       ), np.int32)
     
     size = (self.xyxy[2] - self.xyxy[0]) * (self.xyxy[3] - self.xyxy[1])
+    # Residue size ratio < 0.3 or width, hight < 6 pixel, then drop this unit
     if size / (h * w) < 0.3 or self.xyxy[2] - self.xyxy[0] < 6 or self.xyxy[3] - self.xyxy[1] < 6:
       self.xyxy = np.zeros(4)
 
-    if random.uniform(0, 1) < fliplr and idx2unit[self.cls] not in drop_fliplr:
+    if random.uniform(0, 1) < fliplr and self.cls_name not in drop_fliplr:
       img = np.fliplr(img)
 
     if img.shape[-1] == 4:
@@ -146,14 +152,14 @@ class Unit:
     if augment:
       p = random.random()
       for key, val in aug2prob.items():
-        if idx2unit[self.cls] not in aug2unit[key]: continue
+        if self.cls_name not in aug2unit[key]: continue
         if p < val:
           self.augment = key
           break
         p -= val
 
   def get_name(self, show_state=True):
-    name = idx2unit[self.cls]
+    name = self.cls_name
     if not show_state: return name
     for i, s in enumerate(self.states):
       if i == 0:
@@ -186,6 +192,7 @@ class Unit:
     return mask
 
   def show_box(self, img: Image, cls2color: dict | None = None):
+    if self.cls == -1: return img
     color = cls2color[self.cls] if cls2color is not None else 'red'
     return plot_box_PIL(img, self.xyxy, text=self.get_name(), format='voc', box_color=color)
 
@@ -196,7 +203,8 @@ class Generator:
       self, background_index: int | None = None,
       unit_list: Tuple[Unit,...] = None,
       seed: int | None = None,
-      intersect_ratio_thre: float = 0.8,
+      intersect_ratio_thre: float = 0.5,
+      tower_intersect_ratio_thre: float = 0.8,
       map_update_size: int = 5,
       augment: bool = True
     ):
@@ -214,9 +222,11 @@ class Generator:
     self.augment = augment
 
     self.path_manager = PathManager()
+    self.path_segment = self.path_manager.path / "images/segment"
     self.build_background()
     self.unit_list = [] if unit_list is None else unit_list
     self.intersect_ratio_thre = intersect_ratio_thre
+    self.tower_intersect_ratio_thre = tower_intersect_ratio_thre
     self.map_cfg = {
       'ground': np.array(map_ground, np.float32),
       'fly': np.array(map_fly, np.float32),
@@ -255,7 +265,7 @@ class Generator:
   
   @staticmethod
   def _intersect_ratio_with_mask(unit: Unit, mask: np.ndarray):
-    if (unit.xyxy == 0).any(): return 1.0
+    if (unit.xyxy == 0).all(): return 1.0
     if unit.mask.sum() == 0: return 0.0
     inter = mask[unit.xyxy[1]:unit.xyxy[3],unit.xyxy[0]:unit.xyxy[2]][unit.mask].sum()
     return inter / unit.mask.sum()
@@ -278,12 +288,15 @@ class Generator:
     self.unit_list = sorted(self.unit_list, key=lambda x: (x.level, x.xy_cell[1]))
     box, mask, unit_avail = [], np.zeros(img.shape[:2]), []  # return box, union of images, available units
     for u in self.unit_list[::-1]:  # reverse order for NMS
-      if self._intersect_ratio_with_mask(u, mask) > self.intersect_ratio_thre:
-        continue
+      ratio = self._intersect_ratio_with_mask(u, mask)
+      if u.cls_name in tower_unit_list:
+        if ratio > self.tower_intersect_ratio_thre: continue
+      elif ratio > self.intersect_ratio_thre: continue
       u.draw_mask(mask)
       cls.add(u.cls)
       unit_avail.append(u)
-      box.append((*u.xyxy, *u.states, u.cls))
+      if u.cls != -1:
+        box.append((*u.xyxy, *u.states, u.cls))
     for u in unit_avail[::-1]:  # increase order for drawing
       u.draw(img)
     box = np.array(box, np.float32)
@@ -439,14 +452,15 @@ class Generator:
   
   def _add_component(self, unit: Unit):
     p = random.random()
-    if p > component_prob: return
-    components = [key for key, val in component2unit.items() if idx2unit[unit.cls] in val]
-    # print(idx2unit[unit.cls])
-    # print(components)
+    for ns, prob in component_prob.items():
+      if unit.cls_name in ns: break
+    if p > prob: return
+    components = [key for key, val in component2unit.items() if unit.cls_name in val]
     if len(components) == 0: return
     k = random.randint(1, len(components))
     cs = self._sample_elem(components, k=k, get_elem=False)
     for c in cs:
+      if isinstance(c, tuple): c = self._sample_elem(c)  # 'bar' or 'bar-level'
       if c in component_cfg: cfg = component_cfg[c]
       else: cfg = component_cfg[c+str(unit.states[0])]
       center, dx_range, dy_range, max_width = cfg
@@ -463,24 +477,42 @@ class Generator:
       level = unit2level[c]
       self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width)
   
+  def _add_item(self):
+    """
+    Add background items in `background_item_list`, `big-text`, `emote`.
+    Look at `item_cfg.keys()`.
+    """
+    # (prob, [center, dx_range, dy_range, width_range, max_num]*n)
+    for name, (prob, cfgs) in item_cfg.items():
+      if random.random() > prob: continue
+      for cfg in cfgs:
+        if name not in background_item_list:
+          paths = list((self.path_segment / name).glob('*'))
+        else:
+          paths = list((self.path_segment / 'background-items').glob(name+'*'))
+        level = unit2level[name]  # [0: background_items, 3: big-text, emote]
+        center, dx_range, dy_range, w_range, maxn = cfg
+        if maxn == 1:
+          n = self._sample_elem(range(2))
+        else: n = self._sample_elem(range(maxn)) + 1
+        for _ in range(n):
+          xy = self._sample_from_center(center, dx_range, dy_range)
+          path = self._sample_elem(paths)
+          self._build_unit_from_path(path, xy, level, w_range)
+  
   def add_unit(self, n=1):
     """
     Add unit in [ground, flying, others] randomly.
     Unit list looks at `katacr/constants/label_list.py`
     """
+    self._add_item()
     paths = []
-    path_segment = self.path_manager.path / "images/segment"
-    for p in (path_segment).glob('*'):
-      if p.name in ['backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower', 'big-text'] + drop_units:
+    for p in (self.path_segment).glob('*'):
+      if p.name in [
+        'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
+      ] + drop_units:
         continue
       paths.append(p)
-    if random.random() < big_text_prob:  # add big-text
-      p = path_segment / 'big-text'
-      level = unit2level[p.name]  # [1, 2, 3]
-      cfg = component_cfg['big-text']
-      center = cfg[0]
-      xy = self._sample_from_center(center, *cfg[1:3])
-      self._build_unit_from_path(self._sample_elem(list(p.glob('*'))), xy, level)
     for _ in range(n):
       p: Path = self._sample_elem(paths)
       level = unit2level[p.name]  # [1, 2, 3]
@@ -493,15 +525,15 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
+  generator = Generator(seed=41, intersect_ratio_thre=0.5, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(5):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)
-    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{10+2*i}.jpg"))
-    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{10+2*i+1}.jpg"))
+    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
+    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
     print('box num:', box.shape[0])
     # print(generator.map_cfg['ground'])
     generator.reset()

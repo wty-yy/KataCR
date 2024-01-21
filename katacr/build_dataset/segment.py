@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from segment_anything import sam_model_registry, SamPredictor
 from katacr.build_dataset.utils.datapath_manager import PathManager
-from katacr.build_dataset.constant import path_logs
+from katacr.build_dataset.constant import path_logs, image_size_part2
 from katacr.constants.label_list import idx2unit
 from katacr.constants.state_list import idx2state
 from tqdm import tqdm
@@ -33,7 +33,7 @@ class Segment:
 
     self.path_log_save = path_logs / "segment_unit"  # The temporary files
     self.path_log_save.mkdir(exist_ok=True)
-    self.path_save = self.path_manager.path / "images/units"  # The dataset files (picked)
+    self.path_save = self.path_manager.path / "images/segment"  # The dataset files (picked)
     self.path_save.mkdir(exist_ok=True)
     self.cache_idx = {}  # The cache of the index of class in dataset
   
@@ -67,11 +67,14 @@ class Segment:
     Process the images in part_id with video_name and episode.
     """
     if episode is not None: episode = str(episode)
-    paths = self.path_manager.search(subset='images', part=part_suffix, video_name=video_name, name=episode, regex=r"^\d+.jpg")
-    for path_img in tqdm(paths):
-      vn, episode, frame = path_img.parts[-3:]  # video_name, episode, frame
-      path_box = path_img.parent / (path_img.name.rsplit('.',1)[0] + '.txt')
-      img = np.array(Image.open(str(path_img)).convert('RGB'))
+    paths = self.path_manager.search(subset='images', part=part_suffix, video_name=video_name, name=episode, regex=r"\d+.txt")
+    for path_box in tqdm(paths):
+      if 'background' in str(path_box):
+        vn = 'background'
+      else:
+        vn, episode, frame = path_box.parts[-3:]  # video_name, episode, frame
+      path_img = path_box.parent / (path_box.name.rsplit('.',1)[0] + '.jpg')
+      img = np.array(Image.open(str(path_img)).convert('RGB').resize(image_size_part2))
       box = np.loadtxt(str(path_box))
       for b in box:
         cls = idx2unit[int(b[0])]
@@ -101,12 +104,12 @@ class Segment:
       idx = self.cache_idx[cls]
     elif path_save.exists():
       for path in path_save.glob('*'):
-        idx = max(idx, int(path.name.split('_')[-1]))
+        idx = max(idx, int(path.name.rsplit('.',1)[0].split('_')[-1]))
     idx += 1
     self.cache_idx[cls] = idx
     self.path_log_save_cls = self.path_log_save / f"{video_name}/{cls}"
     self.path_log_save_cls.mkdir(parents=True, exist_ok=True)
-    return self.path_log_save_cls / f"{name}_{idx}.{suffix}"
+    return self.path_log_save_cls / f"{name}_{idx:07}.{suffix}"
   
   def background(self):
     paths = self.path_manager.search(subset='images', part=2, video_name='background', regex=r"background\d+.jpg")
@@ -123,7 +126,7 @@ class Segment:
 
 if __name__ == '__main__':
   segment = Segment()
-  # segment.process(video_name="OYASSU_20210528_episodes")
-  segment.process()
+  segment.process(video_name="background")
+  # segment.process()
   # segment.background()
 
