@@ -48,7 +48,7 @@ class AnnotationHelper:
     w = jnp.r_[w, w, [1] * 3].reshape(1,1,7)
     x = jnp.array(x, dtype=jnp.float32)[None, ...] / 255.
     x = jax.image.resize(x, (1,*shape), method='bilinear')
-    pbox, pnum = self.predictor.pred_and_nms(self.predictor.state, x, iou_threshold=0.4, conf_threshold=0.6, nms_multi=10)
+    pbox, pnum = self.predictor.pred_and_nms(self.predictor.state, x, iou_threshold=0.4, conf_threshold=0.8, nms_multi=10)
     pbox = pbox * w
     return pbox[0], pnum[0]
 
@@ -81,15 +81,16 @@ class AnnotationHelper:
         pbox[:, 1] + pbox[:, 3] / 2,
       ], axis=-1)
       # xyxy, side, cls
-      pbox = np.concatenate([xyxy, pbox[:,5:7]], axis=-1)
+      pbox = np.concatenate([xyxy, pbox[:,4:7]], axis=-1)
       shapes = []
       for i in range(pbox.shape[0]):
         x = list(pbox[i])
+        if (x[2] < 190 and x[3] < 70) or (x[0] > 473 and x[3] < 41): continue
         shapes.append({
-          'label': idx2unit[int(x[5])] + str(int(x[4])),
+          'label': idx2unit[int(x[6])] + str(int(x[5])),
           'points': [[float(x[0]), float(x[1])], [float(x[2]), float(x[3])]],
           'group_id': None,
-          'description': '',
+          'description': f"confidence: {float(x[4])}",
           'shape_type': 'rectangle',
           'flags': {}
         })
