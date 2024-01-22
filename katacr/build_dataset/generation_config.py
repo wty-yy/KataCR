@@ -29,11 +29,11 @@ bottom_center_grid_position = {
 except_king_tower_unit_list = tower_unit_list.copy()
 except_king_tower_unit_list.remove('king-tower')
 component_prob = {x: 0.95 for x in except_king_tower_unit_list}
-component_prob.update({'king-tower': 0.8})  # king-tower-bar
+component_prob.update({'king-tower': 0.5})  # king-tower-bar
 component_prob.update(  # the probability of adding a component
   {x: 0.2 for x in (ground_unit_list + flying_unit_list)}
 )
-important_components = [(('bar', 'bar-level'), 0.9)]  # highter prob to use important components, when add components.
+important_components = [(('bar', 'bar-level'), 0.6)]  # highter prob to use important components, when add components.
 component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_range, width
   'small-text': ['top_center', (0, 0), (-1, -0.5), None],
   'elixir': ['bottom_center', (0, 0), (-2, 0), None],
