@@ -246,6 +246,8 @@ class Generator:
       p = random.random()
       if p < background_augment['prob']:
         add_filter(self.background, 'red', alpha=80, xyxy=background_augment['xyxy'])
+        red_bound = Image.open(str(self.path_segment / 'backgrounds/red_bound.png'))
+        self.background = np.array(Image.alpha_composite(Image.fromarray(self.background).convert('RGBA'), red_bound).convert('RGB'))
   
   @staticmethod
   def _max_intersect_ratio(xyxy: tuple | np.ndarray, box: List[np.ndarray] | np.ndarray):
@@ -466,8 +468,9 @@ class Generator:
     if not len(cs): return  # low prob and no important components
     for c in cs:
       if isinstance(c, tuple):
-        if random.random() < 0.8: c = c[0]  # 0.8 prob for 'bar'
-        else: c = c[1]  # 0.2 prob for 'bar-level'
+        c = self._sample_elem(c)
+        # if random.random() < 0.8: c = c[0]  # 0.8 prob for 'bar'
+        # else: c = c[1]  # 0.2 prob for 'bar-level'
       if c in component_cfg: cfg = component_cfg[c]
       else: cfg = component_cfg[c+str(unit.states[0])]
       center, dx_range, dy_range, max_width = cfg
@@ -539,8 +542,8 @@ if __name__ == '__main__':
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)
-    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{10+2*i}.jpg"))
-    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{10+2*i+1}.jpg"))
+    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
+    generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
     print('box num:', box.shape[0])
     # print(generator.map_cfg['ground'])
     generator.reset()
