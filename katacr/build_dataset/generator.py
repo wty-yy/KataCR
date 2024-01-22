@@ -245,7 +245,7 @@ class Generator:
     if self.augment:
       p = random.random()
       if p < background_augment['prob']:
-        add_filter(self.background, 'red', alpha=80, xyxy=background_augment['xyxy'])
+        add_filter(self.background, 'red', alpha=100, xyxy=background_augment['xyxy'])
         red_bound = Image.open(str(self.path_segment / 'backgrounds/red_bound.png'))
         self.background = np.array(Image.alpha_composite(Image.fromarray(self.background).convert('RGBA'), red_bound).convert('RGB'))
   
@@ -538,7 +538,7 @@ if __name__ == '__main__':
   generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
-  for i in range(5):
+  for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)

@@ -76,7 +76,7 @@ component2unit = {
 # Augmentation (mask and transparency)
 background_augment = {
   'xyxy': (0,56,568,490),
-  'prob': 0.2
+  'prob': 0.5
 }
 aug2prob = {
   'red': 0.05,

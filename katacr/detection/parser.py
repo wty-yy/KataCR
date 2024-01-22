@@ -28,7 +28,7 @@ class YOLOv5Args(CVArgs):
   coef_cls: float
 
 def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, SummaryWriter] | YOLOv5Args:
-  parser = Parser(model_name="YOLOv5_v0.4.2", wandb_project_name=cfg.dataset_name)
+  parser = Parser(model_name="YOLOv5_v0.4.3", wandb_project_name=cfg.dataset_name)
   ### Model ###
   parser.add_argument("--anchors", nargs='+', default=cfg.anchors,
     help="the anchors bounding boxes")
@@ -76,6 +76,7 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
     help="if taggled, cosine learning rate decay will be used, else use the linear learning rate decay")
   args = parser.get_args(input_args)
   args.input_shape = (args.batch_size, *args.image_shape)
+  args.image_size = args.image_shape[:2][::-1]
 
   nbc = 64  # nominal batch size
   args.accumulate = max(round(nbc / args.batch_size), 1)
