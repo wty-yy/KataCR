@@ -150,6 +150,7 @@ unit_list = [
   'cannoneer-tower',
   'valkyrie-evolution',
 ]
+print("Total number unit:",len(unit_list))
 
 idx2unit = dict(enumerate(unit_list))
 unit2idx = {name: idx for idx, name in enumerate(unit_list)}

@@ -14,7 +14,7 @@ LABELME_VERSION = "5.3.1"  # write into LABELME json file
 
 def parse_args(input_args=None):
   parser = argparse.ArgumentParser()
-  parser.add_argument("--model-name", default="YOLOv5_v0.4.2",
+  parser.add_argument("--model-name", default="YOLOv5_v0.4.3",
     help="The model weights in `KataCR/logs/'model_name'-checkpoints/`")
   parser.add_argument("--load-id", default="80",
     help="The id of the model weights")
@@ -65,12 +65,12 @@ class AnnotationHelper:
     return True
   
   def process(self):
-    sps_avg, cnt = 0, 0
     paths = self.path_manager.search('images', 2, self.args.video_name, self.args.episode, regex=r"^\d+.jpg")
     paths = [p for p in paths if self._check_img_path(p)]
-    for p in paths:
-      start_time = time.time()
-      img = np.array(Image.open(str(p)).resize(self.model_args.image_size))
+    bar = tqdm(paths)
+    for p in bar:
+      bar.set_description(str(Path(*p.parts[-3:])))
+      img = np.array(Image.open(str(p)))
       pbox = self.predict(img)
       # DEBUG
       # pbox = np.array([[50, 50, 20, 20, 0.9, 0, 1], [150, 150, 50, 50, 0.8, 1, 0]])
@@ -106,11 +106,9 @@ class AnnotationHelper:
       path_json = p.parent / (p.name.rsplit('.',1)[0] + '.json')
       with path_json.open('w') as file:
         json.dump(d, file, indent=2)
-      cnt += 1
-      sps_avg = (time.time() - start_time + sps_avg) / cnt
-      print(f"Process: {cnt}/{len(paths)}, box num: {pbox.shape[0]}, sps: {sps_avg:.2f}, {p}")
 
 if __name__ == '__main__':
-  args = parse_args("--video-name OYASSU_666_episodes".split())
+  # args = parse_args("--video-name OYASSU_666_episodes".split())
+  args = parse_args()
   helper = AnnotationHelper(args)
   helper.process()
