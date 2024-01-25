@@ -150,7 +150,6 @@ unit_list = [
   'cannoneer-tower',
   'valkyrie-evolution',
 ]
-print("Total number unit:",len(unit_list))
 
 idx2unit = dict(enumerate(unit_list))
 unit2idx = {name: idx for idx, name in enumerate(unit_list)}
@@ -208,3 +207,6 @@ background_item_list = [
   'skull',
   'cup'
 ]
+
+if __name__ == '__main__':
+  print("Total number unit:",len(unit_list))

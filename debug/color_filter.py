@@ -24,8 +24,8 @@ color2alpha = {
 color2bright = {
   'red': (30, 50),
   'blue': (30, 80),
-  'golden': (50, 80),
-  'white': (30, 80),
+  'golden': (70, 80),
+  'white': (70, 80),
 }
 # color2RGBA = {key: val+(255,) for key, val in color2RGB.items()}
 

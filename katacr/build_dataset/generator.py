@@ -12,7 +12,8 @@ from katacr.build_dataset.generation_config import (
   drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
   component_prob, component2unit, component_cfg, important_components,  # component configs
-  item_cfg, drop_box, background_item_list  # background item
+  item_cfg, drop_box, background_item_list,  # background item
+  unit_scale, unit_stretch,  # affine transformation
 )
 import random
 
@@ -66,7 +67,7 @@ class Unit:
       name: str | None = None,
       cls: str | int | None = None,
       states: list | np.ndarray = None,
-      fliplr: float = 0.5,
+      fliplr: float = 0.8,
       augment: bool = True,
     ):
     """
@@ -106,6 +107,21 @@ class Unit:
       raise "Error: You must give the label of the unit (when not background)."
     self.level = level
 
+    _sample_range = lambda l, r: random.random() * (r - l) + l
+    if augment:  # scale and stretch
+      if self.cls_name in unit_scale:
+        r, prob = unit_scale[self.cls_name]
+        if random.random() < prob:
+          scale = _sample_range(*r)
+          size = (np.array((img.shape[1], img.shape[0])) * scale).astype(np.int32)
+          img = np.array(Image.fromarray(img).resize(size))
+      if self.cls_name in unit_stretch:
+        r, prob = unit_stretch[self.cls_name]
+        if random.random() < prob:
+          stretch = _sample_range(*r)
+          size = (np.array((img.shape[1]*stretch, img.shape[0]))).astype(np.int32)
+          img = np.array(Image.fromarray(img).resize(size))
+
     self.xy_cell = xy_bottom_center
     h, w = img.shape[:2]
     xy = cell2pixel(self.xy_cell)
@@ -133,6 +149,16 @@ class Unit:
         self.xyxy[3] + dxy[1],
       ), np.int32)
     
+    self.augment = None
+    if augment:
+      p = random.random()
+      for key, val in aug2prob.items():
+        if self.cls_name not in aug2unit[key]: continue
+        if p < val:
+          self.augment = key
+          break
+        p -= val
+    
     size = (self.xyxy[2] - self.xyxy[0]) * (self.xyxy[3] - self.xyxy[1])
     # Residue size ratio < 0.3 or width, hight < 6 pixel, then drop this unit
     if size / (h * w) < 0.3 or self.xyxy[2] - self.xyxy[0] < 6 or self.xyxy[3] - self.xyxy[1] < 6:
@@ -147,16 +173,6 @@ class Unit:
     else:
       self.mask = img.sum(-1) > 0
       self.img = img
-    
-    self.augment = None
-    if augment:
-      p = random.random()
-      for key, val in aug2prob.items():
-        if self.cls_name not in aug2unit[key]: continue
-        if p < val:
-          self.augment = key
-          break
-        p -= val
 
   def get_name(self, show_state=True):
     name = self.cls_name
@@ -468,9 +484,9 @@ class Generator:
     if not len(cs): return  # low prob and no important components
     for c in cs:
       if isinstance(c, tuple):
-        c = self._sample_elem(c)
-        # if random.random() < 0.8: c = c[0]  # 0.8 prob for 'bar'
-        # else: c = c[1]  # 0.2 prob for 'bar-level'
+        # c = self._sample_elem(c)
+        if random.random() < 0.3: c = c[0]  # 0.3 prob for 'bar'
+        else: c = c[1]  # 0.7 prob for 'bar-level'
       if c in component_cfg: cfg = component_cfg[c]
       else: cfg = component_cfg[c+str(unit.states[0])]
       center, dx_range, dy_range, max_width = cfg
@@ -535,13 +551,13 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
+  generator = Generator(seed=42, intersect_ratio_thre=0.8, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=30)
+    generator.add_unit(n=50)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
     print('box num:', box.shape[0])

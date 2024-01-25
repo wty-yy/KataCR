@@ -14,6 +14,8 @@ hsv_h = 0.015  # HSV-Hue augmentation
 hsv_s = 0.7  # HSV-Saturation augmentation
 hsv_v = 0.4  # HSV-Value augmentation
 fliplr = 0.5  # flip left-right (probability)
+num_unit = 50  # number of units in one image
+intersect_ratio_thre = 0.8  # threshold the intersection ratio
 
 # anchors = jnp.array([
 #   [(29.1, 11.3), (18.4, 22.5), (47.7, 16.6)],   # scale: 8

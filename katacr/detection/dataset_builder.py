@@ -15,10 +15,15 @@ from katacr.utils.detection.data import (
 )
 
 class YOLODataset(Dataset):
-  def __init__(self, image_shape: int, subset: str, path_dataset: Path, train_datasize: int):
+  def __init__(
+      self, image_shape: int, subset: str,
+      path_dataset: Path, train_datasize: int,
+      num_unit: int = 30, intersect_ratio_thre: float = 0.8,
+    ):
     self.img_shape = image_shape
     self.subset = subset
     self.path_dataset = path_dataset
+    self.num_unit = num_unit
     self.augment = False if subset == 'val' else True
     self.max_num_box = MAX_NUM_BBOXES
     if subset == 'val':
@@ -27,7 +32,7 @@ class YOLODataset(Dataset):
       self.paths_img, self.paths_box = paths[:, 0], paths[:, 1]
       self.datasize = len(self.paths_img)
     else:
-      self.generator = Generator()
+      self.generator = Generator(intersect_ratio_thre=intersect_ratio_thre)
       self.datasize = train_datasize
   
   def __len__(self):
@@ -54,7 +59,7 @@ class YOLODataset(Dataset):
     else:
       self.generator.reset()
       self.generator.add_tower()
-      self.generator.add_unit(30)
+      self.generator.add_unit(self.num_unit)
       img, box = self.generator.build()
 
     h0, w0 = img.shape[:2]
@@ -98,7 +103,9 @@ class DatasetBuilder:
     dataset = YOLODataset(
       image_shape=self.args.image_shape, subset=subset,
       path_dataset=self.args.path_dataset,
-      train_datasize=self.args.train_datasize
+      train_datasize=self.args.train_datasize,
+      num_unit=self.args.num_unit,
+      intersect_ratio_thre=self.args.intersect_ratio_thre
     )
     ds = DataLoader(
       dataset, batch_size=self.args.batch_size,

@@ -7,6 +7,8 @@ class YOLOv5Args(CVArgs):
   num_classes: int
   num_data_workers: int
   train_datasize: int
+  num_unit: int
+  intersect_ratio_thre: int
   ### Augmentation for train ###
   hsv_h: float  # HSV-Hue augmentation
   hsv_s: float  # HSV-Saturation augmentation
@@ -51,6 +53,10 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
     help="the number of the subprocesses to use for data loading")
   parser.add_argument("--train-datasize", type=int, default=cfg.train_datasize,
     help="the size of training dataset")
+  parser.add_argument("--num-unit", type=int, default=cfg.num_unit,
+    help="the number of units in images (dataset)")
+  parser.add_argument("--intersect-ratio-thre", type=int, default=cfg.intersect_ratio_thre,
+    help="the threshold of intersection ratio (dataset)")
   ### Training ###
   parser.add_argument("--total-epochs", type=int, default=cfg.total_epochs,
     help="the total epochs for training")

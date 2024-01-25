@@ -78,12 +78,12 @@ background_augment = {
   'xyxy': (0,56,568,490),
   'prob': 0.5
 }
-aug2prob = {
-  'red': 0.05,
-  'blue': 0.10,
-  'golden': 0.10,
-  'white': 0.10,
-  'trans': 0.05,
+aug2prob = {  # accumulate probablity
+  'red': 0.1,
+  'blue': 0.1,
+  'golden': 0.2,
+  'white': 0.1,
+  'trans': 0.2,
 }
 aug2unit = {
   'red': ground_unit_list + tower_unit_list + except_spell_flying_unit_list,
@@ -108,9 +108,12 @@ color2alpha = {
 color2bright = {  # brightness range
   'red': (30, 50),
   'blue': (30, 80),
-  'golden': (50, 80),
-  'white': (30, 80),
+  'golden': (70, 80),
+  'white': (70, 80),
 }
+
+unit_scale = {x: ((0.5, 1.0), 0.2) for x in ('elixir', 'clock')}
+unit_stretch = {x: ((0.5, 0.5), 0.2) for x in (ground_unit_list + except_spell_flying_unit_list)}
 
 grid_size = (18, 32)  # (x, y)
 map_ground = [
