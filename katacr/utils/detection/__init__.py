@@ -57,7 +57,9 @@ def plot_box_PIL(
 
   font_color = (255,255,255)  # white
   font = ImageFont.truetype(fontpath, fontsize)
-  w_text, h_text= font.getsize(text)
+  import PIL
+  pil_version = int(PIL.__version__.split('.')[0])
+  w_text, h_text = font.getbbox(text)[-2:] if pil_version >= 10 else font.getsize(text)
   x_text = x_min
   y_text = y_min - h_text if y_min > h_text else y_min
   draw.rounded_rectangle([x_text, y_text, x_text+w_text, y_text+h_text], radius=1.5, fill=box_color)

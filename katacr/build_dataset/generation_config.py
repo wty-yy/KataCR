@@ -33,7 +33,7 @@ component_prob.update({'king-tower': 0.5})  # king-tower-bar
 component_prob.update(  # the probability of adding a component
   {x: 0.2 for x in (ground_unit_list + flying_unit_list)}
 )
-important_components = [(('bar', 'bar-level'), 0.6)]  # highter prob to use important components, when add components.
+important_components = [(('bar', 'bar-level'), 0.9)]  # highter prob to use important components, when add components.
 component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_range, width
   'small-text': ['top_center', (0, 0), (-1, -0.5), None],
   'elixir': ['bottom_center', (0, 0), (-2, 0), None],
@@ -114,6 +114,8 @@ color2bright = {  # brightness range
 
 unit_scale = {x: ((0.5, 1.0), 0.2) for x in ('elixir', 'clock')}
 unit_stretch = {x: ((0.5, 0.5), 0.2) for x in (ground_unit_list + except_spell_flying_unit_list)}
+tower_intersect_ratio_thre = 0.8
+bar_intersect_ratio_thre = 0.1
 
 grid_size = (18, 32)  # (x, y)
 map_ground = [

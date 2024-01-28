@@ -14,6 +14,7 @@ from katacr.build_dataset.generation_config import (
   component_prob, component2unit, component_cfg, important_components,  # component configs
   item_cfg, drop_box, background_item_list,  # background item
   unit_scale, unit_stretch,  # affine transformation
+  tower_intersect_ratio_thre, bar_intersect_ratio_thre
 )
 import random
 
@@ -220,7 +221,6 @@ class Generator:
       unit_list: Tuple[Unit,...] = None,
       seed: int | None = None,
       intersect_ratio_thre: float = 0.5,
-      tower_intersect_ratio_thre: float = 0.8,
       map_update_size: int = 5,
       augment: bool = True
     ):
@@ -242,7 +242,6 @@ class Generator:
     self.build_background()
     self.unit_list = [] if unit_list is None else unit_list
     self.intersect_ratio_thre = intersect_ratio_thre
-    self.tower_intersect_ratio_thre = tower_intersect_ratio_thre
     self.map_cfg = {
       'ground': np.array(map_ground, np.float32),
       'fly': np.array(map_fly, np.float32),
@@ -308,7 +307,9 @@ class Generator:
     for u in self.unit_list[::-1]:  # reverse order for NMS
       ratio = self._intersect_ratio_with_mask(u, mask)
       if u.cls_name in tower_unit_list:
-        if ratio > self.tower_intersect_ratio_thre: continue
+        if ratio > tower_intersect_ratio_thre: continue
+      elif u.cls_name == 'bar':
+        if ratio > bar_intersect_ratio_thre: continue
       elif ratio > self.intersect_ratio_thre: continue
       u.draw_mask(mask)
       cls.add(u.cls)
@@ -484,9 +485,9 @@ class Generator:
     if not len(cs): return  # low prob and no important components
     for c in cs:
       if isinstance(c, tuple):
-        # c = self._sample_elem(c)
-        if random.random() < 0.3: c = c[0]  # 0.3 prob for 'bar'
-        else: c = c[1]  # 0.7 prob for 'bar-level'
+        c = self._sample_elem(c)
+        # if random.random() < 0.5: c = c[0]  # 0.3 prob for 'bar'
+        # else: c = c[1]  # 0.7 prob for 'bar-level'
       if c in component_cfg: cfg = component_cfg[c]
       else: cfg = component_cfg[c+str(unit.states[0])]
       center, dx_range, dy_range, max_width = cfg
@@ -551,7 +552,7 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.8, augment=True)
+  generator = Generator(seed=42, intersect_ratio_thre=0.6, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
