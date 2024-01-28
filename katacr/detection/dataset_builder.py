@@ -18,7 +18,7 @@ class YOLODataset(Dataset):
   def __init__(
       self, image_shape: int, subset: str,
       path_dataset: Path, train_datasize: int,
-      num_unit: int = 30, intersect_ratio_thre: float = 0.8,
+      num_unit: int = 30, intersect_ratio_thre: float = 0.5,
     ):
     self.img_shape = image_shape
     self.subset = subset

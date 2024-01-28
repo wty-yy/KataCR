@@ -126,6 +126,7 @@ class Unit:
     self.xy_cell = xy_bottom_center
     h, w = img.shape[:2]
     xy = cell2pixel(self.xy_cell)
+    # Note that xyxy is (x0,y0,x1+1,y1+1)
     self.xyxy = np.array((xy[0]-w//2, xy[1]-h, xy[0]+(w+1)//2, xy[1]), np.float32)  # xyxy relative to background
     if self.cls == unit2idx['text']:  # if text, clip the out range
       self.xyxy = np.array((
@@ -186,23 +187,43 @@ class Unit:
     return name
   
   def draw(self, img: np.ndarray, inplace=True):
+    xyxy = self.xyxy
+    mask = self.mask_visiable
     if not inplace: img = img.copy()
     if self.augment is not None:
       if self.augment == 'trans':  # Transparency augmentation
-        subimg = img[self.xyxy[1]:self.xyxy[3],self.xyxy[0]:self.xyxy[2],:]
-        alpha = ((self.mask != 0) * alpha_transparency).astype(np.uint8)
+        subimg = img[xyxy[1]:xyxy[3],xyxy[0]:xyxy[2],:]
+        alpha = (mask * alpha_transparency).astype(np.uint8)
         upimg = Image.fromarray(np.concatenate([self.img, alpha[...,None]], -1))
         upimg = np.array(Image.alpha_composite(Image.fromarray(subimg).convert('RGBA'), upimg).convert('RGB'))
-        subimg[self.mask] = upimg[self.mask]
+        subimg[mask] = upimg[mask]
       else:  # color filter, self.augment in ['red', 'blue', 'golden', 'white']
         color = self.augment
         bright = random.randint(*color2bright[color])
         upimg = add_filter(self.img, color, color2alpha[color], bright, replace=False)
-        img[self.xyxy[1]:self.xyxy[3],self.xyxy[0]:self.xyxy[2],:][self.mask] = upimg[self.mask]
+        img[xyxy[1]:xyxy[3],xyxy[0]:xyxy[2],:][mask] = upimg[mask]
     else:
-      img[self.xyxy[1]:self.xyxy[3],self.xyxy[0]:self.xyxy[2],:][self.mask] = self.img[self.mask]
+      img[xyxy[1]:xyxy[3],xyxy[0]:xyxy[2],:][mask] = self.img[mask]
     return img
-  
+
+  def update_xyxy(self, mask: np.ndarray):
+    self.xyxy_visiable = np.zeros_like(self.xyxy)
+    if self.xyxy.sum() == 0: return
+    mask = mask[self.xyxy[1]:self.xyxy[3],self.xyxy[0]:self.xyxy[2]]
+    self.mask_visiable = (self.mask ^ mask) & self.mask
+    xyxy_ = np.array([  # Minimal uncovered image
+      np.argwhere(self.mask_visiable.any(0))[[0,-1],0],
+      np.argwhere(self.mask_visiable.any(1))[[0,-1],0],
+    ]).T.reshape(-1)
+    w, h = xyxy_[2] - xyxy_[0], xyxy_[3] - xyxy_[1]
+    if w < 6 or h < 6: return
+    self.xyxy_visiable = np.array([
+      self.xyxy[0] + xyxy_[0],
+      self.xyxy[1] + xyxy_[1],
+      self.xyxy[0] + xyxy_[0] + w,
+      self.xyxy[1] + xyxy_[1] + h,
+    ])
+
   def draw_mask(self, mask: np.ndarray, inplace=True):
     if not inplace: mask = mask.copy()
     mask[self.xyxy[1]:self.xyxy[3],self.xyxy[0]:self.xyxy[2]][self.mask] = 1
@@ -211,7 +232,7 @@ class Unit:
   def show_box(self, img: Image, cls2color: dict | None = None):
     if self.cls == -1: return img
     color = cls2color[self.cls] if cls2color is not None else 'red'
-    return plot_box_PIL(img, self.xyxy, text=self.get_name(), format='voc', box_color=color)
+    return plot_box_PIL(img, self.xyxy_visiable, text=self.get_name(), format='voc', box_color=color)
 
 class Generator:
   bc_pos: dict = bottom_center_grid_position  # with keys: ['king0', 'king1', 'queen0_0', 'queen0_1', 'queen1_0', 'queen1_1']
@@ -220,7 +241,7 @@ class Generator:
       self, background_index: int | None = None,
       unit_list: Tuple[Unit,...] = None,
       seed: int | None = None,
-      intersect_ratio_thre: float = 0.5,
+      intersect_ratio_thre: float = 0.6,
       map_update_size: int = 5,
       augment: bool = True
     ):
@@ -303,7 +324,7 @@ class Generator:
     img = self.background
     cls = set()
     self.unit_list = sorted(self.unit_list, key=lambda x: (x.level, x.xy_cell[1]))
-    box, mask, unit_avail = [], np.zeros(img.shape[:2]), []  # return box, union of images, available units
+    box, mask, unit_avail = [], np.zeros(img.shape[:2], dtype=np.bool_), []  # return box, union of images, available units
     for u in self.unit_list[::-1]:  # reverse order for NMS
       ratio = self._intersect_ratio_with_mask(u, mask)
       if u.cls_name in tower_unit_list:
@@ -311,11 +332,12 @@ class Generator:
       elif u.cls_name == 'bar':
         if ratio > bar_intersect_ratio_thre: continue
       elif ratio > self.intersect_ratio_thre: continue
+      u.update_xyxy(mask)
       u.draw_mask(mask)
       cls.add(u.cls)
       unit_avail.append(u)
       if u.cls != -1:
-        box.append((*u.xyxy, *u.states, u.cls))
+        box.append((*u.xyxy_visiable, *u.states, u.cls))
     for u in unit_avail[::-1]:  # increase order for drawing
       u.draw(img)
     box = np.array(box, np.float32)
@@ -559,6 +581,7 @@ if __name__ == '__main__':
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=50)
+    # generator.add_unit(n=1)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
     print('box num:', box.shape[0])

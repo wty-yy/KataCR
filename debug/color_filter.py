@@ -4,7 +4,8 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 
 # img = Image.open('/home/wty/Coding/datasets/CR/images/segment/king-tower/king-tower_1_attack_1024.png')
-img = Image.open('/home/wty/Coding/datasets/CR/images/segment/barbarian/barbarian_1_attack_40.png')
+# img = Image.open('/home/wty/Coding/datasets/CR/images/segment/barbarian/barbarian_1_attack_40.png')
+img = Image.open('/home/wty/Coding/datasets/CR/images/segment/clock/clock_0_13.png')
 # img = Image.open('/home/wty/Coding/datasets/CR/images/segment/the-log/the-log_0_attack_5.png')
 # img = Image.open('/home/wty/Coding/datasets/CR/images/segment/backgrounds/background01.jpg')
 # img = Image.open('/home/wty/Coding/datasets/CR/images/part2/OYASSU_20210528_episodes/1/00000.jpg')

@@ -109,11 +109,11 @@ color2bright = {  # brightness range
   'red': (30, 50),
   'blue': (30, 80),
   'golden': (70, 80),
-  'white': (70, 80),
+  'white': (110, 120),
 }
 
-unit_scale = {x: ((0.5, 1.0), 0.2) for x in ('elixir', 'clock')}
-unit_stretch = {x: ((0.5, 0.5), 0.2) for x in (ground_unit_list + except_spell_flying_unit_list)}
+unit_scale = {x: ((0.5, 1.2), 1.0) for x in ('elixir', 'clock')}
+unit_stretch = {x: ((0.5, 0.8), 0.1) for x in (ground_unit_list + except_spell_flying_unit_list)}
 tower_intersect_ratio_thre = 0.8
 bar_intersect_ratio_thre = 0.1
 
