@@ -76,15 +76,16 @@ component2unit = {
 # Augmentation (mask and transparency)
 background_augment = {
   'xyxy': (0,56,568,490),
-  'prob': 0.5
+  'prob': 0.3
 }
 aug2prob = {  # accumulate probablity
-  'red': 0.1,
-  'blue': 0.1,
-  'golden': 0.2,
-  'white': 0.1,
-  'trans': 0.2,
+  'red': 0.05,    # 0.1
+  'blue': 0.05,   # 0.1
+  'golden': 0.15, # 0.2
+  'white': 0.05,  # 0.1
+  'trans': 0.05,  # 0.2
 }
+
 aug2unit = {
   'red': ground_unit_list + tower_unit_list + except_spell_flying_unit_list,
   'blue': ground_unit_list + tower_unit_list + except_spell_flying_unit_list,

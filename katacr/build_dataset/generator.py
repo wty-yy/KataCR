@@ -580,7 +580,7 @@ if __name__ == '__main__':
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=50)
+    generator.add_unit(n=30)
     # generator.add_unit(n=1)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
