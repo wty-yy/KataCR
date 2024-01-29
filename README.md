@@ -92,3 +92,5 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 3. 蒙板亮度调整：金色`(50,80)->(70,80)`，白色`(50,80)->(110,120)`
 4. 加入对`elixir,clock`的尺度缩放`scale:(0.5,1.2) prob=1.0`，单位的垂直缩放`scale:(0.5,0.8) prob=0.1`
 5. 优化真实框的设置方法：按照**未被上层图层覆盖**的最大框进行设置（使得边界框更加精准）
+
+FIX BUG: 修复`BasePredict`中`compute_tp`的类别从属错误。

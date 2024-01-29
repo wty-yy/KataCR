@@ -13,7 +13,7 @@ import numpy as np
 
 def load_model_state():
   from katacr.detection.parser import get_args_and_writer
-  state_args = get_args_and_writer(no_writer=True, input_args="--model-name YOLOv5_v0.3_b16_13000 --load-id 100 --batch-size 1".split())
+  state_args = get_args_and_writer(no_writer=True, input_args="--model-name YOLOv5_v0.4.4 --load-id 100 --batch-size 1".split())
 
   from katacr.detection.model import get_state
   state = get_state(state_args)
@@ -62,7 +62,7 @@ def main(args):
     start_time = time.time()
     pbox = predict(x)
     SPS_avg += (1/(time.time() - start_time) - SPS_avg) / (idx+1)
-    image = show_box(x, pbox, verbose=False, use_overlay=True)
+    image = show_box(x, pbox, verbose=False, use_overlay=True, show_conf=True)
     processed_frames.append(np.array(image))
     fps_avg += (1/(time.time() - start_time) - fps_avg) / (idx+1)
     bar.set_description(f"SPS:{SPS_avg:.2f} fps:{fps_avg:.2f}")
@@ -77,7 +77,7 @@ def main(args):
   processed_clip.write_videofile(output_video)
 
 def parse_args():
-  from katacr.utils.parser import cvt2Path
+  from katacr.utils.parser import cvt2Path, str2bool
   parser = argparse.ArgumentParser()
   parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4"),
   # parser.add_argument("--path-input-video", type=cvt2Path, default=Path("/home/yy/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20230212_episodes/4.mp4"),
@@ -87,6 +87,8 @@ def parse_args():
     help="The path of the input video.")
   parser.add_argument("--path-output-video", type=cvt2Path, default=None,
     help="The path of the output video, default 'logs/processed_videos/fname_detection.mp4'")
+  parser.add_argument("--show-confidence", type=str2bool, default=False,
+    help="Show the confidence with the label.")
   args = parser.parse_args()
   if args.path_output_video is None:
     fname = args.path_input_video.parent.name.rsplit('_',1)[0] + '_' + args.path_input_video.name
@@ -94,7 +96,7 @@ def parse_args():
     fname = fname[:-len(suffix)-1]
     args.path_processed_videos = Path(__file__).parents[2] / "logs/processed_videos"
     args.path_processed_videos.mkdir(exist_ok=True)
-    args.path_output_video = args.path_processed_videos / (fname + "_yolov5_v0.3" + '.' + suffix)
+    args.path_output_video = args.path_processed_videos / (fname + "_yolov5_v0.4.4" + '.' + suffix)
   return args
 
 if __name__ == '__main__':
