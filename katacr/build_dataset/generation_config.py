@@ -39,8 +39,6 @@ component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_
   'elixir': ['bottom_center', (0, 0), (-2, 0), None],
   'bar': ['top_center', (0, 0), (-0.5, 0), None],
   'bar-level': ['top_center', (0, 0), (-0.5, 0), None],
-  'bar': ['top_center', (0, 0), (0, 1), None],
-  'bar-level': ['top_center', (0, 0), (0, 1), None],
   'tower-bar0': ['bottom_center', (0, 0), (-2, -1), (2.5, 3)],
   'tower-bar1': ['top_center', (0, 0), (0, 0.5), (2.5, 3)],
   'king-tower-bar0': ['bottom_center', (0, 0), (1, 1.5), (4.5, 5.5)],
@@ -81,7 +79,7 @@ background_augment = {
 aug2prob = {  # accumulate probablity
   'red': 0.05,    # 0.1
   'blue': 0.05,   # 0.1
-  'golden': 0.15, # 0.2
+  'golden': 0.10, # 0.2
   'white': 0.05,  # 0.1
   'trans': 0.05,  # 0.2
 }
@@ -114,7 +112,7 @@ color2bright = {  # brightness range
 }
 
 unit_scale = {x: ((0.5, 1.2), 1.0) for x in ('elixir', 'clock')}
-unit_stretch = {x: ((0.5, 0.8), 0.1) for x in (ground_unit_list + except_spell_flying_unit_list)}
+unit_stretch = {x: ((0.5, 0.8), 0.0) for x in (ground_unit_list + except_spell_flying_unit_list)}
 tower_intersect_ratio_thre = 0.8
 bar_intersect_ratio_thre = 0.1
 

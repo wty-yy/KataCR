@@ -129,9 +129,12 @@ if __name__ == '__main__':
   # for image, bboxes, num_bboxes in tqdm(ds):
   #   image, bboxes, num_bboxes = image.numpy(), bboxes.numpy(), num_bboxes.numpy()
   #   # print(type(image))
+  save_test_path = args.path_logs / "generation"
+  save_test_path.mkdir(exist_ok=True)
   for i in range(2):
     image, bboxes, num_bboxes = next(iterator)
     image, bboxes, num_bboxes = image.numpy(), bboxes.numpy(), num_bboxes.numpy()
+    print(f"{num_bboxes=}")
     print(image.shape, bboxes.shape, num_bboxes.shape)
-    show_box(image[0], bboxes[0][np.arange(num_bboxes[0])])
+    show_box(image[0], bboxes[0][np.arange(num_bboxes[0])], save_path=save_test_path / f"train{i:02}.jpg")
   
