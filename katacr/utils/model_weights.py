@@ -12,6 +12,12 @@ def load_weights(
   print(f"Successfully load weights from '{str(path_load)}'")
   return state
 
+def load_weights_orbax(state: train_state.TrainState, path: Path | str):
+  weights = ocp.PyTreeCheckpointer().restore(str(path))
+  state = state.replace(params=weights['params'], batch_stats=weights['batch_stats'])
+  print(f"Successfully load weights from '{str(path)}'")
+  return state
+
 class SaveWeightsManager:
   path_save: Path
 
