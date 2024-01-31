@@ -1,8 +1,6 @@
 import cv2, glob, os, argparse, numpy as np
 from pathlib import Path
 from typing import Sequence
-from katacr.detection.cfg import image_shape
-from tqdm import tqdm
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from PIL import Image
 from katacr.utils import Stopwatch
@@ -103,7 +101,7 @@ class Infer:
     from katacr.detection.predict import Predictor
     self.predictor = Predictor(self.args, self.state)
   
-  # @partial(jax.jit, static_argnums=[0])
+  @partial(jax.jit, static_argnums=[0])
   def preprocess(self, x):
     if x.ndim == 3:
       x = x[None, ...]
