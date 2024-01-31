@@ -1,3 +1,10 @@
+"""
+Useage:
+cd /your/path/KataCR
+python katacv/yolov5/detect.py --path detection_files.txt   # detection_files, each line each file path
+                                      /your/path/image.jpg  # image formats
+                                      /your/path/video.mp4  # video formats
+"""
 import cv2, glob, os, argparse, numpy as np
 from pathlib import Path
 from typing import Sequence
