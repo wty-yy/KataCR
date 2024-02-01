@@ -69,7 +69,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 1. 上调红色背景版中的红色`alpha=80->100`，显示概率上调到`0.2->0.5`。
 2. 平均分配`bar, bar-level`概率（`(0.8,0.2)->(0.5,0.5)`）
 3. 将YOLOv5中`coef_obj=1.0->2.0`。
-**New tool**:
+**NEW TOOL**:
 1. `annotation_helper.py`可辅助标记视频，使用方法：
    1. 先将训练好的YOLO模型放置到`/logs/{model-name}-checkpoints/{model-name}-{load_id}`，例如`YOLOv5_v0.4.3-0080`就放到`logs/YOLOv5_v0.4.3-checkpoints/YOLOv5_v0.4.3-0080`下。
    2. 在命令行解析中加入要识别的视频名称和episode编号，例如：
@@ -86,11 +86,15 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 - `king-tower-bar`仍然无法识别。
 - 单位在金色蒙板并“纵向拉伸”后无法识别。
 
-#### v0.4.4(2024.1.23, 2024.1.28)
+#### v0.4.4(2024.1.23, 2024.1.28, 2024.2.1)
+80epochs识别训练结果：74.32% AP@50, 60.13 AP@75, 52.94% mAP
 1. 血条`bar,bar-level`生成概率上调`0.6->0.9`，并加入单独对`bar`的nms阈值设定，当上层图层对`bar`的覆盖率超过`0.1`则删去（保留尽可能得完整）
-2. 生成图像的单位数量`add_unit`上调`30->50`
+2. （没有明显效果，没有加入）生成图像的单位数量`add_unit`上调`30->50`
 3. 蒙板亮度调整：金色`(50,80)->(70,80)`，白色`(50,80)->(110,120)`
-4. 加入对`elixir,clock`的尺度缩放`scale:(0.5,1.2) prob=1.0`，单位的垂直缩放`scale:(0.5,0.8) prob=0.1`
-5. 优化真实框的设置方法：按照**未被上层图层覆盖**的最大框进行设置（使得边界框更加精准）
+4. 加入对`elixir,clock`的尺度缩放`scale:(0.5,1.0) prob=1.0`
+5. （效果退化，没有加入）单位的垂直缩放`scale:(0.5,0.8) prob=0.1`
+6. （效果退化明显，没有加入）优化真实框的设置方法：按照**未被上层图层覆盖**的最大框进行设置（使得边界框更加精准）
 
-FIX BUG: 修复`BasePredict`中`compute_tp`的类别从属错误。
+**FIX BUG**: 修复`BasePredict`中`compute_tp`的类别从属错误。
+
+**NEW TOOL**：加入`detect.py`实现对视频文件的高效识别，R7-5700x+RTX4080识别速度为`13ms`
