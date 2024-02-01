@@ -1,5 +1,7 @@
 from PIL import Image
 from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parents[2]))
 from katacr.utils.detection import plot_cells_PIL, plot_box_PIL, build_label2colors
 from typing import Tuple, List, Sequence
 import numpy as np
@@ -68,7 +70,7 @@ class Unit:
       name: str | None = None,
       cls: str | int | None = None,
       states: list | np.ndarray = None,
-      fliplr: float = 0.8,
+      fliplr: float = 0.5,
       augment: bool = True,
     ):
     """
@@ -232,7 +234,8 @@ class Unit:
   def show_box(self, img: Image, cls2color: dict | None = None):
     if self.cls == -1: return img
     color = cls2color[self.cls] if cls2color is not None else 'red'
-    return plot_box_PIL(img, self.xyxy_visiable, text=self.get_name(), format='voc', box_color=color)
+    # return plot_box_PIL(img, self.xyxy_visiable, text=self.get_name(), format='voc', box_color=color)  # xyxy visiable is bad
+    return plot_box_PIL(img, self.xyxy, text=self.get_name(), format='voc', box_color=color)
 
 class Generator:
   bc_pos: dict = bottom_center_grid_position  # with keys: ['king0', 'king1', 'queen0_0', 'queen0_1', 'queen1_0', 'queen1_1']
@@ -337,7 +340,8 @@ class Generator:
       cls.add(u.cls)
       unit_avail.append(u)
       if u.cls != -1:
-        box.append((*u.xyxy_visiable, *u.states, u.cls))
+        # box.append((*u.xyxy_visiable, *u.states, u.cls))  # xyxy visiable is bad
+        box.append((*u.xyxy, *u.states, u.cls))
     for u in unit_avail[::-1]:  # increase order for drawing
       u.draw(img)
     box = np.array(box, np.float32)
@@ -556,7 +560,7 @@ class Generator:
     """
     self._add_item()
     paths = []
-    for p in (self.path_segment).glob('*'):
+    for p in self.path_segment.glob('*'):
       if p.name in [
         'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
       ] + drop_units:
@@ -577,7 +581,7 @@ if __name__ == '__main__':
   generator = Generator(seed=42, intersect_ratio_thre=0.6, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
-  for i in range(10):
+  for i in range(5):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)

@@ -5,12 +5,14 @@ python katacv/yolov5/detect.py --path detection_files.txt   # detection_files, e
                                       /your/path/image.jpg  # image formats
                                       /your/path/video.mp4  # video formats
 """
-import cv2, glob, os, argparse, numpy as np
+import sys, cv2, glob, os, argparse, numpy as np
 from pathlib import Path
+sys.path.append(str(Path(__file__).parents[2]))
 from typing import Sequence
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from PIL import Image
 from katacr.utils import Stopwatch
+from katacr.build_dataset.utils.split_part import split_part2
 
 IMG_FORMATS = ['jpeg', 'jpg', 'png', 'webp']
 VID_FORMATS = ['avi', 'gif', 'm4v', 'mkv' ,'mp4', 'mpeg', 'mpg', 'wmv']
@@ -79,6 +81,7 @@ class ImageAndVideoLoader:
       img = np.array(Image.open(path).convert("RGB"))
       s = f"image {self.count}/{self.n} {path}:"
     
+    img = split_part2(img)  # check whether should split part2
     img = img[None,...]
     img = np.ascontiguousarray(img)
 
@@ -131,7 +134,7 @@ def parse_args(input_args=None):
     help="The path of processed file.")
   parser.add_argument("--model-name", type=str, default="YOLOv5_v0.4.3",
     help="The name of model in /logs/{model_name}-checkpoints")
-  parser.add_argument("--load_id", type=int, default=80,
+  parser.add_argument("--load-id", type=int, default=80,
     help="The id of loaded model")
   parser.add_argument("--path-model", type=str, default=None,
     help="The checkpoint directory of the model")
@@ -142,8 +145,8 @@ def process(args):
   path = str(args.path)
   is_file = path.rsplit('.', 1)[-1] in (['txt'] + IMG_FORMATS + VID_FORMATS)
   assert is_file, f"Only support this file: {['txt'] + IMG_FORMATS + VID_FORMATS}"
-  save_dir = Path(__file__).parents[2] / f"logs/detection"
-  save_dir.mkdir(exist_ok=True)
+  save_dir = Path(__file__).parents[2] / f"logs/detection" / args.model_name
+  save_dir.mkdir(exist_ok=True, parents=True)
   vid_writer, vid_path = [None], [None]
   ds = ImageAndVideoLoader(path)
   infer = Infer(**vars(args))
@@ -165,8 +168,8 @@ def process(args):
               vid_writer.release()
             if cap:  # video
               fps = cap.get(cv2.CAP_PROP_FPS)
-              w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-              h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+              w = img.shape[1]
+              h = img.shape[0]
             save_path = str(Path(save_path).with_suffix('.mp4'))
             vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
           vid_writer.write(np.array(img))
@@ -176,6 +179,7 @@ if __name__ == '__main__':
   # p = "/home/yy/Coding/GitHub/KataCR/logs/videos.txt"
   # p = "/home/yy/Videos/OYASSU_20210528_h264.mp4"
   # p = "/home/wty/Coding/datasets/CR/videos/fast_pig_2.6/OYASSU_20210528_episodes/1_h264.mp4"
-  p = "/home/wty/Coding/GitHub/KataCR/logs/detection_files.txt"
-  args = parse_args(f"--path {p}".split())
+  # p = "/home/wty/Coding/GitHub/KataCR/logs/detection_files.txt"
+  # args = parse_args(f"--path {p}".split())
+  args = parse_args()
   process(args)

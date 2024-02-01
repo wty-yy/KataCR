@@ -50,10 +50,21 @@ def preprocess_background():
   for i, path in enumerate(paths):
     img = np.array(Image.open(str(path)))
     if 1 <= i+1 <= 25:
-      img = process_part(img, '2_watch_2400p')
+      img = process_part(img, '2_playback_2400p')
     elif i+1 == 26:
       img = process_part(img, '2_2400p')
     Image.fromarray(img).save(str(path_save / path.name))
+
+def split_part2(x):  # based ratio
+  r = np.max(x.shape[:2]) / np.min(x.shape[:2])
+  for name, ratio in const.ratio.items():
+    if ratio[0] <= r <= ratio[1]:
+      if name == 'oyassu':
+        x = process_part(x, 2)
+      if name == '2400p':
+        x = process_part(x, '2_2400p')
+      break
+  return x
 
 def test():
   path_logs = const.path_logs
@@ -83,7 +94,7 @@ def test():
   # part4 = process_part(image, 4)
   # for key, value in part4.items():
   #   Image.fromarray(value).save(str(path_image_save.joinpath(f"part4_{key}.jpg")))
-  # part2_watch = process_part(image, '2_watch')
+  # part2_playback = process_part(image, '2_playback')
   # Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
   part2_2400p = process_part(image, '2_2400p')
   Image.fromarray(part2_2400p).save(str(path_image_save / "part2_2400p.jpg"))
