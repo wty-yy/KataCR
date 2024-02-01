@@ -73,6 +73,7 @@ class ImageAndVideoLoader:
         path = self.files[self.count]
         self._new_video(path)
         flag, img = self.cap.read()
+      img = img[...,::-1]
       self.frame += 1
       s = f"video {self.count+1}/{self.n} ({self.frame}/{self.total_frame}) {path}:"
     
@@ -138,6 +139,10 @@ def parse_args(input_args=None):
     help="The id of loaded model")
   parser.add_argument("--path-model", type=str, default=None,
     help="The checkpoint directory of the model")
+  parser.add_argument("--iou-thre", type=float, default=0.5,
+    help="The threshold of iou in NMS")
+  parser.add_argument("--conf-thre", type=float, default=0.1,
+    help="The threshold of confidence in NMS")
   return parser.parse_args(input_args)
 
 from katacr.utils.detection.data import show_box
@@ -157,7 +162,7 @@ def process(args):
       pbox = infer(x)
     for i, box in enumerate(pbox):
       if ds.mode in ['image', 'video']:
-        img = show_box(x[i], box, verbose=False, use_overlay=True)
+        img = show_box(x[i], box, verbose=False, use_overlay=True, show_conf=True)
         save_path = str(save_dir / Path(p).name)
         if ds.mode == 'image':
           img.save(save_path)
@@ -168,11 +173,10 @@ def process(args):
               vid_writer.release()
             if cap:  # video
               fps = cap.get(cv2.CAP_PROP_FPS)
-              w = img.shape[1]
-              h = img.shape[0]
+              w, h = img.size
             save_path = str(Path(save_path).with_suffix('.mp4'))
             vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-          vid_writer.write(np.array(img))
+          vid_writer.write(np.array(img)[...,::-1])
       print(f"{s} {sw.dt * 1e3:.1f}ms")
 
 if __name__ == '__main__':

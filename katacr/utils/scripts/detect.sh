@@ -1,0 +1,3 @@
+python katacr/detection/detect.py --path /home/yy/Coding/GitHub/KataCR/logs/detection_list.txt --model-name 'YOLOv5_v0.4.3_more_bar' --load-id 80
+python katacr/detection/detect.py --path /home/yy/Coding/GitHub/KataCR/logs/detection_list.txt --model-name 'YOLOv5_v0.4.3_back' --load-id 80
+python katacr/detection/detect.py --path /home/yy/Coding/GitHub/KataCR/logs/detection_list.txt --model-name 'YOLOv5_v0.4.3_unit30_bar90_scale_higher_mask' --load-id 80
