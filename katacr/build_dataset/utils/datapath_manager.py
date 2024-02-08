@@ -40,7 +40,7 @@ class PathManager:
         part = "part"+str(part)
       path /= part
     if video_name is not None: path /= video_name
-    if name is not None: path /= name
+    if name is not None: path /= str(name)
     if not path.exists():
       # warnings.warn(f"\n### Warning: The sample path `{path}` don't exist, skip it. ###")
       return []

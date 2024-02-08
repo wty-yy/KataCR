@@ -14,7 +14,7 @@ LABELME_VERSION = "5.3.1"  # write into LABELME json file
 
 def parse_args(input_args=None):
   parser = argparse.ArgumentParser()
-  parser.add_argument("--model-name", default="YOLOv5_v0.4.3",
+  parser.add_argument("--model-name", default="YOLOv5_v0.4.4",
     help="The model weights in `KataCR/logs/'model_name'-checkpoints/`")
   parser.add_argument("--load-id", default="80",
     help="The id of the model weights")

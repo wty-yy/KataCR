@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parents[2]))
 import torch
 import numpy as np
 from PIL import Image
@@ -66,8 +69,10 @@ class Segment:
     """
     Process the images in part_id with video_name and episode.
     """
-    if episode is not None: episode = str(episode)
-    paths = self.path_manager.search(subset='images', part=part_suffix, video_name=video_name, name=episode, regex=r"\d+.txt")
+    episodes = episode if isinstance(episode, (list, tuple)) else [episode]
+    paths = []
+    for ep in episodes:
+      paths.extend(self.path_manager.search(subset='images', part=part_suffix, video_name=video_name, name=ep, regex=r"\d+.txt"))
     for path_box in tqdm(paths):
       if 'background' in str(path_box):
         vn = 'background'
@@ -126,7 +131,7 @@ class Segment:
 
 if __name__ == '__main__':
   segment = Segment()
-  segment.process(video_name="background")
-  # segment.process()
+  # segment.process(video_name="background")
+  segment.process(video_name="OYASSU_20210528_episodes", episode=[3,5])
   # segment.background()
 
