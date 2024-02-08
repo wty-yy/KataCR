@@ -4,6 +4,7 @@ from katacr.detection.parser import YOLOv5Args, get_args_and_writer
 from katacr.build_dataset.constant import MAX_NUM_BBOXES
 from torch.utils.data import Dataset, DataLoader
 from katacr.build_dataset.generator import Generator
+import torch
 import cv2
 import numpy as np
 from PIL import Image
@@ -99,6 +100,7 @@ class DatasetBuilder:
 
   def __init__(self, args: YOLOv5Args):
     self.args = args
+    torch.manual_seed(self.args.seed)
   
   def get_dataset(self, subset: str = 'val'):
     dataset = YOLODataset(

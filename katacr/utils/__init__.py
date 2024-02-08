@@ -2,6 +2,7 @@ from PIL import Image
 import numpy as np
 import contextlib, time
 import sys
+from pathlib import Path
 
 def load_image_array(
     path_image, to_gray=False,
@@ -55,6 +56,7 @@ def colorstr(*input):
 # https://stackoverflow.com/questions/14906764/how-to-redirect-stdout-to-both-file-and-console-with-scripting
 class Logger:
   def __init__(self, path: str):
+    Path(path).parent.mkdir(exist_ok=True)
     self.terminal = sys.stdout
     self.log = open(path, "a")
   def write(self, message):
