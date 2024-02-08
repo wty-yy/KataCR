@@ -98,3 +98,13 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 **FIX BUG**: 修复`BasePredict`中`compute_tp`的类别从属错误。
 
 **NEW TOOL**：加入`detect.py`实现对视频文件的高效识别，R7-5700x+RTX4080识别速度为`13ms`
+
+#### v0.4.5(2024.2.8)
+1. 扩充生成式数据集：23个新的单位（5个法术，2个天空，3个地面；18个部队，4个天空，14个地面）
+2. 创建新的图层level划分：`ground_spell`，例如：`poison, rage, tornado`
+3. 将雪堆`snow`加入到背景图`background-items`生成当中，生成概率为0.05，生成范围为整个竞技场。
+4. 上调`bar,bar-level`概率为`1.0`。
+5. YOLO基于当前`segment`中的图像（出去`background`相关的内容）更新锚框`anchors`大小。
+6. 生成式数据集可以基于固定的种子进行（注意这样不能中断训练，继续训练需要使用新的种子），并对`path.glob`的结果进行`sorted`，从而对训练结果进行复现。
+
+**NEW TOOL**：加入`build_dataset/dataset_version.py`分别对`annotation`和`segment`中的图像标签数目来管理数据集的当前版本，记录更新内容。

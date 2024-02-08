@@ -21,6 +21,9 @@ The label file `imagename.json` struct should be:
 
 Let's check whether the 'label' for each file is satisfied with the
 `Images annotate logs.md` in CR Dataset
+
+
+The outputs will save at `CR_dataset/version_info/label_build.log`.
 '''
 import json
 from katacr.utils.related_pkgs.utility import *

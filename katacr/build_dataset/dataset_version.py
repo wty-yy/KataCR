@@ -1,3 +1,15 @@
+"""
+Used to manage the annotation and segment dataset version in part2,
+it will create below files in `CR_dataset/version_info`:
+(note: dataset=[annotation/segment], version=[v0.1,v0.2,...])
+
+1. `{dataset}_{version}.csv`: The number of each label in current dataset.
+2. `{dataset}_{version}_update.txt`: The change in number of each label betweens neighbor version.
+
+用于对识别数据集(part2)进行版本管理，将在CR数据集的根目录下的`/part2/version_info`中生成如下文件：
+1. annotation_{version}.csv, segment_{version}.csv：分别为标记、生成式数据集中的标签数目。
+2. {dataset}_{version}_update.txt为数据集版本变换导致的标签数目变动。
+"""
 from pathlib import Path
 from katacr.build_dataset.utils.datapath_manager import PathManager
 import pandas as pd
