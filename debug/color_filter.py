@@ -14,19 +14,22 @@ color2RGB = {
   'red': (255, 0, 0),
   'blue': (0, 0, 255),
   'golden': (255, 215, 0),
-  'white': (255, 255, 255)
+  'white': (255, 255, 255),
+  'violet': (127, 0, 255),
 }
 color2alpha = {
   'red': 80,
   'blue': 100,
   'golden': 150,
-  'white': 150
+  'white': 150,
+  'violet': 150,
 }
 color2bright = {
   'red': (30, 50),
   'blue': (30, 80),
   'golden': (70, 80),
-  'white': (70, 80),
+  'white': (110, 120),
+  'violet': (10, 30),
 }
 # color2RGBA = {key: val+(255,) for key, val in color2RGB.items()}
 
@@ -63,9 +66,10 @@ def add_filter(
 
 import random
 # color = 'blue'
+n = len(color2alpha)
 for r in range(4):
   for i, color in enumerate(color2bright.keys()):
-    plt.subplot(4,4,r*4+i+1)
+    plt.subplot(4,n,r*n+i+1)
     bmin, bmax = color2bright[color]
     b = bmin + (bmax - bmin) * (r + 1) / 4
     # img = add_filter(img, 'red', alpha=80, xyxy=(0,56,568,490))

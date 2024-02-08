@@ -244,7 +244,7 @@ class Generator:
       self, background_index: int | None = None,
       unit_list: Tuple[Unit,...] = None,
       seed: int | None = None,
-      intersect_ratio_thre: float = 0.6,
+      intersect_ratio_thre: float = 0.5,
       map_update_size: int = 5,
       augment: bool = True
     ):
@@ -324,7 +324,7 @@ class Generator:
     return np.stack([bx, by, bw, bh], -1)
   
   def build(self, save_path="", verbose=False, show_box=False):
-    img = self.background
+    img = self.background.copy()
     cls = set()
     self.unit_list = sorted(self.unit_list, key=lambda x: (x.level, x.xy_cell[1]))
     box, mask, unit_avail = [], np.zeros(img.shape[:2], dtype=np.bool_), []  # return box, union of images, available units
@@ -523,9 +523,9 @@ class Generator:
       xy = self._sample_from_center(center, dx_range, dy_range)
       path = self.path_manager.path / "images/segment" / c
       if 'bar' in c:  # determine the side 0/1
-        paths = list(path.glob(f"{c}_{unit.states[0]}*"))
+        paths = sorted(list(path.glob(f"{c}_{unit.states[0]}*")))
       else:
-        paths = list(path.glob('*'))
+        paths = sorted(list(path.glob('*')))
       if len(paths) == 0: return
       level = unit2level[c]
       self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width)
@@ -540,9 +540,9 @@ class Generator:
       if random.random() > prob: continue
       for cfg in cfgs:
         if name not in background_item_list:
-          paths = list((self.path_segment / name).glob('*'))
+          paths = sorted(list((self.path_segment / name).glob('*')))
         else:
-          paths = list((self.path_segment / 'background-items').glob(name+'*'))
+          paths = sorted(list((self.path_segment / 'background-items').glob(name+'*')))
         level = unit2level[name]  # [0: background_items, 3: big-text, emote]
         center, dx_range, dy_range, w_range, maxn = cfg
         if maxn == 1:
@@ -560,7 +560,7 @@ class Generator:
     """
     self._add_item()
     paths = []
-    for p in self.path_segment.glob('*'):
+    for p in sorted(self.path_segment.glob('*')):
       if p.name in [
         'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
       ] + drop_units:
@@ -578,7 +578,7 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.6, augment=True)
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(5):

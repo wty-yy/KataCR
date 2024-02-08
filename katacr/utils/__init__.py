@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 import contextlib, time
+import sys
 
 def load_image_array(
     path_image, to_gray=False,
@@ -49,3 +50,16 @@ def colorstr(*input):
     'bold': '\033[1m',
     'underline': '\033[4m'}
   return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
+
+# How to redirect stdout to both file and console with scripting?
+# https://stackoverflow.com/questions/14906764/how-to-redirect-stdout-to-both-file-and-console-with-scripting
+class Logger:
+  def __init__(self, path: str):
+    self.terminal = sys.stdout
+    self.log = open(path, "a")
+  def write(self, message):
+    self.terminal.write(message)
+    self.log.write(message)  
+  def flush(self):
+    pass    
+# usage: sys.stdout = Logger()

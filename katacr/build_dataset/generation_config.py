@@ -1,7 +1,9 @@
 from katacr.constants.label_list import ground_unit_list, flying_unit_list, tower_unit_list, other_unit_list, spell_unit_list, background_item_list
+ground_spell_list = list(set(ground_unit_list) & set(spell_unit_list))
+ground_unit_except_spell_list = list(set(ground_unit_list) - set(spell_unit_list))
 level2units = {
-  0: ['blood', 'butterfly', 'flower', 'skull', 'cup'],
-  1: ground_unit_list + tower_unit_list,
+  0: ground_spell_list + ['blood', 'butterfly', 'flower', 'skull', 'cup', 'snow'],
+  1: ground_unit_except_spell_list + tower_unit_list,
   2: flying_unit_list,
   3: other_unit_list + ['ribbon'],
 }
@@ -33,7 +35,7 @@ component_prob.update({'king-tower': 0.5})  # king-tower-bar
 component_prob.update(  # the probability of adding a component
   {x: 0.2 for x in (ground_unit_list + flying_unit_list)}
 )
-important_components = [(('bar', 'bar-level'), 0.9)]  # highter prob to use important components, when add components.
+important_components = [(('bar', 'bar-level'), 1.0)]  # highter prob to use important components, when add components.
 component_cfg = {  # center [cell pos, top_center, bottom_center], dx_range, dy_range, width
   'small-text': ['top_center', (0, 0), (-1, -0.5), None],
   'elixir': ['bottom_center', (0, 0), (-2, 0), None],
@@ -60,15 +62,16 @@ item_cfg = {
   'ribbon': (0.5, [[(0, 0), (0, 18), (0, 32), None, 50]]),  # all
   'skull': (0.05, [[(0, 0), (0, 18), (0, 32), None, 3]]),  # all
   'cup': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
+  'snow': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
 }
-except_spell_flying_unit_list = list(set(flying_unit_list) - set(spell_unit_list))
+except_spell_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list))
 component2unit = {
   'small-text': ground_unit_list + flying_unit_list,
   'elixir': ground_unit_list + flying_unit_list,
-  ('bar', 'bar-level'): ground_unit_list + except_spell_flying_unit_list,
+  ('bar', 'bar-level'): except_spell_unit_list,
   'tower-bar': except_king_tower_unit_list,
   'king-tower-bar': ['king-tower'],
-  'clock': ground_unit_list + except_spell_flying_unit_list,
+  'clock': ground_unit_list + except_spell_unit_list,
 }
 
 # Augmentation (mask and transparency)
@@ -81,39 +84,44 @@ aug2prob = {  # accumulate probablity
   'blue': 0.10,   # 0.1
   'golden': 0.10, # 0.2
   'white': 0.10,  # 0.1
+  'violet': 0.02,
   'trans': 0.05,  # 0.2
 }
 
 aug2unit = {
-  'red': ground_unit_list + tower_unit_list + except_spell_flying_unit_list,
-  'blue': ground_unit_list + tower_unit_list + except_spell_flying_unit_list,
-  'golden': ['text'] + ground_unit_list + except_spell_flying_unit_list,
-  'white': ['clock'] + ground_unit_list + except_spell_flying_unit_list + tower_unit_list,
-  'trans': ground_unit_list + except_spell_flying_unit_list
+  'red': tower_unit_list + except_spell_unit_list,
+  'blue': tower_unit_list + except_spell_unit_list,
+  'golden': ['text'] + except_spell_unit_list,
+  'white': ['clock'] + except_spell_unit_list + tower_unit_list,
+  'violet': except_spell_unit_list + tower_unit_list,
+  'trans': except_spell_unit_list
 }
-alpha_transparency = 150
+alpha_transparency = 100
 color2RGB = {
   'red': (255, 0, 0),
   'blue': (0, 0, 255),
   'golden': (255, 215, 0),
-  'white': (255, 255, 255)
+  'white': (255, 255, 255),
+  'violet': (127, 0, 255),
 }
 color2alpha = {
   'red': 80,
   'blue': 100,
   'golden': 150,
-  'white': 150
+  'white': 150,
+  'violet': 150,
 }
 color2bright = {  # brightness range
   'red': (30, 50),
   'blue': (30, 80),
   'golden': (70, 80),  # (70, 80)
   'white': (110, 120),  # (110, 120)
+  'violet': (10, 30),
 }
 
 # unit_scale = {x: ((0.5, 1.2), 1.0) for x in ('elixir', 'clock')}
 unit_scale = {x: ((0.5, 1.0), 1.0) for x in ('elixir', 'clock')}
-unit_stretch = {x: ((0.5, 0.8), 0.0) for x in (ground_unit_list + except_spell_flying_unit_list)}
+unit_stretch = {x: ((0.5, 0.8), 0.0) for x in (except_spell_unit_list)}
 tower_intersect_ratio_thre = 0.8
 bar_intersect_ratio_thre = 0.1
 

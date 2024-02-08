@@ -46,7 +46,7 @@ class DatasetManager:
     for pt in part:
       data: dict = eval("self."+pt)
       print(colorstr("Process part: ") + colorstr('red', pt) + "...")
-      paths = list(root_path.glob(pt + '*'))
+      paths = sorted(list(root_path.glob(pt + '*.csv')))
       if len(paths) == 0:
         new_version = '0.1'
         print("Don't find any old version, start from v0.1")

@@ -28,6 +28,7 @@ from katacr.build_dataset.utils.datapath_manager import PathManager
 from katacr.constants.label_list import unit_list, unit2idx
 from katacr.constants.state_list import state2idx
 from katacr.build_dataset.constant import path_dataset
+from katacr.utils import Logger
 import random
 
 class LabelBuilder:
@@ -129,16 +130,16 @@ class LabelBuilder:
         max_path = path
 
     random.shuffle(paths)
-    train_size = self.build_annotation(paths, subset='train')
-    val_size = self.build_annotation(paths, subset='val')
-    total_size = self.build_annotation(paths)
+    # train_size = self.build_annotation(paths, subset='train')
+    # val_size = self.build_annotation(paths, subset='val')
+    self.build_annotation(paths)
     if verbose:
       print("Dataset size:", len(paths))
       print("Maximum bbox number:", max_box_num)
       print("with path:", max_path)
-      train_size = int(len(paths) * (1 - self.val_ratio))
-      print("Train datasize:", train_size)
-      print("Val datasize:", val_size)
+      # train_size = int(len(paths) * (1 - self.val_ratio))
+      # print("Train datasize:", train_size)
+      # print("Val datasize:", val_size)
   
   def build_background(self):
     paths = self.path_manager.search(subset='images', part=2, name='background', regex=r'background\d+.json')
@@ -150,7 +151,11 @@ class LabelBuilder:
     self.dfile.close()
 
 if __name__ == '__main__':
+  import sys, time, socket
+  sys.stdout = Logger(path=path_dataset/"version_info/label_build.log")
+  print(f"Build at {time.strftime('%Y%m%d-%H%M%S')}, by {socket.gethostname()}")
   label_builder = LabelBuilder()
   label_builder.build()
+  print()
   # label_builder.close()
   # label_builder.build_background()

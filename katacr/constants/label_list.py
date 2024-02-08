@@ -155,21 +155,38 @@ idx2unit = dict(enumerate(unit_list))
 unit2idx = {name: idx for idx, name in enumerate(unit_list)}
 
 ground_unit_list = [
+  'archer',
+  'bandit',
   'barbarian',
   'barbarian-barrel',
   'barbarian-hut',
   'cannon',
   'electro-spirit',
+  'electro-wizard',
+  'elite-barbarian',
   'goblin-brawler',
   'goblin-cage',
+  'golem',
+  'golemite',
   'hog-rider',
   'ice-golem',
   'ice-spirit',
+  'knight',
+  'lumberjack',
+  'magic-archer',
   'musketeer',
+  'pekka',
+  'poison',
+  'rage',
+  'ram-rider',
+  'royal-ghost',
   'royal-hog',
   'royal-recruit',
   'skeleton',
+  'tesla',
   'the-log',
+  'tornado',
+  'x-box',
   'zappy',
 ]
 
@@ -179,13 +196,24 @@ tower_unit_list = [
 ]
 
 flying_unit_list = [
+  'arrows',
+  'baby-dragon',
   'flying-machine',
   'fireball',
-  'arrows',
+  'inferno-dragon',
+  'mega-minion',
+  'minion',
+  'rocket',
+  'zap',
 ]
 spell_unit_list = [
-  'fireball',
   'arrows',
+  'fireball',
+  'poison',
+  'rage',
+  'rocket',
+  'tornado',
+  'zap',
 ]
 
 other_unit_list = [
@@ -205,7 +233,8 @@ background_item_list = [
   'flower',
   'ribbon',
   'skull',
-  'cup'
+  'cup',
+  'snow'
 ]
 
 if __name__ == '__main__':

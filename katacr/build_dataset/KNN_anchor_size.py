@@ -2,9 +2,11 @@ from katacr.utils.related_pkgs.utility import *
 from katacr.build_dataset.utils.datapath_manager import PathManager
 from katacr.build_dataset.constant import path_logs
 from katacr.detection.cfg import image_shape
+from PIL import Image
 
-def get_bbox_size():
-  path_manager = PathManager()
+path_manager = PathManager()
+
+def get_box_size_from_annotation():
   paths = path_manager.search('images', part=2, regex=r"^\d+.txt")
   ret = []
   for path in paths:
@@ -17,12 +19,19 @@ def get_bbox_size():
         ret.append(np.array((w, h), dtype=np.float32))
       except:
         print(f"{path=}")
-        # print(params)
         raise("Error")
-    # print(path)
   return np.array(ret)
 
-def knn_calc_bbox_size(data, k=9, verbose=False):
+def get_box_size_from_segment():
+  paths = path_manager.search('images', 'segment', regex=r".png")
+  ret = []
+  for path in paths:
+    if 'background' in str(path): continue
+    w, h = Image.open(str(path)).size
+    ret.append([w, h])
+  return np.array(ret, np.float32)
+
+def knn_calc_box_size(data, k=9, verbose=False):
   from sklearn.cluster import KMeans
   kmeans = KMeans(n_clusters=k)
   kmeans.fit(data)
@@ -47,9 +56,11 @@ def knn_calc_bbox_size(data, k=9, verbose=False):
     plt.title("KMeans Clustering")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(str(path_logs.joinpath("KNN_bbox.jpg")), dpi=200)
+    plt.savefig(str(path_logs.joinpath("KNN_box.jpg")), dpi=200)
     plt.show()
 
 if __name__ == '__main__':
-  data = get_bbox_size()
-  knn_calc_bbox_size(data, verbose=True)
+  # data = get_box_size_from_annotation()
+  data = get_box_size_from_segment()
+  print(f"{data.shape=}")
+  knn_calc_box_size(data, verbose=True)
