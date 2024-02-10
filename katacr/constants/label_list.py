@@ -149,6 +149,9 @@ unit_list = [
   # 2024/1/1: add
   'cannoneer-tower',
   'valkyrie-evolution',
+  # 2024/2/1: add
+  'bomber-evolution',
+  'wall-breaker-evolution'
 ]
 
 idx2unit = dict(enumerate(unit_list))
@@ -186,7 +189,7 @@ ground_unit_list = [
   'tesla',
   'the-log',
   'tornado',
-  'x-box',
+  'x-bow',
   'zappy',
 ]
 
@@ -238,4 +241,11 @@ background_item_list = [
 ]
 
 if __name__ == '__main__':
-  print("Total number unit:",len(unit_list))
+  check_union = set(ground_unit_list).intersection(flying_unit_list)
+  assert len(check_union) == 0, f"Ground and fly should no intersection element {check_union}."
+  avail_units = set(ground_unit_list) | set(flying_unit_list) | set(other_unit_list)
+  avail_units.remove('bar-level')
+  print("Total number unit:", len(unit_list))
+  print(f"Available units ({len(avail_units)}):", avail_units)
+  residue = set(unit_list) - avail_units
+  print(f"Residue unit: ({len(residue)})", residue)

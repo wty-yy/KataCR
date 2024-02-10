@@ -108,3 +108,9 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 6. 生成式数据集可以基于固定的种子进行（注意这样不能中断训练，继续训练需要使用新的种子），并对`path.glob`的结果进行`sorted`，从而对训练结果进行复现。
 
 **NEW TOOL**：加入`build_dataset/dataset_version.py`分别对`annotation`和`segment`中的图像标签数目来管理数据集的当前版本，记录更新内容。
+
+#### v0.4.5.1(2024.2.10)
+1. 对`royal-ghost`的透明度蒙板概率上调为`0.5`
+2. 当`spell_unit`中有部分出界时，不将其平移到图内（和`text`一样）
+
+**FIX BUG**：修复`x-bow`标签名称错误，将`fliplr`变换放到所有变换之前。

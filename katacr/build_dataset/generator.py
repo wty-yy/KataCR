@@ -10,7 +10,7 @@ from katacr.build_dataset.constant import path_logs
 from katacr.constants.label_list import unit2idx, idx2unit
 from katacr.constants.state_list import state2idx, idx2state
 from katacr.build_dataset.generation_config import (
-  map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list,
+  map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list, spell_unit_list,
   drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
   component_prob, component2unit, component_cfg, important_components,  # component configs
@@ -110,6 +110,9 @@ class Unit:
       raise "Error: You must give the label of the unit (when not background)."
     self.level = level
 
+    if random.uniform(0, 1) < fliplr and self.cls_name not in drop_fliplr:
+      img = np.fliplr(img)
+
     _sample_range = lambda l, r: random.random() * (r - l) + l
     if augment:  # scale and stretch
       if self.cls_name in unit_scale:
@@ -130,7 +133,7 @@ class Unit:
     xy = cell2pixel(self.xy_cell)
     # Note that xyxy is (x0,y0,x1+1,y1+1)
     self.xyxy = np.array((xy[0]-w//2, xy[1]-h, xy[0]+(w+1)//2, xy[1]), np.float32)  # xyxy relative to background
-    if self.cls == unit2idx['text']:  # if text, clip the out range
+    if self.cls_name in ['text'] + spell_unit_list:  # if text or spell units, clip the out range
       self.xyxy = np.array((
         max(self.xyxy[0], 0),
         max(self.xyxy[1], 0),
@@ -155,8 +158,11 @@ class Unit:
     
     self.augment = None
     if augment:
+      aug2prob_cp = aug2prob.copy()
+      if self.cls_name == 'royal-ghost':
+        aug2prob_cp['trans'] = 0.5
       p = random.random()
-      for key, val in aug2prob.items():
+      for key, val in aug2prob_cp.items():
         if self.cls_name not in aug2unit[key]: continue
         if p < val:
           self.augment = key
@@ -167,9 +173,6 @@ class Unit:
     # Residue size ratio < 0.3 or width, hight < 6 pixel, then drop this unit
     if size / (h * w) < 0.3 or self.xyxy[2] - self.xyxy[0] < 6 or self.xyxy[3] - self.xyxy[1] < 6:
       self.xyxy = np.zeros(4)
-
-    if random.uniform(0, 1) < fliplr and self.cls_name not in drop_fliplr:
-      img = np.fliplr(img)
 
     if img.shape[-1] == 4:
       self.mask = img[...,3] > 0
