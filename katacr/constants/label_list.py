@@ -114,9 +114,9 @@ unit_list = [
   'prince',  # new 'dash'
   'electro-dragon',
   'bowler',
-  'bowl',
+  # 'bowl',
   'executioner',
-  'axe',
+  # 'axe',
   'cannon-cart',  # new 'shield'
   'ram-rider',  # new 'dash'
   'graveyard',
@@ -143,7 +143,7 @@ unit_list = [
   # 2023/11/11: add
   'little-prince',
   'royal-guardian',
-  'archer-evolution'
+  'archer-evolution',
   # 2023/11/29: add
   'ice-spirit-evolution',
   # 2024/1/1: add
@@ -243,9 +243,11 @@ background_item_list = [
 if __name__ == '__main__':
   check_union = set(ground_unit_list).intersection(flying_unit_list)
   assert len(check_union) == 0, f"Ground and fly should no intersection element {check_union}."
-  avail_units = set(ground_unit_list) | set(flying_unit_list) | set(other_unit_list)
+  avail_units = set(ground_unit_list) | set(flying_unit_list) | set(other_unit_list) | set(tower_unit_list)
   avail_units.remove('bar-level')
-  print("Total number unit:", len(unit_list))
-  print(f"Available units ({len(avail_units)}):", avail_units)
+  print(f"Total number unit: ({len(unit_list)})")
+  for i, u in enumerate(sorted(unit_list)):
+    print(i+1, u, '✔' if u in avail_units else '✘')
+  print(f"Available units ({len(avail_units)}):", sorted(avail_units))
   residue = set(unit_list) - avail_units
-  print(f"Residue unit: ({len(residue)})", residue)
+  print(f"Residue unit: ({len(residue)})", sorted(residue))

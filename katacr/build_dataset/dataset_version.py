@@ -47,6 +47,9 @@ class DatasetManager:
         box = np.loadtxt(file)
       for b in box:
         name, side = idx2unit[int(b[0])], int(b[5])
+        if name == 'royal-recruit-evolution':
+          print(name, p)
+          exit()
         if name not in self.annotation:
           self.annotation[name] = [0, 0]
         self.annotation[name][side] += 1
