@@ -10,5 +10,6 @@ character_set = {
 }
 
 # path_weights = "/home/wty/Coding/models/OCR/OCR-CRNN-0020-lite"
-path_weights = "/home/wty/Coding/models/OCR/OCR-CRNN-BiLSTM-0020-lite"
+# path_weights = "/home/wty/Coding/models/OCR/OCR-CRNN-BiLSTM-0020-lite"
 # path_weights = "/home/yy/Coding/models/OCR/OCR-CRNN-0020-lite"
+path_weights = "/home/yy/Coding/models/OCR/OCR-CRNN-BiLSTM-0020-lite"

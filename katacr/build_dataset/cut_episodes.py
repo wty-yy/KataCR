@@ -87,8 +87,6 @@ def split_episodes(path_video: Path):
       raise f"Error: Don't know height/weight ratio: {hw_ratio:.2f}!"
     # image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    if check_feature_exists(image_gray, start_features):
-      bar.set_description(f"Start episode at {frame} ({second2time(frame/fps)})")
     if start_frame == -1 and check_feature_exists(image_gray, start_features):
       episode_num += 1
       start_frame = frame
@@ -100,7 +98,7 @@ def split_episodes(path_video: Path):
       ffmpeg_extract_subclip(str(path_video), start_frame/fps, frame/fps+1, str(path))
       print(f"Split episode{episode_num} in {second2time(start_frame/fps)}~{second2time(frame/fps)}")
       start_frame = -1
-    bar.set_description(f"Process {episode_num} episode")
+    bar.set_description(f"Process {episode_num} episode" + f", start at {second2time(start_frame/fps)}" if start_frame != -1 else "")
   # clip.close()
   cap.release()
 
@@ -133,7 +131,7 @@ def check_text_exists(
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument("--path-video", type=cvt2Path, default="/home/wty/Videos/CR/WTY_20240213_2_30fps.mp4")
+  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/CR/videos/WTY_20240213.mp4")
   args = parser.parse_args()
   split_episodes(args.path_video)
   
