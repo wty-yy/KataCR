@@ -12,7 +12,7 @@
 import os, sys
 sys.path.append(os.getcwd())
 import moviepy.editor as mp
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+from katacr.utils.ffmpeg_tools import ffmpeg_extract_subclip
 from katacr.utils.related_pkgs.utility import *
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.build_dataset.utils.split_part import split_part
