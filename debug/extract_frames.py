@@ -4,7 +4,7 @@
 @Time    : 2023/11/09 10:52:36
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 This script is used to extract and save the special frame to image file in one video.
 '''

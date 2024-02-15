@@ -4,7 +4,7 @@
 @Time    : 2023/11/11 09:55:40
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 Open [`labelme`](https://github.com/wkentaro/labelme) with this suffix
 (check for each param with `--help`): 

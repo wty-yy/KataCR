@@ -4,7 +4,7 @@
 @Time    : 2023/11/09 10:54:37
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 This script is used to extract all frame with `split time` seconds,
 it can be used after `cut_episodes.py`in CR dataset.

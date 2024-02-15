@@ -4,7 +4,7 @@
 @Time  : 2023/10/15 20:46:39
 @Author  : wty-yy
 @Version : 1.0
-@Blog  : https://wty-yy.space/
+@Blog  : https://wty-yy.xyz/
 @Desc  : 提取视频中的所有回合，基于OCR识别文字来判断回合的开始和结束，并对视频文件进行划分：
 |  Start episode  |  End episode  |
 |   card table    |  center word  |

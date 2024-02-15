@@ -133,7 +133,7 @@ def parse_args(input_args=None):
   parser = argparse.ArgumentParser()
   parser.add_argument("--path", type=str, default="",
     help="The path of processed file.")
-  parser.add_argument("--model-name", type=str, default="YOLOv5_v0.4.3",
+  parser.add_argument("--model-name", type=str, default="YOLOv5_v0.4.5",
     help="The name of model in /logs/{model_name}-checkpoints")
   parser.add_argument("--load-id", type=int, default=80,
     help="The id of loaded model")

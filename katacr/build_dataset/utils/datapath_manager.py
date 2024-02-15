@@ -4,7 +4,7 @@
 @Time    : 2023/11/09 10:41:40
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 This script defines the `PathManger` class for the CR dataset,
 this class is used to recursively reading the file path in the directory

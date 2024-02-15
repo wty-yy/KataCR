@@ -4,7 +4,7 @@
 @Time    : 2023/11/11 10:49:01
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 Based on `Clash Royale dataset annotation.md`, we define all the state with special ids.
 
