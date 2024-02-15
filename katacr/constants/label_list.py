@@ -167,6 +167,7 @@ ground_unit_list = [
   'electro-spirit',
   'electro-wizard',
   'elite-barbarian',
+  'goblin',
   'goblin-brawler',
   'goblin-cage',
   'golem',
@@ -174,12 +175,15 @@ ground_unit_list = [
   'hog-rider',
   'ice-golem',
   'ice-spirit',
+  'inferno-tower',
   'knight',
   'lumberjack',
   'magic-archer',
+  'mighty-miner',
   'musketeer',
   'pekka',
   'poison',
+  'princess',
   'rage',
   'ram-rider',
   'royal-ghost',
@@ -203,6 +207,7 @@ flying_unit_list = [
   'baby-dragon',
   'flying-machine',
   'fireball',
+  'goblin-barrel',
   'inferno-dragon',
   'mega-minion',
   'minion',
@@ -212,6 +217,7 @@ flying_unit_list = [
 spell_unit_list = [
   'arrows',
   'fireball',
+  'goblin-barrel',
   'poison',
   'rage',
   'rocket',
@@ -246,6 +252,7 @@ if __name__ == '__main__':
   avail_units = set(ground_unit_list) | set(flying_unit_list) | set(other_unit_list) | set(tower_unit_list)
   avail_units.remove('bar-level')
   print(f"Total number unit: ({len(unit_list)})")
+  unit_list.remove("selected")
   for i, u in enumerate(sorted(unit_list)):
     print(i+1, u, '✔' if u in avail_units else '✘')
   print(f"Available units ({len(avail_units)}):", sorted(avail_units))

@@ -15,6 +15,15 @@ def load_image_array(
   if keep_dim and image.ndim == 2: image = image[..., None]
   return image 
 
+"""
+# A stopwath is used to metric code block running time.
+# Usage:
+sw = Stopwatch()
+with sw:
+  your code...
+  ...
+print("delta time:", sw.dt, "total time:", sw.t)
+"""
 class Stopwatch(contextlib.ContextDecorator):
   def __init__(self, t=0.0):
     self.t = t

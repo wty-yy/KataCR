@@ -12,6 +12,7 @@ sys.path.append(os.getcwd())
 
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.utils.related_pkgs.utility import *
+from katacr.utils import Stopwatch
 
 from katacr.ocr_text.crnn_model import TrainState
 
@@ -95,14 +96,18 @@ if __name__ == '__main__':
   # from katacr.ocr_text.parser import get_args_and_writer
   ocr_text = OCRText()
 
-  path1 = Path("/home/yy/Coding/GitHub/KataCR/test1.png")
-  path2 = Path("/home/yy/Coding/GitHub/KataCR/test2.png")
-  path3 = Path("/home/yy/Coding/GitHub/KataCR/test3.png")
+  path1 = Path("/home/wty/Pictures/test/ocr/2400p_part4_up.jpg")
   from katacr.utils import load_image_array
   image1 = load_image_array(path1)
-  image2 = load_image_array(path2)
-  image3 = load_image_array(path3)
+  # image2 = load_image_array(path2)
+  # image3 = load_image_array(path3)
   # from katacr.build_train_dataset.split_frame_parts import process_part4
   # part4 = list(process_part4(image).values())
-  part4 = [image1, image2, image3]
-  print(ocr_text.predict(part4))
+  # part4 = [image1, image2, image3]
+  part4 = [image1]
+  ocr_text.predict(part4)  # compile
+
+  sw = Stopwatch()
+  with sw:
+    print(ocr_text.predict(part4))
+  print("OCR used time:", sw.dt)
