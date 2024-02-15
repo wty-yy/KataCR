@@ -2,6 +2,8 @@ from katacr.utils.related_pkgs.utility import *
 import katacr.ocr_text.constant as const
 
 class OCRArgs():
+  ### Model ###
+  model_name: str  # OCR_CRNN_BiLSTM or OCR_CRNN_LSTM
   ### Dataset ###
   path_weights: Path
   image_width: Tuple
@@ -13,6 +15,8 @@ class OCRArgs():
 
 def get_args_and_writer(input_args=None) -> OCRArgs:
   parser = argparse.ArgumentParser()
+  parser.add_argument("--model-name", default="OCR_CRNN_BiLSTM",
+    help="the name of the model, OCR_CRNN_BiLSTM or OCR_CRNN_LSTM, decided by model weights type")
   parser.add_argument("--path-weights", type=cvt2Path, default=const.path_weights,
     help="the path of the CRNN model weights")
   parser.add_argument("--image-width", type=int, default=const.image_width,

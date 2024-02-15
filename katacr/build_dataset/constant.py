@@ -10,10 +10,12 @@ This file is used to define the clip rate for each part.
 '''
 from pathlib import Path
 
-image_size = (592, 1280)
-path_logs = Path(__file__).parents[2].joinpath("logs")
+image_size = (592, 1280)  # ratio: 2.16
+image_size_222 = (576, 1280)  # ratio: 2.22
+root = Path(__file__).parents[2]
+path_logs = root / "logs"
 path_logs.mkdir(exist_ok=True)
-path_features = Path(__file__) / "katacr/features"
+path_features = root / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
 # path_dataset = Path("/home/wty/Coding/datasets/CR")
 path_dataset = Path("/home/yy/Coding/datasets/CR")
@@ -21,7 +23,8 @@ path_dataset = Path("/home/yy/Coding/datasets/CR")
 assert path_dataset.exists(), "Dataset not exist!"
 
 image_size_part2 = (568, 896)  # ratio: 1.57~1.58
-split_bbox_params = {
+split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
+  # Forall height/width = 2.16~2.17
   'part1': (0.835, 0.074, 0.165, 0.025),  # just time
   # 'part1': {  # number ocr
   #   'time': (0.835, 0.074, 0.165, 0.025),
@@ -38,8 +41,13 @@ split_bbox_params = {
     'up': (0.100, 0.340, 0.800, 0.070),
     'mid': (0.180, 0.410, 0.650, 0.050),
   },
+  # Forall height/width = 2.22~2.23
   'part2_playback_2400p': (0.024, 0.205, 0.954, 0.676),  # 1080x2400, ratio: 2.22~2.23
   'part2_2400p': (0.020, 0.090, 0.960, 0.680),
+  'part3_2400p': (0.000, 0.850, 1.000, 0.150),
+  'part4_2400p': {
+    'up': (0.130, 0.352, 0.747, 0.051)
+  },
 }
 ratio = {
   'part2': (1.57, 1.58),
