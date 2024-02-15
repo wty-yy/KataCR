@@ -4,7 +4,7 @@
 @Time  : 2023/10/14 20:03:24
 @Author  : wty-yy
 @Version : 1.0
-@Blog  : https://wty-yy.space/
+@Blog  : https://wty-yy.xyz/
 @Desc  : 
 '''
 import os, sys

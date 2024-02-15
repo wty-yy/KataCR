@@ -4,7 +4,7 @@
 @Time    : 2023/12/03 09:31:33
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 The utility functions for compute AP@[.5:.05:.95], mAP.
 Reference: https://github.com/WongKinYiu/ScaledYOLOv4/blob/yolov4-large/utils/general.py

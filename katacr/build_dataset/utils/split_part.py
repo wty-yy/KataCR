@@ -4,7 +4,7 @@
 @Time    : 2023/11/11 09:47:12
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 This script is used to split different part from the origin image.
 '''

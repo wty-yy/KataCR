@@ -4,7 +4,7 @@
 @Time    : 2023/11/09 10:39:22
 @Author  : wty-yy
 @Version : 1.0
-@Blog    : https://wty-yy.space/
+@Blog    : https://wty-yy.xyz/
 @Desc    : 
 This file is used to define the clip rate for each part.
 '''
@@ -17,8 +17,8 @@ path_logs = root / "logs"
 path_logs.mkdir(exist_ok=True)
 path_features = root / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
-path_dataset = Path("/home/wty/Coding/datasets/CR")
-# path_dataset = Path("/home/yy/Coding/datasets/CR")
+# path_dataset = Path("/home/wty/Coding/datasets/CR")
+path_dataset = Path("/home/yy/Coding/datasets/CR")
 # path_dataset = Path("/data/user/wutianyang/dataset/CR")
 assert path_dataset.exists(), "Dataset not exist!"
 
