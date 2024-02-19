@@ -74,3 +74,16 @@ class Logger:
   def flush(self):
     pass    
 # usage: sys.stdout = Logger()
+
+# Convert second to HOUR:MINUTE:SECOND  # if HOUR==0: Don't display this
+def second2str(second):
+  s = int(second)
+  m = int(second // 60)
+  h = int(m // 60)
+  ret = ""
+  if h:
+    ret += f"{h:02}:"
+    m = int(m % 60)
+  s = int(s % 60)
+  ret += f"{m:02}:{s:02}"
+  return ret

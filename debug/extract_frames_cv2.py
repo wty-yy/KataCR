@@ -107,5 +107,12 @@ def videos5():
   }
   extract_frames(path_video, target_idxs, format='time')
 
+def videos6():
+  path_video = Path("/home/yy/Coding/datasets/CR/videos/WTY_20240213_episodes/11.mp4")
+  target_idxs = {
+    2*60+30: "test1",
+  }
+  extract_frames(path_video, target_idxs, format='time')
+
 if __name__ == '__main__':
-  videos5()
+  videos6()

@@ -11,8 +11,8 @@ sys.path.append(str(Path(__file__).parents[2]))
 from typing import Sequence
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from PIL import Image
-from katacr.utils import Stopwatch
-from katacr.build_dataset.utils.split_part import split_part2
+from katacr.utils import Stopwatch, second2str
+from katacr.build_dataset.utils.split_part import split_part
 
 IMG_FORMATS = ['jpeg', 'jpg', 'png', 'webp']
 VID_FORMATS = ['avi', 'gif', 'm4v', 'mkv' ,'mp4', 'mpeg', 'mpg', 'wmv']
@@ -82,7 +82,7 @@ class ImageAndVideoLoader:
       img = np.array(Image.open(path).convert("RGB"))
       s = f"image {self.count}/{self.n} {path}:"
     
-    img = split_part2(img)  # check whether should split part2
+    img = split_part(img, 2)  # check whether should split part2
     img = img[None,...]
     img = np.ascontiguousarray(img)
 
@@ -177,7 +177,11 @@ def process(args):
             save_path = str(Path(save_path).with_suffix('.mp4'))
             vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
           vid_writer.write(np.array(img)[...,::-1])
-      print(f"{s} {sw.dt * 1e3:.1f}ms")
+      print(f"{s} {sw.dt * 1e3:.1f}ms", end='')
+      if ds.mode == 'video':
+        second = (ds.total_frame - ds.frame) * sw.dt
+        print(f", time left: {second2str(second)}", end='')
+      print()
 
 if __name__ == '__main__':
   # p = "/home/yy/Coding/GitHub/KataCR/logs/videos.txt"

@@ -16,7 +16,7 @@ from katacr.utils.ffmpeg_tools import ffmpeg_extract_subclip
 from katacr.utils.related_pkgs.utility import *
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.build_dataset.utils.split_part import split_part
-from katacr.utils import load_image_array, colorstr
+from katacr.utils import load_image_array, colorstr, second2str
 import constant as const
 import cv2
 from katacr.ocr_text.ocr_predict import OCRText
@@ -42,18 +42,6 @@ def get_features(path_features: Path) -> Sequence[np.ndarray]:
       features.append(feature)
   return features
 
-def second2time(second):
-  s = int(second)
-  m = int(second // 60)
-  h = int(m // 60)
-  ret = ""
-  if h:
-    ret += f"{h:02}:"
-    m = int(m % 60)
-  s = int(s % 60)
-  ret += f"{m:02}:{s:02}"
-  return ret
-
 def split_episodes(path_video: Path):
   # clip = mp.VideoFileClip(str(path_video))
   # fps, duration = clip.fps, clip.duration
@@ -63,7 +51,7 @@ def split_episodes(path_video: Path):
   duration = frames / fps
   print(fps, frames, duration)
 
-  print(colorstr("[Video info]") + f" fps={fps:.2f}, duration={second2time(duration)}")
+  print(colorstr("[Video info]") + f" fps={fps:.2f}, duration={second2str(duration)}")
   file_name = path_video.name[:-4]
   path_episodes = path_video.parent.joinpath(file_name+"_episodes")
   # if path_episodes.exists():
@@ -96,9 +84,9 @@ def split_episodes(path_video: Path):
     ):
       path = path_episodes.joinpath(f"{episode_num}.mp4")
       ffmpeg_extract_subclip(str(path_video), start_frame/fps, frame/fps+1, str(path))
-      print(f"Split episode{episode_num} in {second2time(start_frame/fps)}~{second2time(frame/fps)}")
+      print(f"Split episode{episode_num} in {second2str(start_frame/fps)}~{second2str(frame/fps)}")
       start_frame = -1
-    bar.set_description(f"Process {episode_num} episode" + f", start at {second2time(start_frame/fps)}" if start_frame != -1 else "")
+    bar.set_description(f"Process {episode_num} episode" + f", start at {second2str(start_frame/fps)}" if start_frame != -1 else "")
   # clip.close()
   cap.release()
 

@@ -67,10 +67,10 @@ def preprocess_background():
 #       break
 #   return x
 
-def split_part2(x):
-  split_part(x, '2')
+def split_part(x):
+  split_part(x, 2)
 
-def split_part(x, part: str):  # based ratio
+def split_part(x, part: str | int):  # based ratio
   part = str(part)
   r = x.shape[0] / x.shape[1]
   for name, ratio in const.ratio.items():
@@ -88,7 +88,7 @@ def test():
   # path_frame = path_extract.joinpath("OYASSU_20230201")
   # path_frame = path_extract.joinpath("OYASSU_20230211")
   # path_frame = path_extract.joinpath("OYASSU_20210528")
-  path_frame = path_extract.joinpath("WTY_20240213_2")
+  path_frame = path_extract.joinpath("11")
 
   # image = Image.open(str(path_logs.joinpath("start_frame.jpg")))
   # image = Image.open(str(path_logs.joinpath("show_king_tower_hp.jpg")))
@@ -96,7 +96,10 @@ def test():
   # image = Image.open(str(path_frame.joinpath("end_episode1.jpg")))
   # image = Image.open(str(const.path_dataset / "images/background/background26.jpg"))
   # image = Image.open(str(path_frame / "start_episode1.jpg"))
-  image = Image.open(str(path_frame / "end_episode1.jpg"))
+  image = Image.open(str(path_frame / "test1.jpg"))
+  # import matplotlib.pyplot as plt
+  # plt.imshow(image)
+  # plt.show()
   image = np.array(image)
   print("Image shape:", image.shape)
 
@@ -116,14 +119,15 @@ def test():
 
   # part2_playback = process_part(image, '2_playback')
   # Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
-  # part2_2400p = process_part(image, '2_2400p')
-  # Image.fromarray(part2_2400p).save(str(path_image_save / "part2_2400p.jpg"))
+  part2_2400p = process_part(image, '2_2400p')
+  Image.fromarray(part2_2400p).save(str(path_image_save / "part2_2400p.jpg"))
+  Image.fromarray(part2_2400p).show()
   # part3_2400p = process_part(image, '3_2400p')
   # Image.fromarray(part3_2400p).save(str(path_image_save / "part3_2400p.jpg"))
-  part4_2400p = process_part(image, '4_2400p')
-  for key, value in part4_2400p.items():
-    Image.fromarray(value).save(str(path_image_save.joinpath(f"part4_{key}.jpg")))
-    Image.fromarray(value).show()
+  # part4_2400p = process_part(image, '4_2400p')
+  # for key, value in part4_2400p.items():
+  #   Image.fromarray(value).save(str(path_image_save.joinpath(f"part4_{key}.jpg")))
+  #   Image.fromarray(value).show()
 
   # import matplotlib.pyplot as plt
   # plt.figure(figsize=(5,20))
