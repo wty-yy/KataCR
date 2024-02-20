@@ -1,53 +1,66 @@
 import json, numpy as np
 from pathlib import Path
 
-convert_dict = {
-  # 'lumberjack': 'lumberjack1'
-}
 xy2idx = {'x0': 0, 'y0': 1, 'x1': 2, 'y1': 3}
-remove_list = [  # (class[str | None], remove box range[dict]), None means any label satisfied the box range.
+convert_dict = {  # target label: (origin label, position range)
+  # 'lumberjack1': ('lumberjack', {}),
+  # 'cannoneer-tower1': ('queen-tower1', {}),
+  'cannoneer-tower1': ('mega-knight1', {}),
+}
+remove_list = [  # (label[str | None], remove box range[dict]), None means any label satisfied the box range.
   # (None, {'x0': (390, 600), 'y1': (0, 64)}),
-  # (None, {'x0': (0, 190), 'y1': (0, 80)}),
-  # ('king-tower-bar1', {'x0': (210,220)})
-  ('emote0', {'x1': (540, 560), 'y1': (100, 120)} )
+  # ('king-tower-bar1', {'x0': (210,220)}),
+  # (None, {'x0': (480, 500), 'x1': (530, 550), 'y0': (50, 70), 'y1': (90, 110)})  # wrong box around top-right elixir text
 ]
-add_list = [
+add_list = [  # (label, xyxy)
   # ('king-tower-bar1', (212.5874125874126, 1.3986013986013988, 354.54545454545456, 38.46153846153846))
 ]
 json_range = [  # process json file range, could count the unit number
-  # (0, 3690),
-  # (1860, 2175),
-  # (2775, 3135),
-  # (3975, 4275)
+  (0, 3345), 
+  (3705, 4005),
+  (4065, 4125),
+  (4635, 4740),
+  (5115, 5145),
+  (6030, 6285),
+  (6435, 6450),
+  (7470, 7500)
 ]
-check_list = [
-  'mega-minion1', 'pekka1', 'flying-machine1'
+REMOVE_EXTRA_FILES = False
+debug_list = [  # print filepaths when belowing labels in
+  'fireball1'
+  # 'mega-minion1', 'pekka1', 'flying-machine1',
+]
+delta_list = [
+  ('cannoneer-tower1', 2)  # delta
 ]
 update_count = {}
 remove_count = {}
 add_count = {}
 unit_count = {}
 
+def check_position(xyxy, cfg):
+  flag = True
+  for xy, r in cfg.items():
+    tmp = xyxy[xy2idx[xy]]
+    if not r[0] <= tmp <= r[1]:
+      flag = False
+  return flag
+
 def solve(path: Path):
   with open(path, 'r') as file:
     data = json.load(file)
   include = [0] * len(add_list)
   for i, box in enumerate(data['shapes']):
-    for k1, k2 in convert_dict.items():
-      if k1 in box['label']:
-        print(f"Move {k1} in {path} to {k2}")
-        box['label'] = box['label'].replace(k1, k2)
-        if k1 not in update_count: update_count[k1] = 0
-        update_count[k1] += 1
+    xyxy = np.array(box['points']).reshape(-1)
+    for l2, (l1, cfg) in convert_dict.items():
+      if l1 == box['label'] and check_position(xyxy, cfg):
+        print(f"Move {l1} in {path} to {l2}")
+        box['label'] = box['label'].replace(l1, l2)
+        if l1 not in update_count: update_count[l1] = 0
+        update_count[l1] += 1
     for name, cfg in remove_list:
       if name is None or name == box['label']:
-        flag = True
-        xyxy = np.array(box['points']).reshape(-1)
-        for xy, r in cfg.items():
-          tmp = xyxy[xy2idx[xy]]
-          if not r[0] <= tmp <= r[1]:
-            flag = False
-        if flag:
+        if check_position(xyxy, cfg):
           # s = input(f"Remove label {bbox['label']} at {xyxy} ({path})? [Enter(yes)/no]")
           # if s in ['no', 'No']:
           #   continue
@@ -80,18 +93,25 @@ def solve(path: Path):
     )
     if name not in add_count: add_count[name] = 0
     add_count[name] += 1
+  origin_count = unit_count.copy()
   for box in data['shapes']:
     label = box['label']
     if label not in unit_count: unit_count[label] = 0
     unit_count[label] += 1
-    if label in check_list:
+    if label in debug_list:
       print(f"{label} in path: {path}")
+  for name, delta in delta_list:
+    if unit_count.get(name, 0) - origin_count.get(name, 0) != delta:
+      print(f"Wrong in delta count check! '{name}' in {path} don't have {delta} with previous one.")
   with open(path, 'w') as file:
     json.dump(data, file, indent=2)
     
 if __name__ == '__main__':
-  path_dir = Path("/home/wty/Coding/datasets/CR/images/part2/OYASSU_20230203_episodes/2")
+  path_dir = Path("/home/wty/Coding/datasets/CR/images/part2/WTY_20240218_episodes/1")
   process_count = 0
+  if REMOVE_EXTRA_FILES:
+    s = input("Are you sure to remove the extra files which not in 'json_range'? [Yes(Enter)|No] ")
+    if s.lower() in ['no', 'n', 'false']: exit()
   for path in sorted(list(path_dir.glob("*.json"))):
     name = path.stem
     flag = len(json_range) == 0
@@ -101,6 +121,11 @@ if __name__ == '__main__':
     if flag:
       process_count += 1
       solve(path)
+    elif REMOVE_EXTRA_FILES:
+      path.unlink()
+      img_path = path.with_name(name+'.jpg')
+      img_path.unlink()
+      print(f"Remove {path}, {img_path}")
   print("Update count:", update_count)
   print("Remove count:", remove_count)
   print("Add count:", add_count)

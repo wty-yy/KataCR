@@ -21,7 +21,7 @@ def parse_args(input_args=None):
   parser.add_argument("--video-name", default=None,
     help="The name of the preprocessing video in `CR/images/part2/`")
   parser.add_argument("--episode", default=None,
-    help="The episode of the video in `CR/images/part2/'video_name'/`")
+    help="The episode of the video in `CR/images/part2/{video_name}/`")
   args = parser.parse_args(input_args)
   return args
 

@@ -17,8 +17,8 @@ path_logs = root / "logs"
 path_logs.mkdir(exist_ok=True)
 path_features = root / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
-# path_dataset = Path("/home/wty/Coding/datasets/CR")
-path_dataset = Path("/home/yy/Coding/datasets/CR")
+path_dataset = Path("/home/wty/Coding/datasets/CR")
+# path_dataset = Path("/home/yy/Coding/datasets/CR")
 # path_dataset = Path("/data/user/wutianyang/dataset/CR")
 assert path_dataset.exists(), "Dataset not exist!"
 
@@ -43,8 +43,7 @@ split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
   },
   # Forall height/width = 2.22~2.23
   'part2_playback_2400p': (0.024, 0.205, 0.954, 0.676),  # 1080x2400, ratio: 2.22~2.23
-  # 'part2_2400p': (0.020, 0.090, 0.963, 0.680),
-  'part2_2400p': (0.020, 0.074, 0.963, 0.696),
+  'part2_2400p': (0.020, 0.090, 0.960, 0.680),
   'part3_2400p': (0.000, 0.850, 1.000, 0.150),
   'part4_2400p': {
     'up': (0.130, 0.352, 0.747, 0.051)

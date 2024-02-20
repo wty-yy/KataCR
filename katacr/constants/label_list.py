@@ -151,7 +151,9 @@ unit_list = [
   'valkyrie-evolution',
   # 2024/2/1: add
   'bomber-evolution',
-  'wall-breaker-evolution'
+  'wall-breaker-evolution',
+  # 2024/2/19: add
+  'evolution-symbol'
 ]
 
 idx2unit = dict(enumerate(unit_list))
