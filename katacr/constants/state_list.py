@@ -71,7 +71,7 @@ idx2state = {
   62: 'clone',
 }
 
-unit2height: {  # (7, gound/air)
+unit2height = {  # (7, gound/air)
   'queen-tower': 0,
   'king-tower': 0,
   'skeleton': 0,

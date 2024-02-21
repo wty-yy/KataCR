@@ -116,9 +116,9 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 **FIX BUG**：修复`x-bow`标签名称错误，将`fliplr`变换放到所有变换之前。
 
 #### v0.4.5.2(2024.2.14~2024.2.15)
-1. 基于大矿工心机桶，增加5个新单位，1空中法术，4地面单位
+1. 基于大矿工心机桶，增加5个新单位，1空中法术，4地面单位（CR Dataset v0.3）
 2. 支持对1080x2400（高宽比为h/w=2.22）的屏幕的`part3,4`部分的裁剪，可自己采集视频数据划分`epoch`
 3. [做`ffmpeg`命令笔记](https://wty-yy.xyz/posts/50944/)，`fps`转换、视频合并、视频分割
 
 #### v0.4.5.3(2024.2.19~2024.2.21)
-1. 基于自己录制的视频，增加10个新的单位
+1. 基于自己录制的视频`WTY_20240218_episodes_1`，增加11个新的单位，`9`个地面部队，`1`个地面法术，`1`个新的标识`evolution-symbol`

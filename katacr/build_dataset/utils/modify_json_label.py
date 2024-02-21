@@ -27,7 +27,7 @@ json_range = [  # process json file range, could count the unit number
 ]
 REMOVE_EXTRA_FILES = False
 debug_list = [  # print filepaths when belowing labels in
-  'fireball1'
+  'fireball0'
   # 'mega-minion1', 'pekka1', 'flying-machine1',
 ]
 delta_list = [
