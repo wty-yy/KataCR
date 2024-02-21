@@ -80,7 +80,7 @@ class Parser(argparse.ArgumentParser):
         args.path_logs.mkdir(exist_ok=True)
         args.path_cp = args.path_logs.joinpath(args.model_name+"-checkpoints")
         args.path_cp.mkdir(exist_ok=True)
-        args.run_name = f"{args.model_name}__seed_{args.seed}__load_{args.load_id}__lr_{args.learning_rate}__batch_{args.batch_size}__{datetime.datetime.now().strftime(r'%Y%m%d_%H%M%S')}".replace("/", "-")
+        args.run_name = f"{args.model_name}__load_{args.load_id}__lr_{args.learning_rate}__batch_{args.batch_size}__{datetime.datetime.now().strftime(r'%Y%m%d_%H%M%S')}".replace("/", "-")
         
     def get_args(self, input_args=None) -> CVArgs:
         args = self.parse_args(input_args)

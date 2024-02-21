@@ -80,7 +80,10 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
     help="the coef of the classification loss")
   parser.add_argument("--use-cosine-decay", type=str2bool, default=False,
     help="if taggled, cosine learning rate decay will be used, else use the linear learning rate decay")
-  args = parser.get_args(input_args)
+  # args = parser.get_args(input_args)
+  args = parser.parse_args(input_args)
+  args.model_name = args.model_name + f"_s{args.seed}"
+  parser.check_args(args)  # make directory
   args.input_shape = (args.batch_size, *args.image_shape)
   args.image_size = args.image_shape[:2][::-1]
 
