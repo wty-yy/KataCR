@@ -10,9 +10,9 @@ class YOLOv5Args(CVArgs):
   num_unit: int
   intersect_ratio_thre: int
   ### Augmentation for train ###
-  hsv_h: float  # HSV-Hue augmentation
-  hsv_s: float  # HSV-Saturation augmentation
-  hsv_v: float  # HSV-Value augmentation
+  # hsv_h: float  # HSV-Hue augmentation
+  # hsv_s: float  # HSV-Saturation augmentation
+  # hsv_v: float  # HSV-Value augmentation
   fliplr: float  # flip left-right (probability)
   ### Model ###
   anchors: List[Tuple[int, int]]
@@ -30,7 +30,7 @@ class YOLOv5Args(CVArgs):
   coef_cls: float
 
 def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, SummaryWriter] | YOLOv5Args:
-  parser = Parser(model_name="YOLOv5_v0.4.5", wandb_project_name=cfg.dataset_name)
+  parser = Parser(model_name="YOLOv5_v0.4.5.3", wandb_project_name=cfg.dataset_name)
   ### Model ###
   parser.add_argument("--anchors", nargs='+', default=cfg.anchors,
     help="the anchors bounding boxes")
@@ -41,12 +41,12 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
     help="the input shape of the YOLOv4 model")
   parser.add_argument("--num-classes", type=int, default=cfg.num_classes,
     help="the number of the classes in dataset")
-  parser.add_argument("--hsv-h", type=float, default=cfg.hsv_h,
-    help="the fraction of HSV-Hue in image augmentation")
-  parser.add_argument("--hsv-s", type=float, default=cfg.hsv_s,
-    help="the fraction of HSV-Saturation in image augmentation")
-  parser.add_argument("--hsv-v", type=float, default=cfg.hsv_v,
-    help="the fraction of HSV-Value in image augmentation")
+  # parser.add_argument("--hsv-h", type=float, default=cfg.hsv_h,
+  #   help="the fraction of HSV-Hue in image augmentation")
+  # parser.add_argument("--hsv-s", type=float, default=cfg.hsv_s,
+  #   help="the fraction of HSV-Saturation in image augmentation")
+  # parser.add_argument("--hsv-v", type=float, default=cfg.hsv_v,
+  #   help="the fraction of HSV-Value in image augmentation")
   parser.add_argument("--fliplr", type=float, default=cfg.fliplr,
     help="the probability of fliping image left and right augmentation")
   parser.add_argument("--num-data-workers", type=int, default=cfg.num_data_workers,

@@ -96,7 +96,7 @@ aug2unit = {
   'violet': except_spell_unit_list + tower_unit_list,
   'trans': except_spell_unit_list
 }
-alpha_transparency = 100
+alpha_transparency = 150
 color2RGB = {
   'red': (255, 0, 0),
   'blue': (0, 0, 255),

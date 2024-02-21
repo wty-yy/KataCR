@@ -81,11 +81,11 @@ class DatasetManager:
             if same_flag:
               print("Find following difference between the two versions:")
               note_file = (root_path / f"{pt}_v{new_version}_update.txt").open('w')
-              s = ' ' * 21 + f"{'Old (v'+old_version+')':>16} -> {'New (v'+new_version+')':>16} {'Count':>8}"
+              s = ' ' * 26 + f"{'Old (v'+old_version+')':>16} -> {'New (v'+new_version+')':>16} {'Count':>8}"
               note_file.write(s + '\n')
               print(s)
             diff_count += 1
-            s = f"{i:<20} {str(old):>16} -> {str(new):>16} {diff_count:>8}"
+            s = f"{i:<25} {str(old):>16} -> {str(new):>16} {diff_count:>8}"
             note_file.write(s + '\n')
             print(s)
             same_flag = False
