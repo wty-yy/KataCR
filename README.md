@@ -125,4 +125,5 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 #### v0.4.5.4(2024.2.24~2024.2.26)
 1. 基于`WTY_20240222_8spells`，增加3个新法术`earthquake,giant-snowball,mirror`，优化`5`个法术的切片图像。
-注意：生成图像中，所有法术出界均不进行平移，而是进行裁剪。
+   注意：生成图像中，所有法术出界均不进行平移，而是进行裁剪。
+2. 当前已标记70个单位，还需标记72个单位，将训练epoch上调到80->150。
