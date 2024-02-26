@@ -16,14 +16,17 @@ add_list = [  # (label, xyxy)
   # ('king-tower-bar1', (212.5874125874126, 1.3986013986013988, 354.54545454545456, 38.46153846153846))
 ]
 json_range = [  # process json file range, could count the unit number
-  (0, 3345), 
-  (3705, 4005),
-  (4065, 4125),
-  (4635, 4740),
-  (5115, 5145),
-  (6030, 6285),
-  (6435, 6450),
-  (7470, 7500)
+  # (0, 3345), 
+  # (3705, 4005),
+  # (4065, 4125),
+  # (4635, 4740),
+  # (5115, 5145),
+  # (6030, 6285),
+  # (6435, 6450),
+  # (7470, 7500)
+]
+jpg_range = [
+  # (569,655),(2927,3010),( 571,600),(1984,2015),(3127,3180),( 613,637),(1837,1862),( 785,901),(2388,2505),(3671,3787),( 943,1126),( 1053,1070),(2137,2155),( 1327,1365),(2676,2715),(3892,3940),( 1590,1650),(3345,3398)
 ]
 REMOVE_EXTRA_FILES = False
 debug_list = [  # print filepaths when belowing labels in
@@ -105,10 +108,19 @@ def solve(path: Path):
       print(f"Wrong in delta count check! '{name}' in {path} don't have {delta} with previous one.")
   with open(path, 'w') as file:
     json.dump(data, file, indent=2)
+
+def remove_file(path: Path):
+  name = path.stem
+  json_path = path.with_name(name+'.json')
+  json_path.unlink(missing_ok=True)
+  img_path = path.with_name(name+'.jpg')
+  img_path.unlink(missing_ok=True)
+  print(f"Remove {json_path}, {img_path}")
     
 if __name__ == '__main__':
-  path_dir = Path("/home/wty/Coding/datasets/CR/images/part2/WTY_20240218_episodes/1")
+  path_dir = Path("/home/wty/Coding/datasets/CR/images/part2/WTY_20240222_8spells/1")
   process_count = 0
+  print("Resolve directory:", path_dir)
   if REMOVE_EXTRA_FILES:
     s = input("Are you sure to remove the extra files which not in 'json_range'? [Yes(Enter)|No] ")
     if s.lower() in ['no', 'n', 'false']: exit()
@@ -122,10 +134,17 @@ if __name__ == '__main__':
       process_count += 1
       solve(path)
     elif REMOVE_EXTRA_FILES:
-      path.unlink()
-      img_path = path.with_name(name+'.jpg')
-      img_path.unlink()
-      print(f"Remove {path}, {img_path}")
+      remove_file(path)
+  for path in sorted(list(path_dir.glob("*.jpg"))):
+    id = int(path.stem)
+    flag = len(jpg_range) == 0
+    for l, r in jpg_range:
+      if l <= id <= r:
+        flag = True
+    if flag:
+      process_count += 1
+    if not flag and REMOVE_EXTRA_FILES:
+      remove_file(path)
   print("Update count:", update_count)
   print("Remove count:", remove_count)
   print("Add count:", add_count)

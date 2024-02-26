@@ -33,6 +33,7 @@ class DatasetManager:
           side = 0
         else: side = p.stem.split('_')[1]
         name = p.parent.name
+        if name == 'old': continue  # skip old images
         if name not in self.segment:
           self.segment[name] = [0, 0]
         self.segment[name][int(side)] += 1

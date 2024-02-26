@@ -153,7 +153,9 @@ unit_list = [
   'bomber-evolution',
   'wall-breaker-evolution',
   # 2024/2/19: add
-  'evolution-symbol'
+  'evolution-symbol',
+  # 2024/2/22: forget
+  'mirror',
 ]
 
 idx2unit = dict(enumerate(unit_list))
@@ -168,6 +170,7 @@ ground_unit_list = [
   'bomb',
   'bomb-tower',
   'cannon',
+  'earthquake',
   'electro-spirit',
   'electro-wizard',
   'elite-barbarian',
@@ -187,6 +190,7 @@ ground_unit_list = [
   'lumberjack',
   'magic-archer',
   'mighty-miner',
+  'mirror',
   'musketeer',
   'pekka',
   'poison',
@@ -219,6 +223,7 @@ flying_unit_list = [
   'baby-dragon',
   'flying-machine',
   'fireball',
+  'giant-snowball',
   'goblin-barrel',
   'inferno-dragon',
   'mega-minion',
@@ -228,8 +233,11 @@ flying_unit_list = [
 ]
 spell_unit_list = [
   'arrows',
+  'earthquake',
   'fireball',
+  'giant-snowball',
   'goblin-barrel',
+  'mirror',
   'poison',
   'rage',
   'rocket',

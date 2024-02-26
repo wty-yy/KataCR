@@ -573,7 +573,7 @@ class Generator:
       p: Path = self._sample_elem(paths)
       level = unit2level[p.name]  # [1, 2, 3]
       xy = self._sample_from_map(level)
-      unit = self._build_unit_from_path(self._sample_elem(list(p.glob('*'))), xy, level)
+      unit = self._build_unit_from_path(self._sample_elem(list(p.glob('*.png'))), xy, level)
       self._add_component(unit)
   
   def reset(self):

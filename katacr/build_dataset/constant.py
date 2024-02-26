@@ -59,3 +59,9 @@ mse_feature_match_threshold = 0.03
 text_features_episode_end = ['match', 'over', 'break']
 text_confidence_threshold = 0.005
 MAX_NUM_BBOXES = 200  # 36 in OYASSU_20210528, 42 in OYASSU_20230305
+
+part_sizes = {
+  'part1': (97, 32),
+  'part2': (568, 896),
+  'part3': (590, 229),
+}
