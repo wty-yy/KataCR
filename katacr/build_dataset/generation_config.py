@@ -2,7 +2,7 @@ from katacr.constants.label_list import ground_unit_list, flying_unit_list, towe
 ground_spell_list = list(set(ground_unit_list) & set(spell_unit_list))
 ground_unit_except_spell_list = list(set(ground_unit_list) - set(spell_unit_list))
 level2units = {
-  0: ground_spell_list + ['blood', 'butterfly', 'flower', 'skull', 'cup', 'snow'],
+  0: ground_spell_list + ['blood', 'butterfly', 'flower', 'skull', 'cup', 'snow', 'grave'],
   1: ground_unit_except_spell_list + tower_unit_list,
   2: flying_unit_list,
   3: other_unit_list + ['ribbon'],
@@ -63,6 +63,7 @@ item_cfg = {
   'skull': (0.05, [[(0, 0), (0, 18), (0, 32), None, 3]]),  # all
   'cup': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
   'snow': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
+  'grave': (0.05, [[(0, 0), (0, 18), (0, 32), None, 20]]),  # all
 }
 except_spell_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list))
 component2unit = {

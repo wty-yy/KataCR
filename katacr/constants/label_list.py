@@ -170,17 +170,20 @@ ground_unit_list = [
   'bomb',
   'bomb-tower',
   'cannon',
+  'dirt',
   'earthquake',
   'electro-spirit',
   'electro-wizard',
   'elite-barbarian',
   'firecracker',
   'firecracker-evolution',
+  'freeze',
   'goblin',
   'goblin-brawler',
   'goblin-cage',
   'golem',
   'golemite',
+  'graveyard',
   'hog-rider',
   'ice-golem',
   'ice-spirit',
@@ -227,6 +230,7 @@ flying_unit_list = [
   'giant-snowball',
   'goblin-barrel',
   'inferno-dragon',
+  'lightning',
   'mega-minion',
   'minion',
   'rocket',
@@ -238,6 +242,8 @@ spell_unit_list = [
   'fireball',
   'giant-snowball',
   'goblin-barrel',
+  'graveyard',
+  'lightning',
   'mirror',
   'poison',
   'rage',
@@ -265,7 +271,8 @@ background_item_list = [
   'ribbon',
   'skull',
   'cup',
-  'snow'
+  'snow',
+  'grave'
 ]
 
 if __name__ == '__main__':
