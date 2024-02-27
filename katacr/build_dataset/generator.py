@@ -16,7 +16,7 @@ from katacr.build_dataset.generation_config import (
   component_prob, component2unit, component_cfg, important_components,  # component configs
   item_cfg, drop_box, background_item_list,  # background item
   unit_scale, unit_stretch,  # affine transformation
-  tower_intersect_ratio_thre, bar_intersect_ratio_thre
+  tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio,
 )
 import random
 
@@ -418,11 +418,16 @@ class Generator:
     if queen:
       for i in range(2):  # is enermy?
         for j in range(2):  # left or right
-          queen = self._sample_elem(
-            self.path_manager.search(subset='images', part='segment', name='queen-tower', regex=f'queen-tower_{i}') +
-            self.path_manager.search(subset='images', part='segment', name='cannoneer-tower', regex=f'cannoneer-tower_{i}')
-          )
-          unit = self._build_unit_from_path(queen, self.bc_pos[f'queen{i}_{j}'], 1)
+          p = random.random()
+          for name, prob in tower_generation_ratio.items():
+            if p <= prob or i == 0: break  # our don't have cannoneer images
+            p -= prob
+          tower = self._sample_elem(self.path_manager.search(subset='images', part='segment', name=name, regex=f"{name}_{i}"))
+          # queen = self._sample_elem(
+          #   self.path_manager.search(subset='images', part='segment', name='queen-tower', regex=f'queen-tower_{i}') +
+          #   self.path_manager.search(subset='images', part='segment', name='cannoneer-tower', regex=f'cannoneer-tower_{i}')
+          # )
+          unit = self._build_unit_from_path(tower, self.bc_pos[f'queen{i}_{j}'], 1)
           unit = self._add_component(unit)
           
   @staticmethod

@@ -124,6 +124,10 @@ unit_scale = {x: ((0.5, 1.0), 1.0) for x in ('elixir', 'clock')}
 unit_stretch = {x: ((0.5, 0.8), 0.0) for x in (except_spell_unit_list)}
 tower_intersect_ratio_thre = 0.8
 bar_intersect_ratio_thre = 0.1
+tower_generation_ratio = {
+  'queen-tower': 0.7,
+  'cannoneer-tower': 0.3,
+}
 
 grid_size = (18, 32)  # (x, y)
 map_ground = [

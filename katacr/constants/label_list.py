@@ -216,6 +216,7 @@ ground_unit_list = [
 tower_unit_list = [
   'king-tower',
   'queen-tower',
+  'cannoneer-tower',
 ]
 
 flying_unit_list = [
