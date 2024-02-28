@@ -79,5 +79,5 @@ if __name__ == '__main__':
     # path_save = Path(*parts)
     # print(path_save)
     # break
-    extract_part(path, path_parts=parts, part_ids=[2], interval=1)
+    extract_part(path, path_parts=parts, part_ids=[2], interval=15)
     
