@@ -30,7 +30,7 @@ class YOLOv5Args(CVArgs):
   coef_cls: float
 
 def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, SummaryWriter] | YOLOv5Args:
-  parser = Parser(model_name="YOLOv5_v0.4.5.4", wandb_project_name=cfg.dataset_name)
+  parser = Parser(model_name="YOLOv5_v0.4.5.5", wandb_project_name=cfg.dataset_name)
   ### Model ###
   parser.add_argument("--anchors", nargs='+', default=cfg.anchors,
     help="the anchors bounding boxes")

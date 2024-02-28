@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
   ### Save config ###
   from katacr.utils.model_weights import SaveWeightsManager
-  save_weight = SaveWeightsManager(args, ignore_exist=True, max_to_keep=5)
+  save_weight = SaveWeightsManager(args, ignore_exist=True, max_to_keep=1)
   
   from katacr.detection.dataset_builder import DatasetBuilder
   ds_builder = DatasetBuilder(args)
