@@ -85,7 +85,7 @@ class AnnotationHelper:
       shapes = []
       for i in range(pbox.shape[0]):
         x = list(pbox[i])
-        if (x[2] < 200 and x[3] < 80) or (x[0] > 390 and x[3] < 64): continue
+        if (x[2] < 280 and x[3] < 80) or (x[0] > 390 and x[3] < 120): continue
         shapes.append({
           'label': idx2unit[int(x[6])] + str(int(x[5])),
           'points': [[float(x[0]), float(x[1])], [float(x[2]), float(x[3])]],

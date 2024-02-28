@@ -26,6 +26,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 8. 对大型文字的出现位置进行固定，并设置生成概率为`0.01`。
 9. 对目标位姿进行重新筛选。
 10. 加入新的`king-tower-bar`标签，重新生成对应标签数据集，并修正当前数据集中的错误标签。
+
 **FIX BUG**:
 1. 重新定义nms计算，只考虑图层在自己之上的，对`unit_list`，按照图层级别，从高到低求
 2. 修改边缘单位保留方法，除text单位外，其余单位都水平平移到图像内。
@@ -52,6 +53,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    1. 随机在背景中生成，阵亡圣水`blood`、蝴蝶`butterfly`、花朵`flower`、彩条`ribbon`、骷髅头`skull`、金杯`cup`（每个单位有自己的生成范围和生成概率）。
    2. 加入方形和盾形的的单位等级`bar-level`联合生成（和bar同级别生成）
 5. 重新加入`emote`生成（包含上下左右四个生成范围）
+
 **FIX BUG**:
 1. 修正单位边缘不显示问题。
 2. 将tower的NMS筛出比例单独计算，筛出比例设为0.8。
@@ -69,6 +71,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 1. 上调红色背景版中的红色`alpha=80->100`，显示概率上调到`0.2->0.5`。
 2. 平均分配`bar, bar-level`概率（`(0.8,0.2)->(0.5,0.5)`）
 3. 将YOLOv5中`coef_obj=1.0->2.0`。
+
 **NEW TOOL**:
 1. `annotation_helper.py`可辅助标记视频，使用方法：
    1. 先将训练好的YOLO模型放置到`/logs/{model-name}-checkpoints/{model-name}-{load_id}`，例如`YOLOv5_v0.4.3-0080`就放到`logs/YOLOv5_v0.4.3-checkpoints/YOLOv5_v0.4.3-0080`下。
