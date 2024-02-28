@@ -133,9 +133,9 @@ def parse_args(input_args=None):
   parser = argparse.ArgumentParser()
   parser.add_argument("--path", type=str, default="",
     help="The path of processed file.")
-  parser.add_argument("--model-name", type=str, default="YOLOv5_v0.4.5",
+  parser.add_argument("--model-name", type=str, default="YOLOv5_v0.4.5.4",
     help="The name of model in /logs/{model_name}-checkpoints")
-  parser.add_argument("--load-id", type=int, default=80,
+  parser.add_argument("--load-id", type=int, default=150,
     help="The id of loaded model")
   parser.add_argument("--path-model", type=str, default=None,
     help="The checkpoint directory of the model")
@@ -163,7 +163,7 @@ def process(args):
     for i, box in enumerate(pbox):
       if ds.mode in ['image', 'video']:
         img = show_box(x[i], box, verbose=False, use_overlay=True, show_conf=True)
-        save_path = str(save_dir / Path(p).name)
+        save_path = str(save_dir / (f"{Path(p).parent.name}_ep{Path(p).name}"))
         if ds.mode == 'image':
           img.save(save_path)
         else:  # video

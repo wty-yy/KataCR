@@ -14,9 +14,9 @@ LABELME_VERSION = "5.3.1"  # write into LABELME json file
 
 def parse_args(input_args=None):
   parser = argparse.ArgumentParser()
-  parser.add_argument("--model-name", default="YOLOv5_v0.4.5",
+  parser.add_argument("--model-name", default="YOLOv5_v0.4.5.4",
     help="The model weights in `KataCR/logs/'model_name'-checkpoints/`")
-  parser.add_argument("--load-id", default="80",
+  parser.add_argument("--load-id", default="150",
     help="The id of the model weights")
   parser.add_argument("--video-name", default=None,
     help="The name of the preprocessing video in `CR/images/part2/`")
@@ -85,7 +85,7 @@ class AnnotationHelper:
       shapes = []
       for i in range(pbox.shape[0]):
         x = list(pbox[i])
-        if (x[2] < 190 and x[3] < 80) or (x[0] > 390 and x[3] < 64): continue
+        if (x[2] < 200 and x[3] < 80) or (x[0] > 390 and x[3] < 64): continue
         shapes.append({
           'label': idx2unit[int(x[6])] + str(int(x[5])),
           'points': [[float(x[0]), float(x[1])], [float(x[2]), float(x[3])]],
