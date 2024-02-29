@@ -134,3 +134,4 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 #### v0.4.5.5(2024.2.27-2024.2.28)
 1. 加入`cannoneer-tower`和`queen-tower`的生成比例（`3:7`）
 2. 基于`WTY_20240227_miners`加入9个敌方单位（5个法术，4个地面单位），1个非目标单位`dirt`，1个背景部件`grave`，总计11个。
+3. 加入动态采样单位生成。（记录所有单位出现的频次`freq`，按照`1/(freq-freq.min()-1)`对应的分布对单位进行采样，从而使各种单位在训练集中出现的频次基本一致）
