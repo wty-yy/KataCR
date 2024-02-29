@@ -83,7 +83,7 @@ background_augment = {
 aug2prob = {  # accumulate probablity
   'red': 0.05,    # 0.1
   'blue': 0.05,   # 0.1
-  'golden': 0.10, # 0.2
+  'golden': 0.05, # 0.2
   'white': 0.05,  # 0.1
   'violet': 0.02,
   'trans': 0.05,  # 0.2

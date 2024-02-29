@@ -274,6 +274,16 @@ class Generator:
       'fly': np.array(map_fly, np.float32),
       'update_size': map_update_size
     }
+    self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit = [], {}, {}
+    for p in sorted(self.path_segment.glob('*')):
+      if p.name in [
+        'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
+      ] + drop_units:
+        continue
+      self.moveable_unit2idx[p.name] = len(self.moveable_unit_paths)
+      self.idx2moveable_unit[len(self.moveable_unit_paths)] = p.name
+      self.moveable_unit_paths.append(p)
+    self.moveable_unit_frequency = np.zeros(len(self.moveable_unit_paths), np.int32)
   
   def build_background(self):
     background_index = self.background_index
@@ -347,6 +357,8 @@ class Generator:
         box.append((*u.xyxy, *u.states, u.cls))
     for u in unit_avail[::-1]:  # increase order for drawing
       u.draw(img)
+      if u.cls_name in self.moveable_unit2idx:
+        self.moveable_unit_frequency[self.moveable_unit2idx[u.cls_name]] += 1
     box = np.array(box, np.float32)
     box[:,:4] = self.xyxy2cxcywh(box[:,:4])
     x = img
@@ -567,15 +579,14 @@ class Generator:
     Unit list looks at `katacr/constants/label_list.py`
     """
     self._add_item()
-    paths = []
-    for p in sorted(self.path_segment.glob('*')):
-      if p.name in [
-        'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
-      ] + drop_units:
-        continue
-      paths.append(p)
-    for _ in range(n):
-      p: Path = self._sample_elem(paths)
+    # paths = self.moveable_unit_paths
+    freq = self.moveable_unit_frequency.copy()
+    freq -= freq.min() - 1
+    freq = 1 / freq
+    idxs = self._sample_prob(freq, size=n, replace=True).reshape(-1)
+    for i in idxs:
+      # p: Path = self._sample_elem(paths)
+      p = self.moveable_unit_paths[i]
       level = unit2level[p.name]  # [1, 2, 3]
       xy = self._sample_from_map(level)
       unit = self._build_unit_from_path(self._sample_elem(list(p.glob('*.png'))), xy, level)
@@ -595,6 +606,11 @@ if __name__ == '__main__':
     generator.add_unit(n=30)
     # generator.add_unit(n=1)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
+    # print(generator.moveable_unit_frequency)
+    # f = generator.moveable_unit_frequency
+    # for i in range(len(f)):
+    #   if f[i] > 0:
+    #     print(f"{generator.idx2moveable_unit[i]}: {f[i]}")
     generator.build(verbose=False, show_box=False, save_path=str(path_generation / f"test{0+2*i+1}.jpg"))
     print('box num:', box.shape[0])
     # print(generator.map_cfg['ground'])
