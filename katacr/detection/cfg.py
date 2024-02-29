@@ -30,7 +30,7 @@ anchors = jnp.array([  # Update: 2024.02.08, v0.4.5
 
 ### Training ###
 batch_size = 16
-total_epochs = 150
+total_epochs = 200
 coef_box = 0.05
 coef_obj = 2.0 * (image_shape[0] / 640) * (image_shape[1] / 640)  # scale image size
 coef_cls = 0.5 * 150 / 80  # scale class number
