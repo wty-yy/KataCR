@@ -37,7 +37,7 @@ coef_cls = 0.5 * 150 / 80  # scale class number
 learning_rate_init = 0.01
 learning_rate_final = 1e-4
 weight_decay = 5e-4
-warmup_epochs = 2
+warmup_epochs = 5
 momentum = 0.937
 
 if __name__ == '__main__':

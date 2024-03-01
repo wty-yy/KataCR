@@ -580,9 +580,10 @@ class Generator:
     """
     self._add_item()
     # paths = self.moveable_unit_paths
-    freq = self.moveable_unit_frequency.copy()
-    freq -= freq.min() - 1
-    freq = 1 / freq
+    # freq = self.moveable_unit_frequency.copy()
+    # freq -= freq.min() - 1
+    # freq = 1 / freq
+    freq = np.ones_like(freq)
     idxs = self._sample_prob(freq, size=n, replace=True).reshape(-1)
     for i in idxs:
       # p: Path = self._sample_elem(paths)
