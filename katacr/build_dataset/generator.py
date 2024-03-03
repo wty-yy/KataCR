@@ -249,10 +249,18 @@ class Generator:
       seed: int | None = None,
       intersect_ratio_thre: float = 0.5,
       map_update_size: int = 5,
-      augment: bool = True
+      augment: bool = True,
+      dynamic_unit: bool = True,
     ):
     """
     Args:
+      background_index: Use image file name in `dataset/images/segment/backgrounds/background{index}.jpg` as current background.
+      unit_list: The list of units will be generated in arean.
+      seed: The random seed.
+      intersect_ratio_thre: The threshold to filte overlapping units.
+      map_update_size: The changing size of dynamic generation distribution (SxS).
+      augment: If taggled, the mask augmentation will be used.
+      dynamic_unit: If taggled, the frequency of each unit will tend to average.
       map_cfg (dict):
         'ground': The 0/1 ground unit map in `katacr/build_dataset/generation_config.py`.
         'fly': The 0/1 fly unit map in `katacr/build_dataset/generation_config.py`.
@@ -263,6 +271,7 @@ class Generator:
       random.seed(seed)
     self.background_index = background_index
     self.augment = augment
+    self.dynamic_unit = dynamic_unit
 
     self.path_manager = PathManager()
     self.path_segment = self.path_manager.path / "images/segment"
@@ -580,10 +589,12 @@ class Generator:
     """
     self._add_item()
     # paths = self.moveable_unit_paths
-    # freq = self.moveable_unit_frequency.copy()
-    # freq -= freq.min() - 1
-    # freq = 1 / freq
-    freq = np.ones_like(freq)
+    freq = self.moveable_unit_frequency.copy()
+    if self.dynamic_unit:
+      freq -= freq.min() - 1
+      freq = 1 / freq
+    else:
+      freq = np.ones_like(freq)
     idxs = self._sample_prob(freq, size=n, replace=True).reshape(-1)
     for i in idxs:
       # p: Path = self._sample_elem(paths)
@@ -598,7 +609,7 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True)
+  generator = Generator(seed=42, intersect_ratio_thre=0.3, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(5):

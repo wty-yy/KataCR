@@ -3,7 +3,7 @@ from pathlib import Path
 
 xy2idx = {'x0': 0, 'y0': 1, 'x1': 2, 'y1': 3}
 convert_dict = {  # target label: (origin label, position range)
-  # 'lumberjack1': ('lumberjack', {}),
+  'elixir-collector1': ('elixir-sollector1', {}),
 }
 remove_list = [  # (label[str | None], remove box range[dict]), None means any label satisfied the box range.
   # (None, {'x0': (390, 600), 'y1': (0, 64)}),
@@ -20,10 +20,11 @@ jpg_range = [
   # WTY_20240222_8spells
   # (569,655),(2927,3010),( 571,600),(1984,2015),(3127,3180),( 613,637),(1837,1862),( 785,901),(2388,2505),(3671,3787),( 943,1126),( 1053,1070),(2137,2155),( 1327,1365),(2676,2715),(3892,3940),( 1590,1650),(3345,3398)
   # (0,1905),(2400,3450),(3600,4230)
+  # (0, 2655), (2880, 3480)
 ]
 REMOVE_EXTRA_FILES = False
 debug_list = [  # print filepaths when belowing labels in
-  # 'elixir0'
+  'elixir0'
 ]
 delta_list = [
   # ('queen-tower0', 2)  # delta
@@ -110,7 +111,7 @@ def remove_file(path: Path):
   print(f"Remove {json_path}, {img_path}")
     
 if __name__ == '__main__':
-  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240301/1")
+  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240303/1")
   process_count = 0
   print("Resolve directory:", path_dir)
   if REMOVE_EXTRA_FILES:

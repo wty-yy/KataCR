@@ -138,4 +138,5 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 #### v0.4.5.6(2024.3.1~)
 1. 开源[`Clash Roayle Dataset`](https://github.com/wty-yy/Clash-Royale-Dataset)。
-2. 2024.3.2：基于`WTY_20240301`标记242帧，共包含13个新地面单位切片。
+2. 2024.3.2：基于`WTY_20240301`标记242帧，共包含13个新地面单位切片。（还差56个单位）
+3. 2024.3.3：基于`WTY_20240303`标记
