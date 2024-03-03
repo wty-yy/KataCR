@@ -4,8 +4,6 @@ from pathlib import Path
 xy2idx = {'x0': 0, 'y0': 1, 'x1': 2, 'y1': 3}
 convert_dict = {  # target label: (origin label, position range)
   # 'lumberjack1': ('lumberjack', {}),
-  # 'cannoneer-tower1': ('queen-tower1', {}),
-  'cannoneer-tower1': ('mega-knight1', {}),
 }
 remove_list = [  # (label[str | None], remove box range[dict]), None means any label satisfied the box range.
   # (None, {'x0': (390, 600), 'y1': (0, 64)}),
@@ -17,27 +15,18 @@ add_list = [  # (label, xyxy)
   # ('king-tower-bar1', (212.5874125874126, 1.3986013986013988, 354.54545454545456, 38.46153846153846))
 ]
 json_range = [  # process json file range, could count the unit number
-  # (0, 3345), 
-  # (3705, 4005),
-  # (4065, 4125),
-  # (4635, 4740),
-  # (5115, 5145),
-  # (6030, 6285),
-  # (6435, 6450),
-  # (7470, 7500)
-  (240, 510), (690,1140), (3525,3750), (1980,2205), (4530,4545)
 ]
 jpg_range = [
   # WTY_20240222_8spells
   # (569,655),(2927,3010),( 571,600),(1984,2015),(3127,3180),( 613,637),(1837,1862),( 785,901),(2388,2505),(3671,3787),( 943,1126),( 1053,1070),(2137,2155),( 1327,1365),(2676,2715),(3892,3940),( 1590,1650),(3345,3398)
+  # (0,1905),(2400,3450),(3600,4230)
 ]
-REMOVE_EXTRA_FILES = True
+REMOVE_EXTRA_FILES = False
 debug_list = [  # print filepaths when belowing labels in
-  'fireball0'
-  # 'mega-minion1', 'pekka1', 'flying-machine1',
+  # 'elixir0'
 ]
 delta_list = [
-  ('queen-tower0', 2)  # delta
+  # ('queen-tower0', 2)  # delta
 ]
 update_count = {}
 remove_count = {}
@@ -121,7 +110,7 @@ def remove_file(path: Path):
   print(f"Remove {json_path}, {img_path}")
     
 if __name__ == '__main__':
-  path_dir = Path("/home/wty/Coding/datasets/CR/images/part2/WTY_20240227_miners/1")
+  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240301/1")
   process_count = 0
   print("Resolve directory:", path_dir)
   if REMOVE_EXTRA_FILES:
@@ -144,8 +133,6 @@ if __name__ == '__main__':
     for l, r in jpg_range:
       if l <= id <= r:
         flag = True
-    if flag:
-      process_count += 1
     if not flag and REMOVE_EXTRA_FILES:
       remove_file(path)
   print("Update count:", update_count)

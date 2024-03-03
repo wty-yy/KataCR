@@ -125,7 +125,7 @@ class LabelBuilder:
 
     paths = self.path_manager.search(subset='images', part=2, regex=r'^\d+.json')
     max_path, max_box_num = None, 0
-    for path in paths:
+    for path in tqdm(paths):
       if 'background' in str(path): continue  # Don't build background to dataset
       num = self.build_label_txt(path)
       if num > max_box_num:

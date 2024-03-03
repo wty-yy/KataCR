@@ -131,7 +131,11 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    注意：生成图像中，所有法术出界均不进行平移，而是进行裁剪。
 2. 当前已标记70个单位，还需标记72个单位，将训练epoch上调到80->150。
 
-#### v0.4.5.5(2024.2.27-2024.2.29)
+#### v0.4.5.5(2024.2.27~2024.2.29)  
 1. 加入`cannoneer-tower`和`queen-tower`的生成比例（`3:7`）
 2. 基于`WTY_20240227_miners`加入9个敌方单位（5个法术，4个地面单位），1个非目标单位`dirt`，1个背景部件`grave`，总计11个。
 3. 加入动态采样单位生成。（记录所有单位出现的频次`freq`，按照`1/(freq-freq.min()-1)`对应的分布对单位进行采样，从而使各种单位在训练集中出现的频次基本一致）
+
+#### v0.4.5.6(2024.3.1~)
+1. 开源[`Clash Roayle Dataset`](https://github.com/wty-yy/Clash-Royale-Dataset)。
+2. 2024.3.2：基于`WTY_20240301`标记242帧，共包含13个新地面单位切片。
