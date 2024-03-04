@@ -197,12 +197,18 @@ ground_unit_list = [
   'fire-spirit',
   'firecracker',
   'firecracker-evolution',
+  'fisherman',
   'freeze',
+  'furnace',
   'giant',
+  'giant-skeleton',
   'goblin',
   'goblin-brawler',
   'goblin-cage',
   'goblin-drill',
+  'goblin-giant',
+  'goblin-hut',
+  'golden-knight',
   'golem',
   'golemite',
   'graveyard',
@@ -231,6 +237,7 @@ ground_unit_list = [
   'royal-recruit',
   'skeleton',
   'skeleton-evolution',
+  'spear-goblin',
   'tesla',
   'the-log',
   'tornado',
@@ -299,14 +306,32 @@ background_item_list = [
 ]
 
 if __name__ == '__main__':
+  from katacr.utils import colorstr
   check_union = set(ground_unit_list).intersection(flying_unit_list)
   assert len(check_union) == 0, f"Ground and fly should no intersection element {check_union}."
   avail_units = set(ground_unit_list) | set(flying_unit_list) | set(other_unit_list) | set(tower_unit_list)
   avail_units.remove('bar-level')
-  print(f"Total number unit: ({len(unit_list)})")
+  print(colorstr(f"Total number unit n={len(unit_list)}"))
   unit_list.remove("selected")
-  for i, u in enumerate(sorted(unit_list)):
-    print(i+1, u, '✔' if u in avail_units else '✘')
-  print(f"Available units ({len(avail_units)}):", sorted(avail_units))
+  # for i, u in enumerate(sorted(unit_list)):
+  #   print(i+1, u, '✔' if u in avail_units else '✘')
+  print(f"{colorstr(f'Available units (n={len(avail_units)})')}", sorted(avail_units))
   residue = set(unit_list) - avail_units
-  print(f"Residue unit: ({len(residue)})", sorted(residue))
+  print(f"{colorstr(f'Residue unit: (n={len(residue)})')}", sorted(residue))
+
+  from katacr.build_dataset.constant import path_dataset
+  path_segment = path_dataset / "images/segment"
+  segment_units = {'0': set(), '1': set()}
+  for pu in path_segment.glob('*'):
+    if pu.name in ['backgrounds', 'background-items']:
+      continue
+    for pi in pu.glob('*.png'):
+      name = pi.stem
+      sl = name.split('_')
+      segment_units[sl[1]].add(sl[0])
+  # print(segment_units['0'])
+  # print(segment_units['1'])
+  # print(segment_units['0'] - segment_units['1'])
+  residue_set = set(unit_list) - {'text', 'emote', 'evolution-symbol', 'dirt', 'elixir'}
+  residue_set_1 = residue_set - segment_units['1']
+  print(f"{colorstr(f'Residue unit with 1 (n={len(residue_set_1)})')}", sorted(residue_set_1))
