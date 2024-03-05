@@ -102,7 +102,7 @@ class Segment:
         x = np.concatenate([x * mask, alpha], axis=-1, dtype=np.uint8)
         Image.fromarray(x).save(path_log_save)
         sw.__exit__()
-        bar.set_description(f"{sw.avg_per_s:.2f}box/s,{sw.avg_dt}s/box")
+        bar.set_description(f"{sw.avg_per_s:.2f}box/s,{sw.avg_dt:.2f}s/box")
   
   def _get_log_save_path(self, video_name: str, cls: str, name: str, suffix='jpg'):
     """
@@ -138,6 +138,6 @@ class Segment:
 if __name__ == '__main__':
   segment = Segment()
   # segment.process(video_name="background")
-  segment.process(video_name="WTY_20240303", episode=[1])
+  segment.process(video_name="WTY_20240305", episode=[1])
   # segment.background()
 
