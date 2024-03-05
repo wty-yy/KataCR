@@ -10,6 +10,7 @@ from katacr.build_dataset.constant import path_logs, image_size_part2
 from katacr.constants.label_list import idx2unit
 from katacr.constants.state_list import idx2state
 from tqdm import tqdm
+from katacr.utils import Stopwatch
 
 # CHECKPOINT_PATH = r"/home/wty/Coding/models/sam_vit_h_4b8939.pth"
 CHECKPOINT_PATH = r"/home/yy/Coding/models/sam_vit_h_4b8939.pth"
@@ -71,9 +72,11 @@ class Segment:
     """
     episodes = episode if isinstance(episode, (list, tuple)) else [episode]
     paths = []
+    sw = Stopwatch()
     for ep in episodes:
       paths.extend(self.path_manager.search(subset='images', part=part_suffix, video_name=video_name, name=ep, regex=r"\d+.txt"))
-    for path_box in tqdm(paths):
+    bar = tqdm(paths)
+    for path_box in bar:
       if 'background' in str(path_box):
         vn = 'background'
       else:
@@ -82,6 +85,7 @@ class Segment:
       img = np.array(Image.open(str(path_img)).convert('RGB').resize(image_size_part2))
       box = np.loadtxt(str(path_box))
       for b in box:
+        sw.__enter__()
         cls = idx2unit[int(b[0])]
         xyxy = cxcywh2xyxy(b[1:5], img)
         states = b[5:].astype(np.int32)
@@ -97,6 +101,8 @@ class Segment:
         alpha = (mask * 255).astype(np.uint8)
         x = np.concatenate([x * mask, alpha], axis=-1, dtype=np.uint8)
         Image.fromarray(x).save(path_log_save)
+        sw.__exit__()
+        bar.set_description(f"{sw.avg_per_s:.2f}box/s,{sw.avg_dt}s/box")
   
   def _get_log_save_path(self, video_name: str, cls: str, name: str, suffix='jpg'):
     """

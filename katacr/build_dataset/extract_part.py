@@ -70,7 +70,7 @@ if __name__ == '__main__':
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/OYASSU_20210528_episodes/5.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/WTY_20240218_episodes/1.mp4", regex="^\d+.mp4$")
-  paths = path_manager.search('videos', video_name="segment_test/WTY_20240304/1.mp4")
+  paths = path_manager.search('videos', video_name="segment_test/WTY_20240305/1.mp4")
   for path in paths:
     parts = list(path.parts)
     parts[-4] = 'images'

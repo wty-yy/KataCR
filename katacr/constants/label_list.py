@@ -156,6 +156,8 @@ unit_list = [
   'evolution-symbol',
   # 2024/2/22: forget
   'mirror',
+  # 2024/3/4: add
+  'tesla-evolution',
 ]
 
 idx2unit = dict(enumerate(unit_list))

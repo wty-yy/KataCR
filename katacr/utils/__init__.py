@@ -27,14 +27,20 @@ print("delta time:", sw.dt, "total time:", sw.t)
 class Stopwatch(contextlib.ContextDecorator):
   def __init__(self, t=0.0):
     self.t = t
+    self.avg_dt = 0
+    self.avg_per_s = 0
+    self.count = 0
   
   def __enter__(self):
     self.start = time.time()
     return self
   
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, *args):
     self.dt = time.time() - self.start
     self.t += self.dt
+    self.count += 1
+    self.avg_dt += (self.dt - self.avg_dt) / self.count
+    self.avg_per_s += (1 / self.dt - self.avg_per_s) / self.count
 
 def colorstr(*input):
   # Colors a string https://en.wikipedia.org/wiki/ANSI_escape_code, i.e.  colorstr('blue', 'hello world')
