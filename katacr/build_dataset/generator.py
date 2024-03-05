@@ -612,7 +612,7 @@ if __name__ == '__main__':
   generator = Generator(seed=42, intersect_ratio_thre=0.3, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
-  for i in range(5):
+  for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)

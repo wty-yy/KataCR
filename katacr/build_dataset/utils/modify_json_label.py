@@ -25,7 +25,7 @@ jpg_range = [
 ]
 REMOVE_EXTRA_FILES = False
 debug_list = [  # print filepaths when belowing labels in
-  # 'elixir0'
+  'elixir0'
 ]
 delta_list = [
   # ('queen-tower0', 2)  # delta
