@@ -54,7 +54,6 @@ unit_list = [
   'elixir-golem-big',
   'elixir-golem-mid',
   'elixir-golem-small',
-  'goblin-ball',
   'goblin-barrel',
   'guard',  # new 'shield'
   'clone',  # 'attack', add 'clone' state
@@ -159,6 +158,8 @@ unit_list = [
   'mirror',
   # 2024/3/4: add
   'tesla-evolution',
+  # 2024/3/6: add
+  'goblin-ball',
 ]
 
 idx2unit = dict(enumerate(unit_list))
@@ -217,6 +218,7 @@ ground_unit_list = [
   'graveyard',
   'guard',
   'heal-spirit',
+  'hog',
   'hog-rider',
   'hunter',
   'ice-golem',
@@ -225,12 +227,21 @@ ground_unit_list = [
   'inferno-tower',
   'knight',
   'knight-evolution',
+  'lava-hound',
+  'lava-pup',
   'little-prince',
   'lumberjack',
   'magic-archer',
+  'mega-knight',
   'mighty-miner',
   'miner',
+  'mini-pekka',
+  'monk',
+  'mortar',
+  'mortar-evolution',
+  'mother-witch',
   'musketeer',
+  'night-witch',
   'pekka',
   'poison',
   'princess',
@@ -263,9 +274,11 @@ flying_unit_list = [
   'arrows',
   'axe',
   'baby-dragon',
+  'bat',
   'flying-machine',
   'fireball',
   'giant-snowball',
+  'goblin-ball',
   'goblin-barrel',
   'inferno-dragon',
   'lightning',
