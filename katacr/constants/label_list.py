@@ -54,6 +54,7 @@ unit_list = [
   'elixir-golem-big',
   'elixir-golem-mid',
   'elixir-golem-small',
+  'goblin-ball',
   'goblin-barrel',
   'guard',  # new 'shield'
   'clone',  # 'attack', add 'clone' state
@@ -318,8 +319,9 @@ if __name__ == '__main__':
   assert len(check_union) == 0, f"Ground and fly should no intersection element {check_union}."
   avail_units = set(ground_unit_list) | set(flying_unit_list) | set(other_unit_list) | set(tower_unit_list)
   avail_units.remove('bar-level')
-  print(colorstr(f"Total number unit n={len(unit_list)}"))
   unit_list.remove("selected")
+  total_units = len(unit_list)
+  print(colorstr(f"Total number unit n={total_units}"))
   # for i, u in enumerate(sorted(unit_list)):
   #   print(i+1, u, '✔' if u in avail_units else '✘')
   print(f"{colorstr(f'Available units (n={len(avail_units)})')}", sorted(avail_units))
@@ -341,4 +343,4 @@ if __name__ == '__main__':
   # print(segment_units['0'] - segment_units['1'])
   residue_set = set(unit_list) - {'text', 'emote', 'evolution-symbol', 'dirt', 'elixir'}
   residue_set_1 = residue_set - segment_units['1']
-  print(f"{colorstr(f'Residue unit with 1 (n={len(residue_set_1)})')}", sorted(residue_set_1))
+  print(f"{colorstr(f'Residue unit with 1 (n={len(residue_set_1)}, N-n={total_units-len(residue_set_1)})')}", sorted(residue_set_1))
