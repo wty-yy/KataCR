@@ -120,7 +120,11 @@ class Segment:
     self.cache_idx[cls] = idx
     self.path_log_save_cls = self.path_log_save / f"{video_name}/{cls}"
     self.path_log_save_cls.mkdir(parents=True, exist_ok=True)
-    return self.path_log_save_cls / f"{name}_{idx:07}.{suffix}"
+    save_path = self.path_log_save_cls / f"{name}_{idx:07}.{suffix}"
+    if save_path.exists():
+      print(f"The path {save_path} exists, can you rename the {self.path_log_save} and try again?")
+      exit()
+    return 
   
   def background(self):
     paths = self.path_manager.search(subset='images', part=2, video_name='background', regex=r"background\d+.jpg")
@@ -138,6 +142,6 @@ class Segment:
 if __name__ == '__main__':
   segment = Segment()
   # segment.process(video_name="background")
-  segment.process(video_name="WTY_20240305", episode=[1])
+  segment.process(video_name="WTY_20240307", episode=[2])
   # segment.background()
 

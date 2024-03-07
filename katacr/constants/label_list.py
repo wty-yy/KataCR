@@ -160,6 +160,8 @@ unit_list = [
   'tesla-evolution',
   # 2024/3/6: add
   'goblin-ball',
+  # 2024/3/7: add
+  'skeleton-king-bar', 'skeleton-king-skill', 'tesla-evolution-shock'
 ]
 
 idx2unit = dict(enumerate(unit_list))
@@ -243,10 +245,14 @@ ground_unit_list = [
   'musketeer',
   'night-witch',
   'pekka',
+  'phoenix-egg',
   'poison',
+  'prince',
   'princess',
   'rage',
   'ram-rider',
+  'rascal-boy',
+  'rascal-girl',
   'royal-delivery',
   'royal-ghost',
   'royal-giant',
@@ -256,8 +262,13 @@ ground_unit_list = [
   'royal-recruit',
   'skeleton',
   'skeleton-evolution',
+  'skeleton-king',
+  'skeleton-king-skill',
+  'sparky',
   'spear-goblin',
   'tesla',
+  'tesla-evolution',
+  'tesla-evolution-shock',
   'the-log',
   'tornado',
   'x-bow',
@@ -284,7 +295,11 @@ flying_unit_list = [
   'lightning',
   'mega-minion',
   'minion',
+  'phoenix-big',
+  'phoenix-small',
   'rocket',
+  'skeleton-barrel',
+  'skeleton-dragon',
   'zap',
 ]
 spell_unit_list = [
@@ -299,6 +314,8 @@ spell_unit_list = [
   'poison',
   'rage',
   'rocket',
+  'skeleton-king-skill',
+  'tesla-evolution-shock',
   'tornado',
   'zap',
 ]
@@ -306,6 +323,7 @@ spell_unit_list = [
 other_unit_list = [
   'bar',
   'bar-level',
+  'skeleton-king-bar',
   'evolution-symbol',
   'tower-bar',
   'king-tower-bar',
