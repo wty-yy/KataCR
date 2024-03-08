@@ -30,6 +30,7 @@ def extract_part(
     interval: int = 15,  # 0.5 second in 30 fps
     part_ids: List[int] = [1,2,3],
     playback: bool = False,  # Is video playback?
+    limit: tuple = (0, float('inf')),  # extract frames limit
 ):
   # clip = mp.VideoFileClip()
   cap = cv2.VideoCapture(str(path_video))
@@ -45,12 +46,15 @@ def extract_part(
     path_save.mkdir(parents=True, exist_ok=True)
     path_saves.append(path_save)
   print("Save paths:", path_saves)
+  f = 0
   for i in tqdm(range(int(frames / interval))):
     cap.grab()
     flag, origin_image = cap.retrieve()
     origin_image = origin_image[...,::-1]
     for _ in range(interval-1):
       cap.grab()
+    f += interval
+    if not limit[0] <= f <= limit[1]: continue
     # t = i * split_time
     # origin_image = clip.get_frame(t)
     for j, id in enumerate(part_ids):
@@ -71,7 +75,7 @@ if __name__ == '__main__':
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/OYASSU_20210528_episodes/5.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/WTY_20240218_episodes/1.mp4", regex="^\d+.mp4$")
-  paths = path_manager.search('videos', video_name="segment_test/WTY_20240308/3.mp4")
+  paths = path_manager.search('videos', video_name="segment_test/WTY_20240308/2.mp4")
   for path in paths:
     parts = list(path.parts)
     parts[-4] = 'images'
@@ -80,5 +84,5 @@ if __name__ == '__main__':
     # path_save = Path(*parts)
     # print(path_save)
     # break
-    extract_part(path, path_parts=parts, part_ids=[2], interval=15, playback=True)
+    extract_part(path, path_parts=parts, part_ids=[2], interval=15, playback=False, limit=(0, float('inf')))
     
