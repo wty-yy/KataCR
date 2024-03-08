@@ -28,7 +28,8 @@ def extract_part(
     path_parts: List[str],
     # split_time: float = 0.5,
     interval: int = 15,  # 0.5 second in 30 fps
-    part_ids: List[int] = [1,2,3]
+    part_ids: List[int] = [1,2,3],
+    playback: bool = False,  # Is video playback?
 ):
   # clip = mp.VideoFileClip()
   cap = cv2.VideoCapture(str(path_video))
@@ -58,7 +59,7 @@ def extract_part(
         print(f"the file '{path_save_file}' exists, skip processing it.")
         continue
       # print(process_func[id](origin_image))
-      image = Image.fromarray(process_part(origin_image, id))
+      image = Image.fromarray(process_part(origin_image, id, playback=playback))
       image = image.resize(part_sizes['part'+str(id)])
       image.save(str(path_save_file))
 
@@ -70,7 +71,7 @@ if __name__ == '__main__':
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/OYASSU_20210528_episodes/5.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/WTY_20240218_episodes/1.mp4", regex="^\d+.mp4$")
-  paths = path_manager.search('videos', video_name="segment_test/WTY_20240307/1.mp4")
+  paths = path_manager.search('videos', video_name="segment_test/WTY_20240308/3.mp4")
   for path in paths:
     parts = list(path.parts)
     parts[-4] = 'images'
@@ -79,5 +80,5 @@ if __name__ == '__main__':
     # path_save = Path(*parts)
     # print(path_save)
     # break
-    extract_part(path, path_parts=parts, part_ids=[2], interval=15)
+    extract_part(path, path_parts=parts, part_ids=[2], interval=15, playback=True)
     

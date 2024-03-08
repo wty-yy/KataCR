@@ -14,6 +14,13 @@ from pathlib import Path
 import katacr.build_dataset.constant as const
 from katacr.build_dataset.utils.datapath_manager import PathManager
 
+def ratio2name(img):
+  if isinstance(img, Image.Image): img = np.array(img)
+  r = img.shape[0] / img.shape[1]
+  for name, ratio in const.ratio.items():
+    if ratio[0] <= r <= ratio[1]:
+      return name
+
 def extract_bbox(image, x, y, w, h):
   """
   - `(x, y)`: The left top proportion point of the whole image.
@@ -31,16 +38,19 @@ def extract_bbox(image, x, y, w, h):
 def to_gray(image):
   return np.array(Image.fromarray(image).convert('L'))
 
-def process_part(image, part_id: int | str):
+def process_part(img, part_id: int | str, playback: bool = False):
   if not (isinstance(part_id, str) and 'part' in part_id):
     part = f"part{part_id}"
+  name = ratio2name(img)
+  if playback: part += '_playback'
+  if name == '2400p': part += '_' + name
   bbox_params = const.split_bbox_params[part]
   if type(bbox_params) == dict:
     ret = {}
     for key, value in bbox_params.items():
-      ret[key] = extract_bbox(image, *value)
+      ret[key] = extract_bbox(img, *value)
   else:
-    ret = extract_bbox(image, *bbox_params)
+    ret = extract_bbox(img, *bbox_params)
   return ret
 
 def preprocess_background():
@@ -72,14 +82,11 @@ def split_part(x):
 
 def split_part(x, part: str | int):  # based ratio
   part = str(part)
-  r = x.shape[0] / x.shape[1]
-  for name, ratio in const.ratio.items():
-    if ratio[0] <= r <= ratio[1]:
-      if name == 'oyassu':
-        x = process_part(x, part)
-      if name == '2400p':
-        x = process_part(x, part+'_2400p')
-      break
+  name = ratio2name(x)
+  if name == 'oyassu':
+    x = process_part(x, part)
+  elif name == '2400p':
+    x = process_part(x, part+'_2400p')
   return x
 
 def test():

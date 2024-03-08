@@ -25,7 +25,7 @@ jpg_range = [
 ]
 REMOVE_EXTRA_FILES = False
 debug_list = [  # print filepaths when belowing labels in
-  'elixir0'
+  # 'elixir0'
 ]
 delta_list = [
   # ('queen-tower0', 2)  # delta
@@ -112,7 +112,7 @@ def remove_file(path: Path):
   print(f"Remove {json_path}, {img_path}")
     
 if __name__ == '__main__':
-  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240307/1")
+  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240308/2")
   process_count = 0
   print("Resolve directory:", path_dir)
   if REMOVE_EXTRA_FILES:

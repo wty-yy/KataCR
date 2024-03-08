@@ -124,7 +124,7 @@ class Segment:
     if save_path.exists():
       print(f"The path {save_path} exists, can you rename the {self.path_log_save} and try again?")
       exit()
-    return 
+    return save_path
   
   def background(self):
     paths = self.path_manager.search(subset='images', part=2, video_name='background', regex=r"background\d+.jpg")
@@ -142,6 +142,6 @@ class Segment:
 if __name__ == '__main__':
   segment = Segment()
   # segment.process(video_name="background")
-  segment.process(video_name="WTY_20240307", episode=[2])
+  segment.process(video_name="WTY_20240308", episode=[1,2])
   # segment.background()
 
