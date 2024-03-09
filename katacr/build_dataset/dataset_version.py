@@ -48,9 +48,6 @@ class DatasetManager:
         box = np.loadtxt(file)
       for b in box:
         name, side = idx2unit[int(b[0])], int(b[5])
-        if name == 'royal-recruit-evolution':
-          print(name, p)
-          exit()
         if name not in self.annotation:
           self.annotation[name] = [0, 0]
         self.annotation[name][side] += 1
@@ -82,11 +79,11 @@ class DatasetManager:
             if same_flag:
               print("Find following difference between the two versions:")
               note_file = (root_path / f"{pt}_v{new_version}_update.txt").open('w')
-              s = ' ' * 26 + f"{'Old (v'+old_version+')':>16} -> {'New (v'+new_version+')':>16} {'Count':>8}"
+              s = ' ' * 30 + f"{'Old (v'+old_version+')':>16} -> {'New (v'+new_version+')':>16} {'Count':>8}"
               note_file.write(s + '\n')
               print(s)
             diff_count += 1
-            s = f"{i:<25} {str(old):>16} -> {str(new):>16} {diff_count:>8}"
+            s = f"{i:<29} {str(old):>16} -> {str(new):>16} {diff_count:>8}"
             note_file.write(s + '\n')
             print(s)
             same_flag = False
