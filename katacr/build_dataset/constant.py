@@ -42,7 +42,7 @@ split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
     'mid': (0.180, 0.410, 0.650, 0.050),
   },
   # Forall height/width = 2.22~2.23, 576x1280 or 450x1000
-  'part2_playback_2400p': (0.024, 0.205, 0.954, 0.676),  # 1080x2400, ratio: 2.22~2.23
+  'part2_playback_2400p': (0.024, 0.196, 0.954, 0.685),  # 1080x2400, ratio: 2.22~2.23
   'part2_2400p': (0.020, 0.090, 0.960, 0.680),
   'part3_2400p': (0.000, 0.850, 1.000, 0.150),
   'part4_2400p': {

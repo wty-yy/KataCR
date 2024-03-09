@@ -161,7 +161,9 @@ unit_list = [
   # 2024/3/6: add
   'goblin-ball',
   # 2024/3/7: add
-  'skeleton-king-bar', 'skeleton-king-skill', 'tesla-evolution-shock'
+  'skeleton-king-bar', 'skeleton-king-skill', 'tesla-evolution-shock',
+  # 2024/3/9: add
+  'ice-spirit-evolution-symbol',
 ]
 
 idx2unit = dict(enumerate(unit_list))

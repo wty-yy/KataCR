@@ -3,7 +3,7 @@ from pathlib import Path
 
 xy2idx = {'x0': 0, 'y0': 1, 'x1': 2, 'y1': 3}
 convert_dict = {  # target label: (origin label, position range)
-  'giant-skeleton1': ('skeleton-giant1', {}),
+  'ice-spirit-evolution-symbol1': ('ice-spirit-evoltuion-symbol1', {}),
 }
 remove_list = [  # (label[str | None], remove box range[dict]), None means any label satisfied the box range.
   # (None, {'x0': (390, 600), 'y1': (0, 64)}),
@@ -112,7 +112,7 @@ def remove_file(path: Path):
   print(f"Remove {json_path}, {img_path}")
     
 if __name__ == '__main__':
-  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240308/3")
+  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240309/WTY_20240309_ice_spirit")
   process_count = 0
   print("Resolve directory:", path_dir)
   if REMOVE_EXTRA_FILES:
