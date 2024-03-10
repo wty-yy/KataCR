@@ -13,7 +13,7 @@ from katacr.build_dataset.generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list, spell_unit_list,
   drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
-  component_prob, component2unit, component_cfg, important_components,  # component configs
+  component_prob, component2unit, component_cfg, important_components, bar_xy_range,  # component configs
   item_cfg, drop_box, background_item_list,  # background item
   unit_scale, unit_stretch,  # affine transformation
   tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio,
@@ -95,7 +95,7 @@ class Unit:
         cls, *states = name.split('_')
       self.cls_name = cls if isinstance(cls, str) else idx2unit[cls]
       if isinstance(cls, str):
-        if cls in drop_box: self.cls = -1
+        if cls in drop_box: self.cls = -1  # background items
         else: self.cls = unit2idx[cls]
       else: self.cls = cls
       if isinstance(states, np.ndarray):
@@ -386,11 +386,14 @@ class Generator:
   
   def _build_unit_from_path(
       self, path: str | Path,
-      xy_bottom_center: tuple,
+      xy: tuple,
       level: int,
       max_width: float | tuple = None,  # relative to cell
+      xy_format: str = 'bottom_center',  # decide the format of 'xy'
       join: bool = True,
     ):
+    avail_format = ['bottom_center', 'center', 'left_center', 'right_center', 'left_bottom', 'right_bottom']
+    assert xy_format in avail_format, f"Need 'xy_format' in {avail_format}"
     img = Image.open(path)
     if max_width is not None:
       if isinstance(max_width, tuple): max_width = self._sample_range(*max_width)
@@ -401,6 +404,13 @@ class Generator:
     img = np.array(img)
     name = path.name.rsplit('.',1)[0]
     name = name.rsplit('_',1)[0]
+    xy_bottom_center = list(xy)
+    if xy_format in ['center', 'left_center', 'right_center']:
+      xy_bottom_center[1] += img.shape[0] / 2 / cell_size[1]
+    if 'left' in xy_format:
+      xy_bottom_center[0] += img.shape[1] / 2 / cell_size[0]
+    if 'right' in xy_format:
+      xy_bottom_center[0] -= img.shape[1] / 2 / cell_size[0]
     unit = Unit(img=img, xy_bottom_center=xy_bottom_center, level=level, background_size=self.background_size, name=name, augment=self.augment)
     if join: self.unit_list.append(unit)
     return unit
@@ -525,30 +535,36 @@ class Generator:
     return center
   
   def _add_component(self, unit: Unit):
-    components = [key for key, val in component2unit.items() if unit.cls_name in val]
+    components = [key for key, (units, prob) in component2unit.items() if unit.cls_name in units]
     if len(components) == 0: return
-    cs = []
+    cs = []  # seleted components
+    # First, check important component probability
     for c, prob in important_components:
       if c in components and c not in cs and random.random() < prob:
         components.remove(c)
         cs.append(c)
+    # Second, check normal component probability
     for ns, prob in component_prob.items():
       if unit.cls_name in ns: break
     if random.random() < prob:
-      k = random.randint(1, len(components))
-      cs += self._sample_elem(components, k=k, get_elem=False)
-    if not len(cs): return  # low prob and no important components
+      # Third, check single component probability
+      for c in components:
+        if random.random() < component2unit[c][1]:
+          cs.append(c)
+    if not len(cs): return  # no selected components
     for c in cs:
       if isinstance(c, tuple):
         c = self._sample_elem(c)
         # if random.random() < 0.5: c = c[0]  # 0.3 prob for 'bar'
         # else: c = c[1]  # 0.7 prob for 'bar-level'
+        # DEBUG:
+        # c = 'bar'
       if c in component_cfg: cfg = component_cfg[c]
       else: cfg = component_cfg[c+str(unit.states[0])]
-      center, dx_range, dy_range, max_width = cfg
+      center, dx_range, dy_range, max_width, xy_format = cfg
       if center == 'bottom_center': center = unit.xy_cell
-      elif center == 'top_center': center = (unit.xy_cell[0], (unit.xyxy[1]-xyxy_grids[1])/cell_size[1])
-      # elif center == 'top_center': center = (unit.xy_cell[0], unit.xyxy[1]/cell_size[1])
+      elif center == 'top_center': center = (unit.xy_cell[0], (unit.xyxy[1]-xyxy_grids[1])/cell_size[1])  # xyxy_grids[1] is the top of whold grid in image
+      elif center == 'center': center = (unit.xy_cell[0], ((unit.xyxy[1]+unit.xyxy[3])/2-xyxy_grids[1])/cell_size[1])
       xy = self._sample_from_center(center, dx_range, dy_range)
       path = self.path_manager.path / "images/segment" / c
       if 'bar' in c:  # determine the side 0/1
@@ -557,7 +573,17 @@ class Generator:
         paths = sorted(list(path.glob('*')))
       if len(paths) == 0: return
       level = unit2level[c]
-      self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width)
+      if c == 'bar':  # xy is mid of bar-level and bar
+        xy[0] += self._sample_range(*bar_xy_range)
+        paths_bar_level = sorted(list(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*")))
+        xy_ = xy.copy()
+        xy_[0] += 0.08  # 0.08 * 30.8 pixel = 2.464 pixel
+        self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
+      self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format)
+      # if c == 'bar':
+      #   delta = (bar_level.img.shape[1] - u.img.shape[1]) // 2
+      #   bar_level.xyxy[[0,2]] += delta + 2
+      #   u.xyxy[[0,2]] += delta
   
   def _add_item(self):
     """
@@ -599,8 +625,13 @@ class Generator:
     for i in idxs:
       # p: Path = self._sample_elem(paths)
       p = self.moveable_unit_paths[i]
+      # DEBUG:
+      # p = self.path_manager.path.joinpath("images/segment/tesla-evolution")
+      # p = self.path_manager.path.joinpath("images/segment/skeleton-king")
       level = unit2level[p.name]  # [1, 2, 3]
       xy = self._sample_from_map(level)
+      # DEBUG:
+      # xy = (9, 20)
       unit = self._build_unit_from_path(self._sample_elem(list(p.glob('*.png'))), xy, level)
       self._add_component(unit)
   
@@ -609,14 +640,13 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.3, augment=True)
+  generator = Generator(seed=None, intersect_ratio_thre=0.5, augment=True)
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=30)
-    # generator.add_unit(n=1)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # print(generator.moveable_unit_frequency)
     # f = generator.moveable_unit_frequency

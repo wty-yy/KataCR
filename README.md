@@ -136,7 +136,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 2. 基于`WTY_20240227_miners`加入9个敌方单位（5个法术，4个地面单位），1个非目标单位`dirt`，1个背景部件`grave`，总计11个。
 3. 加入动态采样单位生成。（记录所有单位出现的频次`freq`，按照`1/(freq-freq.min()-1)`对应的分布对单位进行采样，从而使各种单位在训练集中出现的频次基本一致）
 
-#### v0.4.5.6(2024.3.1~2024.3.7)
+#### v0.4.5.6(2024.3.1~2024.3.9)
 1. 开源[`Clash Roayle Dataset`](https://github.com/wty-yy/Clash-Royale-Dataset)。
 2. 2024.3.2：基于`WTY_20240301`标记242帧，共包含13个新地面单位切片。（还差56个单位）
 3. 2024.3.3：基于`WTY_20240303`标记219帧，标记用时165mins完成，筛选切片用时90mins。更新数据集为annotation v0.8, segment v0.10，还差45种切片。
@@ -145,8 +145,22 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 6. 2024.3.6：基于`WTY_20240306_episodes_1`标记344帧，用时160mins完成，筛选切片用时120mins。当前敌方单位切片为还差24种。
 7. 22024.3.7：基于`WTY_20240307_episodes_1,2`标记342帧，8地面，4空中部队，2关联性地面法术，用时164mins完成，筛选切片用时126mins完成，数据集版本更新为a0.12,s0.12，当前敌方切片还差12种。
 8. 22024.3.8：基于`WTY_20240308_episodes_1,2,3`标记190+54+52帧，6个敌方单位切片，用时82+10+15完成，筛选切片用时70mins完成，数据集版本更新为a0.13,s0.13，当前敌方切片还差6种。
-9. 22024.3.9：基于`WTY_20240307_episodes_1~8`标记40+22+36+82+20+52+12+12帧，6个进化单位，以及大量切片的优化，用时27+37+24+30+20+36+4+4mins完成，筛选切片用时150mins完成，数据集版本更新为a0.14,s0.14，完成除去`mirror`之外（`mirror`通过逻辑判断实现）的所有敌方切片制作，总计151种，4490个切片，标记数据集（验证机）大小为6842。
+9. 22024.3.9：基于`WTY_20240307_episodes_1~8`标记40+22+36+82+20+52+12+12帧，6个进化单位，以及大量切片的优化，用时27+37+24+30+20+36+4+4mins完成，筛选切片用时150mins完成，数据集版本更新为a0.14,s0.14，完成除去`mirror`之外（`mirror`通过逻辑判断实现）的所有敌方切片制作，总计150种，4431个切片，标记数据集（验证集）大小为6842。
 
 > 待解决问题：
 > 1. 数据生成中需要加入新的关联性生成，例如`skeleton-king, skeleton-king-skill`和`tesla-evolution, tesla-evolution-shock`。
 > 2. 考虑是否要将`bar`分为两个部分识别`bar-level`和`bar`，还要考虑如何生成`skeleton-king-bar`。
+
+### v0.5 (2024.3.10)
+对Generator进行如下优化：
+1. 加入新的`object_unit_list`包含`'axe','dirt','goblin-ball','bomb'`这些物体单位（需要识别，但是不关联生成`bar,bar-level,elixir,clock,small-text`）
+2. 更新`drop_units`（不直接生成的单位）：`'skeleton-king-skill', 'tesla-evolution-shock'`
+3. 加入新的组件component生成相对点位`center`用于`tesla-evolution,tesla-evolution-shock`和`skeleton-king,skeleton-king-skill`
+4. 重新规划组件生成概率计算方法：
+   1. 若组件属于`important_components`则单独计算其生成概率。
+   2. 若组件不属于`important_components`则先基于`component_prob`的概率$p_s$判断是否生成组件，若生成，则对于要生成的第$i$个组件其对应一个生成概率$p_{c_i}$，当满足概率$p_s\cdot p_{c_i}$使生成该组件。
+   基于上述组件生成方法，我们将`elixir,clock,small-text`个数之和的期望设置为$0.2$，之前为$0.2*(1/3+2/3+3/3)=0.4$而且生成较为密集。
+5. 在`_build_unit_from_path`中加入生成初始位置`center,left_center,right_center,left_bottom,right_bottom`。
+6. 将`bar`和`bar-level`分开进行识别，生成概率仍然为各自$0.5$，当`bar`要生成的时候，随机选一个`bar-level`放置到其左侧并向右微调$2.4 pixel$，并加入整体中心点向左偏移`(-0.3,-0.1) cell`的扰动。
+7. 将训练数据集单个epoch从13000上调至100K（和COCO数据集118K对齐），total_epoch需要调试（当前为150）。
+8. 基于150种，4431个切片，更新anchor，由于有少量的异常值（`lightning, big-text`），所以将宽度限制在`300`内，高度限制在`400`内。

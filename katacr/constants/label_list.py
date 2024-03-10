@@ -164,6 +164,8 @@ unit_list = [
   'skeleton-king-bar', 'skeleton-king-skill', 'tesla-evolution-shock',
   # 2024/3/9: add
   'ice-spirit-evolution-symbol',
+  # 2024/3/10: add
+  'bar-level',
 ]
 
 idx2unit = dict(enumerate(unit_list))
@@ -286,13 +288,11 @@ ground_unit_list = [
   'x-bow',
   'zappy',
 ]
-
 tower_unit_list = [
   'king-tower',
   'queen-tower',
   'cannoneer-tower',
 ]
-
 flying_unit_list = [
   'arrows',
   'axe',
@@ -332,7 +332,6 @@ spell_unit_list = [
   'tornado',
   'zap',
 ]
-
 other_unit_list = [
   'bar',
   'bar-level',
@@ -346,7 +345,6 @@ other_unit_list = [
   'elixir',
   'emote',
 ]
-
 background_item_list = [
   'blood',
   'butterfly',
@@ -356,6 +354,12 @@ background_item_list = [
   'cup',
   'snow',
   'grave'
+]
+object_unit_list = [
+  'axe',
+  'dirt',
+  'goblin-ball',
+  'bomb',
 ]
 
 if __name__ == '__main__':

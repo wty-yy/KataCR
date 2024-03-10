@@ -28,6 +28,8 @@ def get_box_size_from_segment():
   for path in paths:
     if 'background' in str(path): continue
     w, h = Image.open(str(path)).size
+    w = np.clip(0, 300, w)
+    h = np.clip(0, 400, h)
     ret.append([w, h])
   return np.array(ret, np.float32)
 
@@ -53,8 +55,8 @@ def knn_calc_box_size(data, k=9, verbose=False):
     # data_sample = data[:1000, ...]
     plt.scatter(data[:, 0], data[:, 1], c=kmeans.labels_, cmap='viridis', label='Data')
     plt.scatter(cluster_centroids[:, 0], cluster_centroids[:, 1], c='red', marker='*', s=200, label='Cluster Centroid')
-    plt.title("KMeans Clustering")
-    plt.legend()
+    plt.title(f"KMeans Clustering (n={data.shape[0]})")
+    plt.legend(loc="upper right")
     plt.tight_layout()
     plt.savefig(str(path_logs.joinpath("KNN_box.jpg")), dpi=200)
     plt.show()
