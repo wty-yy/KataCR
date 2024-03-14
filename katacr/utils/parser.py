@@ -16,6 +16,7 @@ class CVArgs(NamedTuple):
     wandb_track: bool
     wandb_project_name: str
     path_logs: Path
+    path_logs_model: Path
     write_tensorboard_freq: int
     load_id: int
     save_weights_freq: int
@@ -25,7 +26,6 @@ class CVArgs(NamedTuple):
     weight_decay: float
     # Related
     path_cp: Path
-    path_logs: Path
     run_name: str
     input_shape: tuple
     # Dataset
@@ -69,7 +69,7 @@ class Parser(argparse.ArgumentParser):
             help="if taggled, start evaluating the model")
     
     @staticmethod
-    def check_args(args):
+    def check_args(args: CVArgs):
         """
         If you need change `args.model_name` after `parse_args()`, then you need this function
         to build related log directories.
@@ -81,6 +81,8 @@ class Parser(argparse.ArgumentParser):
         args.path_cp = args.path_logs.joinpath(args.model_name+"-checkpoints")
         args.path_cp.mkdir(exist_ok=True)
         args.run_name = f"{args.model_name}__load_{args.load_id}__lr_{args.learning_rate}__batch_{args.batch_size}__{datetime.datetime.now().strftime(r'%Y%m%d_%H%M%S')}".replace("/", "-")
+        args.path_logs_model = args.path_logs.joinpath(args.run_name)
+        args.path_logs_model.mkdir(exist_ok=True)
         
     def get_args(self, input_args=None) -> CVArgs:
         args = self.parse_args(input_args)
@@ -88,7 +90,7 @@ class Parser(argparse.ArgumentParser):
         return args
     
     @staticmethod
-    def get_writer(args=None) -> SummaryWriter:
+    def get_writer(args: CVArgs=None) -> SummaryWriter:
         if args.wandb_track:
             import wandb
             wandb.init(
@@ -98,7 +100,7 @@ class Parser(argparse.ArgumentParser):
                 name=args.run_name,
                 save_code=True,
             )
-        writer = SummaryWriter(args.path_logs.joinpath(args.run_name))
+        writer = SummaryWriter(args.path_logs_model)
         writer.add_text(
             "hyper-parameters",
             "|param|value|\n|-|-|\n%s" % ('\n'.join([f"|{key}|{value}|" for key, value in vars(args).items()]))

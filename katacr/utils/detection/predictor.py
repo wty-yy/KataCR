@@ -85,7 +85,15 @@ class BasePredictor:
       tcls=np.concatenate(self.tcls, axis=0)
     )
   
-  def p_r_ap50_ap75_map(self):
+  def save_csv(self, path, p50, r50, ap50, ap75, ap, ucls, idx2name):
+    import csv
+    with open(path, 'w') as file:
+      writer = csv.writer(file)
+      writer.writerow(['cls_id', 'cls_name', 'P@50_val', 'R@50_val', 'AP@50_val', 'AP@75_val', 'mAP_val'])
+      for i in range(p50.shape[0]):
+        writer.writerow([int(ucls[i]), idx2name[int(ucls[i])], float(p50[i]), float(r50[i]), float(ap50[i]), float(ap75[i]), float(ap[i])])
+  
+  def p_r_ap50_ap75_map(self, path_csv: Path = None, idx2name: dict = None):
     """
     Return:
       p50: Precision with 0.5 iou threshold and bigger than 0.1 confidence.
@@ -95,8 +103,9 @@ class BasePredictor:
       map: Mean average precision by AUC with mean of 10 \
         different iou threshold [0.5:0.05:0.95].
     """
-    p, r, ap = self.ap_per_class()[:3]
+    p, r, ap, f1, ucls = self.ap_per_class()
     p50, r50, ap50, ap75, ap = p[:,0], r[:,0], ap[:,0], ap[:,5], ap.mean(1)
+    if path_csv: self.save_csv(path_csv, p50, r50, ap50, ap75, ap, ucls, idx2name)
     p50, r50, ap50, ap75, map = p50.mean(), r50.mean(), ap50.mean(), ap75.mean(), ap.mean()
     return p50, r50, ap50, ap75, map
 

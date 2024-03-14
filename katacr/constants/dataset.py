@@ -1,2 +1,2 @@
-path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2"
+path_dataset = "/data/user/wutianyang/dataset/Clash-Royale-Dataset/images/part2"
 datasize = 6842

@@ -649,6 +649,10 @@ class Generator:
   def reset(self):
     self.build_background()
     self.unit_list = []
+    self.map_cfg.update({
+      'ground': np.array(map_ground, np.float32),
+      'fly': np.array(map_fly, np.float32),
+    })
 
 if __name__ == '__main__':
   generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5})
@@ -657,7 +661,7 @@ if __name__ == '__main__':
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=20)
+    generator.add_unit(n=15)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # print(generator.moveable_unit_frequency)
     # f = generator.moveable_unit_frequency

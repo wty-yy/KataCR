@@ -151,7 +151,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 > 1. 数据生成中需要加入新的关联性生成，例如`skeleton-king, skeleton-king-skill`和`tesla-evolution, tesla-evolution-shock`。
 > 2. 考虑是否要将`bar`分为两个部分识别`bar-level`和`bar`，还要考虑如何生成`skeleton-king-bar`。
 
-### v0.5 (2024.3.10)
+### v0.5 (2024.3.10-2024.3.14)
 对Generator进行如下优化：
 1. 加入新的`object_unit_list`包含`'axe','dirt','goblin-ball','bomb'`这些物体单位（需要识别，但是不关联生成`bar,bar-level,elixir,clock,small-text`）
 2. 更新`drop_units`（不直接生成的单位）：`'skeleton-king-skill', 'tesla-evolution-shock'`
@@ -164,3 +164,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 6. 将`bar`和`bar-level`分开进行识别，生成概率仍然为各自$0.5$，当`bar`要生成的时候，随机选一个`bar-level`放置到其左侧并向右微调$2.4 pixel$，并加入整体中心点向左偏移`(-0.3,-0.1) cell`的扰动。
 7. 将训练数据集单个epoch从13000上调至100K（和COCO数据集118K对齐），total_epoch需要调试（当前为150）。
 8. 基于150种，4431个切片，更新anchor，由于有少量的异常值（`lightning, big-text`），所以将宽度限制在`300`内，高度限制在`400`内。
+9. 加入`naive`概率地图变换，将生成过的位置概率直接修改为0。
+
+**FIX BUG**
+1. `generator.reset()`时忘记为概率地图的生成进行重置。
