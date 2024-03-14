@@ -248,7 +248,7 @@ class Generator:
       unit_list: Tuple[Unit,...] = None,
       seed: int | None = None,
       intersect_ratio_thre: float = 0.5,
-      map_update_size: int = 5,
+      map_update: dict = {'mode': 'dynamic','size': 5},
       augment: bool = True,
       dynamic_unit: bool = True,
     ):
@@ -281,8 +281,8 @@ class Generator:
     self.map_cfg = {
       'ground': np.array(map_ground, np.float32),
       'fly': np.array(map_fly, np.float32),
-      'update_size': map_update_size
     }
+    self.map_cfg.update(map_update)
     self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit = [], {}, {}
     for p in sorted(self.path_segment.glob('*')):
       if p.name in [
@@ -465,10 +465,13 @@ class Generator:
   def _update_map(
     a: np.ndarray,
     xy: np.ndarray | Sequence,
-    size: int = 3, replace: bool = True
+    size: int = 3,
+    mode: str = 'dynamic',
+    replace: bool = True
   ) -> np.ndarray:
     """
-    Update the distribution map after use the `xy` position, modify policy is:
+    Dynamic update mode:
+      Update the distribution map after use the `xy` position, modify policy is:
     confirm the center point `xy`, find the `(size, size)` area around the center,
     let `a[*xy] <- a[*xy] / 2`, around values add `a[*xy] / 2 / num_round`,
     for example (left matrix is `a`, let `xy=(1,2), size=3`):
@@ -478,32 +481,40 @@ class Generator:
       [0. 1. 1.]]     [0.    1.125 1.125]]
     ```
 
+    Naive update mode:
+      Just let `a[*xy] <- 0`.
+
     Args:
       a (np.ndarray): The distribution map (not necessary sum to 1).
       xy (np.ndarray | Sequence): The point to place the unit.
       size (int): The size of the squre width.
+      mode (str): The mode of update map, dynamic or naive.
       replace (bool): Replace the array `a` directly.
     Return:
       a (np.ndarray): The distribution map after updating.
     """
+    assert mode in ['dynamic', 'naive'], f"map update mode must in ['dynamic', 'naive']"
     if not replace: a = a.copy()
     if not isinstance(xy, np.ndarray):
       xy = np.array(xy)
     assert a[xy[0],xy[1]] != 0 and xy.size == 2
 
-    d = np.stack(np.meshgrid(np.arange(size), np.arange(size)), -1) - size // 2  # delta
-    dxy = (d + xy.reshape(1,1,2)).reshape(-1, 2).T  # xy around indexs with sizexsize
-    for i in range(2):  # clip the indexs which are out of range
-      dxy[i] = dxy[i].clip(0, a.shape[i]-1)
-    dx, dy = np.unique(dxy, axis=1)  # unique the same indexs
-    nonzero = (a[dx, dy] != 0) ^ ((dx == xy[0]) & (dy == xy[1]))  # get nonzeros mask in around and remove center index
-    n = nonzero.sum()  # total number of nonzeros (without center point)
-    if n == 0: return
-    dx, dy = dx[nonzero], dy[nonzero]
+    if mode == 'dynamic':
+      d = np.stack(np.meshgrid(np.arange(size), np.arange(size)), -1) - size // 2  # delta
+      dxy = (d + xy.reshape(1,1,2)).reshape(-1, 2).T  # xy around indexs with sizexsize
+      for i in range(2):  # clip the indexs which are out of range
+        dxy[i] = dxy[i].clip(0, a.shape[i]-1)
+      dx, dy = np.unique(dxy, axis=1)  # unique the same indexs
+      nonzero = (a[dx, dy] != 0) ^ ((dx == xy[0]) & (dy == xy[1]))  # get nonzeros mask in around and remove center index
+      n = nonzero.sum()  # total number of nonzeros (without center point)
+      if n == 0: return
+      dx, dy = dx[nonzero], dy[nonzero]
 
-    c = a[xy[0],xy[1]]  # center value
-    a[xy[0],xy[1]] = c / 2  # update center point
-    a[dx, dy] += c / 2 / n  # update around point
+      c = a[xy[0],xy[1]]  # center value
+      a[xy[0],xy[1]] = c / 2  # update center point
+      a[dx, dy] += c / 2 / n  # update around point
+    elif mode == 'naive':
+      a[xy[0],xy[1]] = 0
     return a
 
   def _sample_from_map(self, level: int, noisy: bool = True, replace_map: bool = True):
@@ -520,7 +531,7 @@ class Generator:
     if not replace_map: map = map.copy()
     assert isinstance(map, np.ndarray) and map.dtype == np.float32, "The distribution map must be ndarray and float32"
     xy = self._sample_prob(map)[0]  # array index
-    self._update_map(map, xy, size=self.map_cfg['update_size'])
+    self._update_map(map, xy, size=self.map_cfg['size'], mode=self.map_cfg['mode'])
     xy = xy.astype(np.float32)[::-1] + 0.5  # array idx -> center of the cell
     if noisy:
       xy += np.clip(np.random.randn(2) * 0.2, -0.5, 0.5)
@@ -640,13 +651,13 @@ class Generator:
     self.unit_list = []
 
 if __name__ == '__main__':
-  generator = Generator(seed=None, intersect_ratio_thre=0.5, augment=True)
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5})
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=30)
+    generator.add_unit(n=20)
     x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # print(generator.moveable_unit_frequency)
     # f = generator.moveable_unit_frequency

@@ -320,6 +320,7 @@ spell_unit_list = [
   'clone',
   'earthquake',
   'fireball',
+  'freeze',
   'giant-snowball',
   'goblin-barrel',
   'graveyard',

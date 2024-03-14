@@ -65,7 +65,7 @@ component2unit = {  # the component below to units, prob
   ('bar', 'bar-level'): (except_spell_and_object_unit_list, 1.0),
   'tower-bar': (except_king_tower_unit_list, 1.0),
   'king-tower-bar': (['king-tower'], 1.0),
-  'clock': (ground_unit_list + except_spell_and_object_unit_list, 1/3),
+  'clock': (ground_unit_list + except_spell_and_object_unit_list + ['bomb'], 1/3),
   'tesla-evolution-shock': (['tesla-evolution'], 1.0),
   'skeleton-king-skill': (['skeleton-king'], 1.0),
   'skeleton-king-bar': (['skeleton-king'], 1.0),
@@ -99,10 +99,10 @@ background_augment = {
 aug2prob = {  # accumulate probablity
   'red': 0.05,    # 0.05
   'blue': 0.05,   # 0.05
-  'golden': 0.00, # 0.10
+  'golden': 0.02, # 0.10
   'white': 0.02,  # 0.05
   'violet': 0.05,
-  'trans': 0.00,  # 0.05
+  'trans': 0.01,  # 0.05
 }
 
 aug2unit = {

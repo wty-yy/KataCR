@@ -12,7 +12,7 @@ from typing import Sequence
 from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from PIL import Image
 from katacr.utils import Stopwatch, second2str
-from katacr.build_dataset.utils.split_part import split_part
+from katacr.build_dataset.utils.split_part import process_part
 
 IMG_FORMATS = ['jpeg', 'jpg', 'png', 'webp']
 VID_FORMATS = ['avi', 'gif', 'm4v', 'mkv' ,'mp4', 'mpeg', 'mpg', 'wmv']
@@ -82,7 +82,7 @@ class ImageAndVideoLoader:
       img = np.array(Image.open(path).convert("RGB"))
       s = f"image {self.count}/{self.n} {path}:"
     
-    img = split_part(img, 2)  # check whether should split part2
+    img = process_part(img, 2)  # check whether should split part2
     img = img[None,...]
     img = np.ascontiguousarray(img)
 
@@ -133,7 +133,7 @@ def parse_args(input_args=None):
   parser = argparse.ArgumentParser()
   parser.add_argument("--path", type=str, default="",
     help="The path of processed file.")
-  parser.add_argument("--model-name", type=str, default="YOLOv5_v0.4.5.4",
+  parser.add_argument("--model-name", type=str, default="YOLOv5_v0.5",
     help="The name of model in /logs/{model_name}-checkpoints")
   parser.add_argument("--load-id", type=int, default=150,
     help="The id of loaded model")

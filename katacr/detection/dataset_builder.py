@@ -20,6 +20,7 @@ class YOLODataset(Dataset):
       self, image_shape: int, subset: str,
       path_dataset: Path, train_datasize: int,
       num_unit: int = 30, intersect_ratio_thre: float = 0.5,
+      map_mode: str = 'dynamic',
       seed: int = None
     ):
     self.img_shape = image_shape
@@ -34,7 +35,7 @@ class YOLODataset(Dataset):
       self.paths_img, self.paths_box = paths[:, 0], paths[:, 1]
       self.datasize = len(self.paths_img)
     else:
-      self.generator = Generator(seed=seed, intersect_ratio_thre=intersect_ratio_thre)
+      self.generator = Generator(seed=seed, intersect_ratio_thre=intersect_ratio_thre, map_update={'mode': map_mode, 'size': 5})
       self.datasize = train_datasize
   
   def __len__(self):
@@ -109,13 +110,15 @@ class DatasetBuilder:
       train_datasize=self.args.train_datasize,
       num_unit=self.args.num_unit,
       intersect_ratio_thre=self.args.intersect_ratio_thre,
+      map_mode=self.args.generation_map_mode,
       seed=self.args.seed,
     )
     ds = DataLoader(
       dataset, batch_size=self.args.batch_size,
       shuffle=subset == 'train',
       num_workers=self.args.num_data_workers,
-      drop_last=True,
+      drop_last=subset == 'train',
+      persistent_workers=True,
     )
     return ds
 

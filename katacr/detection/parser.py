@@ -9,6 +9,7 @@ class YOLOv5Args(CVArgs):
   train_datasize: int
   num_unit: int
   intersect_ratio_thre: int
+  generation_map_mode: str
   ### Augmentation for train ###
   # hsv_h: float  # HSV-Hue augmentation
   # hsv_s: float  # HSV-Saturation augmentation
@@ -57,6 +58,8 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
     help="the number of units in images (dataset)")
   parser.add_argument("--intersect-ratio-thre", type=int, default=cfg.intersect_ratio_thre,
     help="the threshold of intersection ratio (dataset)")
+  parser.add_argument("--generation-map-mode", type=str, default=cfg.generation_map_mode,
+    help="the mode of updating the probability map")
   ### Training ###
   parser.add_argument("--total-epochs", type=int, default=cfg.total_epochs,
     help="the total epochs for training")
