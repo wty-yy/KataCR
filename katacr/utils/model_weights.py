@@ -55,9 +55,8 @@ class SaveWeightsManager:
     if self.best['key'] is not None and save_key_val is not None:
       if save_key_val > self.best['val']:
         self.best['val'] = save_key_val
-        s = f"Update best weights with {self.best['key']}={save_key_val:.2f}, epoch={self.save_id}"
+        s = f"Update best weights with {self.best['key']}={save_key_val:.8f}, epoch={self.save_id}"
         print(s)
-        self.best['key'] = save_key_val
         shutil.copyfile(str(self.path_save), str(self.best['path_weights']))
         with self.best['path_log'].open('a+') as file:
           file.write(s + '\n')

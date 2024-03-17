@@ -14,7 +14,7 @@ image_shape = (896, 576, 3)  # origin shape = (896, 568, 3)
 # hsv_s = 0.7  # HSV-Saturation augmentation
 # hsv_v = 0.4  # HSV-Value augmentation
 fliplr = 0.5  # flip left-right (probability)
-num_unit = 15  # number of units in one image
+num_unit = 30  # number of units in one image
 intersect_ratio_thre = 0.5  # threshold the intersection ratio
 generation_map_mode = 'naive'  # The mode of update the prob map, dynamic or naive
 
