@@ -579,14 +579,14 @@ class Generator:
       xy = self._sample_from_center(center, dx_range, dy_range)
       path = self.path_manager.path / "images/segment" / c
       if 'bar' in c:  # determine the side 0/1
-        paths = sorted(list(path.glob(f"{c}_{unit.states[0]}*")))
+        paths = sorted(path.glob(f"{c}_{unit.states[0]}*"))
       else:
-        paths = sorted(list(path.glob('*')))
+        paths = sorted(path.glob('*'))
       if len(paths) == 0: return
       level = unit2level[c]
       if c == 'bar':  # xy is mid of bar-level and bar
         xy[0] += self._sample_range(*bar_xy_range)
-        paths_bar_level = sorted(list(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*")))
+        paths_bar_level = sorted(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*"))
         xy_ = xy.copy()
         xy_[0] += 0.08  # 0.08 * 30.8 pixel = 2.464 pixel
         self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
@@ -606,9 +606,9 @@ class Generator:
       if random.random() > prob: continue
       for cfg in cfgs:
         if name not in background_item_list:
-          paths = sorted(list((self.path_segment / name).glob('*')))
+          paths = sorted((self.path_segment / name).glob('*'))
         else:
-          paths = sorted(list((self.path_segment / 'background-items').glob(name+'*')))
+          paths = sorted((self.path_segment / 'background-items').glob(name+'*'))
         level = unit2level[name]  # [0: background_items, 3: big-text, emote]
         center, dx_range, dy_range, w_range, maxn = cfg
         if maxn == 1:
@@ -643,7 +643,7 @@ class Generator:
       xy = self._sample_from_map(level)
       # DEBUG:
       # xy = (9, 20)
-      unit = self._build_unit_from_path(self._sample_elem(list(p.glob('*.png'))), xy, level)
+      unit = self._build_unit_from_path(self._sample_elem(sorted(p.glob('*.png'))), xy, level)
       self._add_component(unit)
   
   def reset(self):
