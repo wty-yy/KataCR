@@ -34,5 +34,5 @@ class YOLO_CR(Model):
     }
 
 if __name__ == '__main__':
-  model = YOLO_CR("yolov8n.yaml", task='detect')
+  model = YOLO_CR("yolov8x.yaml", task='detect')
   model.train(**dict(get_cfg('./katacr/yolov8/ClashRoyale.yaml')))

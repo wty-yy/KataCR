@@ -1,6 +1,7 @@
 from ultralytics.models.yolo.detect.val import DetectionValidator, torch, Path
-from ultralytics.utils import ops
+from ultralytics.utils import ops, colorstr
 from katacr.yolov8.custom_utils import plot_images, non_max_suppression
+from katacr.yolov8.custom_dataset import CRDataset
 
 def output_to_target(output, max_det=300):
   """output: (x1, y1, x2, y2, confidence, class, belong)"""
@@ -104,3 +105,22 @@ class CRDetectionValidator(DetectionValidator):
       if self.args.save_txt:
         file = self.save_dir / "labels" / f'{Path(batch["im_file"][si]).stem}.txt'
         self.save_one_txt(predn, self.args.save_conf, pbatch["ori_shape"], file)
+  
+  def build_dataset(self, img_path, mode="val", batch=None):
+    return CRDataset(
+      img_path=img_path,
+      imgsz=self.args.imgsz,
+      cache=self.args.cache,
+      augment=False,
+      prefix=colorstr(f"{mode} 123: "),
+      # rect=self.args.rect,
+      rect=True,  # TODO: set rect True, since CR Dataset is same size
+      batch_size=batch,
+      stride=32,
+      pad=0.0,
+      single_cls=False,
+      classes=None,  # only include class
+      fraction=1.0,
+      data=self.data,
+      seed=self.args.seed,  # TODO: add to generation dataset config
+    )
