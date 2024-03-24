@@ -109,8 +109,10 @@ class LabelBuilder:
     for path in paths:
       path_img = str(path.relative_to(p2)).rsplit('.', 1)[0] + '.jpg'
       path_box = str(path.relative_to(p2)).rsplit('.', 1)[0] + '.txt'
-      # file.write('./' + str(path_img) + ' ' + './' + str(path_box) + '\n')
-      file.write('./' + str(path_img) + '\n')
+      if subset is None:
+        file.write('./' + str(path_img) + ' ' + './' + str(path_box) + '\n')
+      else:
+        file.write('./' + str(path_img) + '\n')
     size = train_size if subset == 'train' else (n - train_size if subset == 'val' else n)
     if subset is not None:
       self.dfile.write(f"{subset}_datasize = {size}\n")
@@ -149,7 +151,8 @@ class LabelBuilder:
     random.shuffle(paths)
     train_size = self.build_annotation(paths, subset='train')
     val_size = self.build_annotation(paths, subset='val')
-    # self.build_annotation(paths)
+    self.build_annotation(paths, subset='yolo')
+    self.build_annotation(paths)
     self.build_data_yaml()
     if verbose:
       print("Dataset size:", len(paths))

@@ -1,6 +1,17 @@
-from ultralytics.models.yolo.detect.val import DetectionValidator, output_to_target, torch, Path
+from ultralytics.models.yolo.detect.val import DetectionValidator, torch, Path
 from ultralytics.utils import ops
 from katacr.yolov8.custom_utils import plot_images, non_max_suppression
+
+def output_to_target(output, max_det=300):
+  """output: (x1, y1, x2, y2, confidence, class, belong)"""
+  """Convert model output to target format [batch_id, class_id_with_bel, x, y, w, h, conf] for plotting."""
+  targets = []
+  for i, o in enumerate(output):
+    box, conf, cls = o[:max_det, :6].cpu().split((4, 1, 2), 1)  # TODO
+    j = torch.full((conf.shape[0], 1), i)
+    targets.append(torch.cat((j, cls, ops.xyxy2xywh(box), conf), 1))
+  targets = torch.cat(targets, 0).numpy()
+  return targets[:, 0], targets[:, 1:3], targets[:, 3:-1], targets[:, -1]  # TODO
 
 class CRDetectionValidator(DetectionValidator):
   def plot_val_samples(self, batch, ni):
@@ -24,7 +35,7 @@ class CRDetectionValidator(DetectionValidator):
       names=self.names,
       on_plot=self.on_plot,
     )  # pred
-  
+
   def postprocess(self, preds):
     """Apply Non-maximum suppression to prediction outputs."""
     return non_max_suppression(

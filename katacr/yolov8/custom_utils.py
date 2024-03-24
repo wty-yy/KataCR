@@ -30,7 +30,7 @@ def plot_images(
     if isinstance(batch_idx, torch.Tensor):
         batch_idx = batch_idx.cpu().numpy()
 
-    max_size = 1920  # max image size
+    max_size = 1920 * 4  # max image size TODO: BIGGER * 4
     bs, _, h, w = images.shape  # batch size, _, height, width
     bs = min(bs, max_subplots)  # limit plot images
     ns = np.ceil(bs**0.5)  # number of subplots (square)
@@ -56,7 +56,7 @@ def plot_images(
     for i in range(bs):
         x, y = int(w * (i // ns)), int(h * (i % ns))  # block origin
         annotator.rectangle([x, y, x + w, y + h], None, (255, 255, 255), width=2)  # borders
-        if paths:
+        if paths[i]:  # BUG: paths is [None, None, ...]
             annotator.text((x + 5, y + 5), text=Path(paths[i]).name[:40], txt_color=(220, 220, 220))  # filenames
         if len(cls) > 0:
             idx = batch_idx == i
@@ -135,7 +135,7 @@ def non_max_suppression(
   Returns:
     (List[torch.Tensor]): A list of length batch_size, where each element is a tensor of
       shape (num_boxes, 7 + num_masks) containing the kept boxes, with columns
-      (x1, y1, x2, y2, confidence, belong, class, mask1, mask2, ...).
+      (x1, y1, x2, y2, confidence, class, belong, mask1, mask2, ...).
   """
 
   # Checks
@@ -194,10 +194,6 @@ def non_max_suppression(
       # bel: (N, 1)
       conf, j = cls.max(1, keepdim=True)
       bel = (bel > 0.5).float()
-      # print(box.shape, conf.shape, j.shape, bel.shape)
-      # tmp = torch.cat((box, conf, j.float(), bel), 1)
-      # print(tmp.shape, tmp)
-      # print(conf.view(-1)>conf_thres)
       x = torch.cat((box, conf, j.float(), bel), 1)[conf.view(-1) > conf_thres]
 
     # Filter by class

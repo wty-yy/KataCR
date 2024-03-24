@@ -9,12 +9,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parents[2]))
 from ultralytics.cfg import get_cfg
 from ultralytics.engine.model import Model
-import ultralytics.models.yolo as yolo
 from pathlib import Path
-# from ultralytics.nn.tasks import DetectionModel
 from katacr.yolov8.custom_model import CRDetectionModel
 from katacr.yolov8.custom_validator import CRDetectionValidator
 from katacr.yolov8.custom_trainer import CRTrainer
+from katacr.yolov8.custom_predict import CRDetectionPredictor
 
 class YOLO_CR(Model):
   """YOLO (You Only Look Once) object detection model. (Clash Royale)"""
@@ -30,9 +29,10 @@ class YOLO_CR(Model):
         "model": CRDetectionModel,
         "trainer": CRTrainer,
         "validator": CRDetectionValidator,
-        "predictor": yolo.detect.DetectionPredictor,
+        "predictor": CRDetectionPredictor,
       },
     }
 
-model = YOLO_CR("yolov8l.yaml", task='detect')
-model.train(**dict(get_cfg('./katacr/yolov8/ClashRoyale.yaml')))
+if __name__ == '__main__':
+  model = YOLO_CR("yolov8n.yaml", task='detect')
+  model.train(**dict(get_cfg('./katacr/yolov8/ClashRoyale.yaml')))

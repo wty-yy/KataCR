@@ -248,7 +248,7 @@ class Generator:
       unit_list: Tuple[Unit,...] = None,
       seed: int | None = None,
       intersect_ratio_thre: float = 0.5,
-      map_update: dict = {'mode': 'dynamic','size': 5},
+      map_update: dict = {'mode': 'naive','size': 5},
       augment: bool = True,
       dynamic_unit: bool = True,
     ):
@@ -333,19 +333,48 @@ class Generator:
     inter = mask[unit.xyxy[1]:unit.xyxy[3],unit.xyxy[0]:unit.xyxy[2]][unit.mask].sum()
     return inter / unit.mask.sum()
   
-  def xyxy2cxcywh(self, xyxy, relative=True):
+  def xyxy2cxcywh(self, xyxy, img_shape, relative=True):
     if xyxy.ndim == 1: xyxy = xyxy.reshape(1, 4)
     bx, by = np.round(xyxy[:,[0,2]].sum(-1)/2), np.round(xyxy[:,[1,3]].sum(-1)/2)
     bw, bh = np.abs(xyxy[:,2]-xyxy[:,0]), np.abs(xyxy[:,3]-xyxy[:,1])
-    w, h = self.background_size
+    w, h = img_shape[:2][::-1]
     bw = np.minimum(bw, np.minimum(bx, w - bx) * 2)
     bh = np.minimum(bh, np.minimum(by, h - by) * 2)
     if relative:
       bx, bw = bx / w, bw / w
       by, bh = by / h, bh / h
     return np.stack([bx, by, bw, bh], -1)
+
+  def xyxy2xywh(self, xyxy, img_shape, relative=True):
+    if xyxy.ndim == 1: xyxy = xyxy.reshape(1, 4)
+    x, y = xyxy[:, 0], xyxy[:, 1]
+    w, h = xyxy[:, 2] - x, xyxy[:, 3] - y
+    if relative:
+      ws, hs = img_shape[:2][::-1]
+      x, w = x / ws, w / ws
+      y, h = y / hs, h / hs
+    return np.stack([x, y, w, h], -1)
   
-  def build(self, save_path="", verbose=False, show_box=False):
+  def resize_and_pad(self, img, box, img_size):
+    import cv2
+    # resize image and padding to img_size (896, 568) -> (896, 576)
+    shape = img.shape[:2]
+    target_shape =  img_size[::-1]
+    r = min(target_shape[0]/shape[0], target_shape[1]/shape[1])
+    unpad_shape = int(round(shape[0]*r)), int(round(shape[1]*r))
+    if shape != unpad_shape:
+      img = cv2.resize(img, unpad_shape[::-1], interpolation=cv2.INTER_CUBIC)
+    dw, dh = target_shape[1] - unpad_shape[1], target_shape[0] - unpad_shape[0]  # wh padding
+    dw, dh = dw / 2, dh / 2  # put image in padding center
+    top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+    left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114))  # add border
+    box[:, :4] *= r
+    box[:, [0, 2]] += left
+    box[:, [1, 3]] += top
+    return img, box
+  
+  def build(self, save_path="", verbose=False, show_box=False, box_format='cxcywh', img_size=None):
     img = self.background.copy()
     cls = set()
     self.unit_list = sorted(self.unit_list, key=lambda x: (x.level, x.xy_cell[1]))
@@ -369,7 +398,14 @@ class Generator:
       if u.cls_name in self.moveable_unit2idx:
         self.moveable_unit_frequency[self.moveable_unit2idx[u.cls_name]] += 1
     box = np.array(box, np.float32)
-    box[:,:4] = self.xyxy2cxcywh(box[:,:4])
+    if img_size is not None:
+      img, box = self.resize_and_pad(img, box, img_size)
+    if box_format == 'cxcywh':
+      box[:,:4] = self.xyxy2cxcywh(box[:,:4], img.shape)
+    elif box_format == 'xywh':
+      box[:,:4] = self.xyxy2xywh(box[:,:4], img.shape)
+    else:
+      raise RuntimeError(f"Don't know {box_format=}")
     origin_img = img
     img = Image.fromarray(img)
     if show_box:

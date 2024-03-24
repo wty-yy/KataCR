@@ -12,17 +12,18 @@ epochs: 100 # (int) number of epochs to train for
 time: # (float, optional) number of hours to train for, overrides epochs if supplied
 patience: 100 # (int) epochs to wait for no observable improvement for early stopping of training
 # batch: 16 # (int) number of images per batch (-1 for AutoBatch)
-batch: 32 # (int) number of images per batch (-1 for AutoBatch)
+# batch: 32 # (int) number of images per batch (-1 for AutoBatch)
+batch: 2 # (int) number of images per batch (-1 for AutoBatch)
 imgsz: 896 # (int | list) input images size as int for train and val modes, or list[w,h] for predict and export modes
 # - 576
 # - 896
 save: True # (bool) save train checkpoints and predict results
 save_period: -1 # (int) Save checkpoint every x epochs (disabled if < 1)
 cache: False # (bool) True/ram, disk or False. Use cache for data loading
-device: 2,3 # (int | str | list, optional) device to run on, i.e. cuda device=0 or device=0,1,2,3 or device=cpu
+device:  # (int | str | list, optional) device to run on, i.e. cuda device=0 or device=0,1,2,3 or device=cpu
 workers: 8 # (int) number of worker threads for data loading (per RANK if DDP)
 project: # (str, optional) project name
-name: # (str, optional) experiment name, results saved to 'project/name' directory
+name: unit40_naive # (str, optional) experiment name, results saved to 'project/name' directory
 exist_ok: False # (bool) whether to overwrite existing experiment
 pretrained: False # (bool | str) whether to use a pretrained model (bool) or a model to load weights from (str)
 optimizer: auto # (str) optimizer to use, choices=[SGD, Adam, Adamax, AdamW, NAdam, RAdam, RMSProp, auto]
@@ -121,3 +122,8 @@ copy_paste: 0.0 # (float) segment copy-paste (probability)
 auto_augment: randaugment # (str) auto augmentation policy for classification (randaugment, autoaugment, augmix)
 erasing: 0.4 # (float) probability of random erasing during classification training (0-1)
 crop_fraction: 1.0 # (float) image crop fraction for classification evaluation/inference (0-1)
+
+# Generative ClashRoyale Dataset
+# cr_unit_nums: 40
+# cr_intersect_ratio_thre: 0.5
+# cr_map_mode: naive  # 'naive' or 'dynamic'
