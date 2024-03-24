@@ -1,6 +1,6 @@
 from ultralytics.models.yolo.detect.val import DetectionValidator, output_to_target, torch, Path
-from custom_utils import plot_images, non_max_suppression
 from ultralytics.utils import ops
+from katacr.yolov8.custom_utils import plot_images, non_max_suppression
 
 class CRDetectionValidator(DetectionValidator):
   def plot_val_samples(self, batch, ni):

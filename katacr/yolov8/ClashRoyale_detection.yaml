@@ -1,4 +1,5 @@
-path: /home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2
+# path: /home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2
+path: /data/user/wutianyang/dataset/Clash-Royale-Dataset/images/part2
 train: train_annotation.txt
 val: val_annotation.txt
 # train: null

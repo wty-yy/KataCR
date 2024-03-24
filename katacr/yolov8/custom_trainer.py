@@ -1,11 +1,11 @@
 from ultralytics.models.yolo.detect.train import DetectionTrainer, copy, torch_distributed_zero_first, LOGGER, build_dataloader
-from custom_utils import plot_images
 from ultralytics.data.build import build_yolo_dataset
 from ultralytics.data import YOLODataset
 from ultralytics.utils import colorstr, RANK
 from pathlib import Path
-from custom_model import CRDetectionModel
-from custom_validator import CRDetectionValidator
+from katacr.yolov8.custom_model import CRDetectionModel
+from katacr.yolov8.custom_validator import CRDetectionValidator
+from katacr.yolov8.custom_utils import plot_images
 
 class CRTrainer(DetectionTrainer):
 
@@ -30,7 +30,8 @@ class CRTrainer(DetectionTrainer):
       cache=self.args.cache,
       augment=False,
       prefix=colorstr(f"{mode} 123: "),
-      rect=self.args.rect,
+      # rect=self.args.rect,
+      rect=True,  # TODO: set rect True, since CR Dataset is same size
       batch_size=batch,
       stride=32,
       pad=0.0,
