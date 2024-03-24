@@ -1,6 +1,8 @@
 """
 config start wandb at Path.home() / ".config" / sub_dir
 ultralytics.__version__ == 8.1.24
+Running with multi gpu should add ../KataCR to your PYTHONPATH in .bashrc or .zshrc
+export PYTHONPATH=$PYTHONPATH:/Your/Path/KataCR
 """
 import sys
 from pathlib import Path
