@@ -63,7 +63,7 @@ class YOLODataset(Dataset):
       self.generator.reset()
       self.generator.add_tower()
       self.generator.add_unit(self.num_unit)
-      img, box = self.generator.build()
+      img, box, _ = self.generator.build()
 
     h0, w0 = img.shape[:2]
     if box[:, :4].max() <= 1:  # ratio to pixel

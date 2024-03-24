@@ -102,6 +102,7 @@ def get_args_and_writer(no_writer=False, input_args=None) -> Tuple[YOLOv5Args, S
   )
   if no_writer: return args
   
+  args.path_logs_model.mkdir(exist_ok=True)
   writer = parser.get_writer(args)
   return args, writer
 

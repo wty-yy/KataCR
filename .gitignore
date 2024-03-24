@@ -4,3 +4,5 @@ test*
 _DEBUG
 logs
 wandb
+runs
+yolov8n.pt

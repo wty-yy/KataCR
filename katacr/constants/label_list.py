@@ -368,7 +368,7 @@ if __name__ == '__main__':
   check_union = set(ground_unit_list).intersection(flying_unit_list)
   assert len(check_union) == 0, f"Ground and fly should no intersection element {check_union}."
   avail_units = set(ground_unit_list) | set(flying_unit_list) | set(other_unit_list) | set(tower_unit_list)
-  avail_units.remove('bar-level')
+  # avail_units.remove('bar-level')
   unit_list.remove("selected")
   total_units = len(unit_list)
   print(colorstr(f"Total number unit n={total_units}"))

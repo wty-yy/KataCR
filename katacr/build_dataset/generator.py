@@ -370,7 +370,7 @@ class Generator:
         self.moveable_unit_frequency[self.moveable_unit2idx[u.cls_name]] += 1
     box = np.array(box, np.float32)
     box[:,:4] = self.xyxy2cxcywh(box[:,:4])
-    x = img
+    origin_img = img
     img = Image.fromarray(img)
     if show_box:
       cls2color = build_label2colors(list(cls))
@@ -378,7 +378,8 @@ class Generator:
         img = u.show_box(img, cls2color)
     if len(save_path): img.save(save_path)
     if verbose: img.show()
-    return x, box
+    pil_img = img
+    return origin_img, box, pil_img
   
   def join(self, unit: Unit):
     assert isinstance(unit, Unit), "The join element must be the instance of Unit"
@@ -662,7 +663,7 @@ if __name__ == '__main__':
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
     generator.add_unit(n=15)
-    x, box = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
+    x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # print(generator.moveable_unit_frequency)
     # f = generator.moveable_unit_frequency
     # for i in range(len(f)):

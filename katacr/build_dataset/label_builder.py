@@ -28,7 +28,7 @@ The outputs will save at `CR_dataset/version_info/label_build.log`.
 import json
 from katacr.utils.related_pkgs.utility import *
 from katacr.build_dataset.utils.datapath_manager import PathManager
-from katacr.constants.label_list import unit_list, unit2idx
+from katacr.constants.label_list import unit_list, unit2idx, idx2unit
 from katacr.constants.state_list import state2idx
 from katacr.build_dataset.constant import path_dataset
 from katacr.utils import Logger
@@ -109,7 +109,8 @@ class LabelBuilder:
     for path in paths:
       path_img = str(path.relative_to(p2)).rsplit('.', 1)[0] + '.jpg'
       path_box = str(path.relative_to(p2)).rsplit('.', 1)[0] + '.txt'
-      file.write(str(path_img) + ' ' + str(path_box) + '\n')
+      # file.write('./' + str(path_img) + ' ' + './' + str(path_box) + '\n')
+      file.write('./' + str(path_img) + '\n')
     size = train_size if subset == 'train' else (n - train_size if subset == 'val' else n)
     if subset is not None:
       self.dfile.write(f"{subset}_datasize = {size}\n")
@@ -118,12 +119,25 @@ class LabelBuilder:
     file.close()
     return size
   
+  def build_data_yaml(self, size=200):  # max cls size
+    path_data_yaml = self.path_part2 / f"ClashRoyale_detection.yaml"
+    yolov8_idx2unit = {k: v for k, v in idx2unit.items()}
+    n = len(yolov8_idx2unit)
+    yolov8_idx2unit.update({i: f"pad_{i-n}" for i in range(n, size)})
+    data = {'path': str(self.path_part2), 'train': None, 'val': 'annotation.txt', 'test': None, 'names': yolov8_idx2unit}
+    yolov8_idx2unit.update({size: "pad_belong"})
+    import yaml
+    with path_data_yaml.open('w') as file:
+      yaml.dump(data, file, sort_keys=False)
+    print(f"Save YOLO detection data config at {str(path_data_yaml)}")
+  
   def build(self, verbose=True):
     self.dfile = self.path_const_dataset.open('w')
     print(f"Write train/val annotation files to {self.path_part2},\ndataset infomations to {self.path_const_dataset}")
     self.dfile.write(f"path_dataset = \"{str(self.path_part2.resolve())}\"\n")
 
     paths = self.path_manager.search(subset='images', part=2, regex=r'^\d+.json')
+    # paths = self.path_manager.search(subset='images', part=2, name="OYASSU_20210528_episodes" regex=r'^\d+.json')
     max_path, max_box_num = None, 0
     for path in tqdm(paths):
       if 'background' in str(path): continue  # Don't build background to dataset
@@ -133,16 +147,17 @@ class LabelBuilder:
         max_path = path
 
     random.shuffle(paths)
-    # train_size = self.build_annotation(paths, subset='train')
-    # val_size = self.build_annotation(paths, subset='val')
-    self.build_annotation(paths)
+    train_size = self.build_annotation(paths, subset='train')
+    val_size = self.build_annotation(paths, subset='val')
+    # self.build_annotation(paths)
+    self.build_data_yaml()
     if verbose:
       print("Dataset size:", len(paths))
       print("Maximum bbox number:", max_box_num)
       print("with path:", max_path)
-      # train_size = int(len(paths) * (1 - self.val_ratio))
-      # print("Train datasize:", train_size)
-      # print("Val datasize:", val_size)
+      train_size = int(len(paths) * (1 - self.val_ratio))
+      print("Train datasize:", train_size)
+      print("Val datasize:", val_size)
   
   def build_background(self):
     paths = self.path_manager.search(subset='images', part=2, name='background', regex=r'background\d+.json')
@@ -155,7 +170,7 @@ class LabelBuilder:
 
 if __name__ == '__main__':
   import sys, time, socket
-  sys.stdout = Logger(path=path_dataset/"version_info/label_build.log")
+  # sys.stdout = Logger(path=path_dataset/"version_info/label_build.log")
   print(f"Build at {time.strftime('%Y.%m.%d %H:%M:%S')}, by {socket.gethostname()}")
   label_builder = LabelBuilder()
   label_builder.build()

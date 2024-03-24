@@ -82,7 +82,6 @@ class Parser(argparse.ArgumentParser):
         args.path_cp.mkdir(exist_ok=True)
         args.run_name = f"{args.model_name}__load_{args.load_id}__lr_{args.learning_rate}__batch_{args.batch_size}__{datetime.datetime.now().strftime(r'%Y%m%d_%H%M%S')}".replace("/", "-")
         args.path_logs_model = args.path_logs.joinpath(args.run_name)
-        args.path_logs_model.mkdir(exist_ok=True)
         
     def get_args(self, input_args=None) -> CVArgs:
         args = self.parse_args(input_args)

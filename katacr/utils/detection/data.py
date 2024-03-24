@@ -99,7 +99,7 @@ def transform_pad(img, target_shape):
   img = np.pad(img, ((top, bottom), (left, right), (0, 0)), mode="constant", constant_values=114)
   return img, (top, left)
 
-def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use_overlay=True, num_state=1, show_conf=False, save_path=None):
+def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use_overlay=True, num_state=1, show_conf=False, save_path=None, fontsize=12):
   from katacr.utils.detection import plot_box_PIL, build_label2colors
   from katacr.constants.label_list import idx2unit
   from katacr.constants.state_list import idx2state
@@ -128,7 +128,8 @@ def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use
         x, b[:4],
         text=text,
         box_color=label2color[label],
-        format=format, draw_center_point=draw_center_point
+        format=format, draw_center_point=draw_center_point,
+        fontsize=fontsize
       )
     if use_overlay: overlay = plot_box(overlay)
     else: img = plot_box(img)

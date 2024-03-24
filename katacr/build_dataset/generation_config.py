@@ -38,7 +38,7 @@ component_prob.update(  # the probability of adding a component
 )
 important_components = [  # highter prob to use important components, when add components.
   (('bar', 'bar-level'), 1.0),
-  ('tesla-evolution-shock', 0.5),
+  ('tesla-evolution-shock', 1.0),
   ('skeleton-king-skill', 1.0),
   ('skeleton-king-bar', 1.0),
 ]
