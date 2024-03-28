@@ -2,6 +2,7 @@ from ultralytics.data import YOLODataset
 from ultralytics.data.dataset import load_dataset_cache_file, DATASET_CACHE_VERSION, get_hash, TQDM, LOGGER, LOCAL_RANK, HELP_URL, ThreadPool, NUM_THREADS, repeat, save_dataset_cache_file, Path, torch, cv2
 from katacr.build_dataset.generator import Generator
 from katacr.yolov8.cfg import unit_nums, map_update_mode, intersect_ratio_thre, train_datasize, img_size
+from katacr.constants.label_list import idx2unit
 
 class CRDataset(YOLODataset):
 
@@ -15,7 +16,8 @@ class CRDataset(YOLODataset):
       self.generator = Generator(
         seed=kwargs['seed'],
         intersect_ratio_thre=intersect_ratio_thre,
-        map_update={'mode': map_update_mode, 'size': 5})
+        map_update={'mode': map_update_mode, 'size': 5},
+        avail_names=list(data.names.keys()))
   
   def __len__(self):
     if self.img_path is not None:
@@ -118,7 +120,7 @@ class CRDataset(YOLODataset):
           self.label_files,
           repeat(self.prefix),
           repeat(self.use_keypoints),
-          repeat(len(self.data["names"])),
+          repeat(self.data["names"]),  # TODO: give names
           repeat(nkpt),
           repeat(ndim),
         ),
@@ -160,7 +162,8 @@ class CRDataset(YOLODataset):
 from ultralytics.data.utils import Image, np, exif_size, IMG_FORMATS, ImageOps, segments2boxes, os
 def verify_image_label(args):
   """Verify one image-label pair."""
-  im_file, lb_file, prefix, keypoint, num_cls, nkpt, ndim = args
+  im_file, lb_file, prefix, keypoint, names, nkpt, ndim = args
+  names_inv = {n: i for i, n in names.items()}
   # Number (missing, found, empty, corrupt), message, segments, keypoints
   nm, nf, ne, nc, msg, segments, keypoints = 0, 0, 0, 0, "", [], None
   # Verify images
@@ -182,12 +185,18 @@ def verify_image_label(args):
     nf = 1  # label found
     with open(lb_file) as f:
       lb = [x.split() for x in f.read().strip().splitlines() if len(x)]
-      if any(len(x) > 6 for x in lb) and (not keypoint):  # is segment
-        classes = np.array([(x[0], x[5]) for x in lb], dtype=np.float32)  # TODO: Add belong class target
-        # segments = [np.array(x[1:5], dtype=np.float32).reshape(-1, 2) for x in lb]  # (cls, bel, xy1...)
-        xywh = [np.array(x[1:5], dtype=np.float32) for x in lb]  # TODO: Load xywh directly
-        # lb = np.concatenate((classes.reshape(-1, 2), segments2boxes(segments)), 1)  # (cls, bel, xywh)
-        lb = np.concatenate((classes, xywh), 1)  # (cls, bel, xywh)
+      tmp = []
+      for x in lb:  # just detect box whose label in detection range
+        name = idx2unit[int(x[0])]
+        if name in names_inv:
+          x[0] = str(names_inv[name])
+          tmp += x
+      lb = tmp
+      classes = np.array([(x[0], x[5]) for x in lb], dtype=np.float32)  # TODO: Add belong class target
+      # segments = [np.array(x[1:5], dtype=np.float32).reshape(-1, 2) for x in lb]  # (cls, bel, xy1...)
+      xywh = [np.array(x[1:5], dtype=np.float32) for x in lb]  # TODO: Load xywh directly
+      # lb = np.concatenate((classes.reshape(-1, 2), segments2boxes(segments)), 1)  # (cls, bel, xywh)
+      lb = np.concatenate((classes, xywh), 1)  # (cls, bel, xywh)
       lb = np.array(lb, dtype=np.float32)
     nl = len(lb)
     if nl:
@@ -198,9 +207,9 @@ def verify_image_label(args):
 
       # All labels
       max_cls = lb[:, 0].max()  # max label count
-      assert max_cls <= num_cls, (
-        f"Label class {int(max_cls)} exceeds dataset class count {num_cls}. "
-        f"Possible class labels are 0-{num_cls - 1}"
+      assert max_cls <= len(names), (
+        f"Label class {int(max_cls)} exceeds dataset class count {len(name)}. "
+        f"Possible class labels are 0-{len(names) - 1}"
       )
       _, i = np.unique(lb, axis=0, return_index=True)
       if len(i) < nl:  # duplicate row check

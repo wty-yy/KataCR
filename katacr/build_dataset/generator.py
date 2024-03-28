@@ -251,6 +251,7 @@ class Generator:
       map_update: dict = {'mode': 'naive','size': 5},
       augment: bool = True,
       dynamic_unit: bool = True,
+      avail_names: Sequence[str] = None,
     ):
     """
     Args:
@@ -261,6 +262,8 @@ class Generator:
       map_update_size: The changing size of dynamic generation distribution (SxS).
       augment: If taggled, the mask augmentation will be used.
       dynamic_unit: If taggled, the frequency of each unit will tend to average.
+      avail_names: Specify the generation classes.
+    Variables:
       map_cfg (dict):
         'ground': The 0/1 ground unit map in `katacr/build_dataset/generation_config.py`.
         'fly': The 0/1 fly unit map in `katacr/build_dataset/generation_config.py`.
@@ -287,7 +290,7 @@ class Generator:
     for p in sorted(self.path_segment.glob('*')):
       if p.name in [
         'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
-      ] + drop_units:
+      ] + drop_units or (avail_names is not None and p.name not in avail_names):
         continue
       self.moveable_unit2idx[p.name] = len(self.moveable_unit_paths)
       self.idx2moveable_unit[len(self.moveable_unit_paths)] = p.name
@@ -692,7 +695,8 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5})
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
+  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['bat', 'skeleton', 'musketeer'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):

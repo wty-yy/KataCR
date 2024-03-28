@@ -6,14 +6,18 @@ unit_list = [
   # object
   'king-tower',
   'queen-tower',
+  # 2024/1/1: add
+  'cannoneer-tower',
   'tower-bar',
-  'bar',
   'king-tower-bar',
-  'selected',
+  'bar',
+  # 2024/3/10: add
+  'bar-level',
   'clock',
   'emote',
   'text',
   'elixir',
+  'selected',
   # ==========
   'skeleton',
   'skeleton-evolution',
@@ -147,7 +151,6 @@ unit_list = [
   # 2023/11/29: add
   'ice-spirit-evolution',
   # 2024/1/1: add
-  'cannoneer-tower',
   'valkyrie-evolution',
   # 2024/2/1: add
   'bomber-evolution',
@@ -164,8 +167,8 @@ unit_list = [
   'skeleton-king-bar', 'skeleton-king-skill', 'tesla-evolution-shock',
   # 2024/3/9: add
   'ice-spirit-evolution-symbol',
-  # 2024/3/10: add
-  'bar-level',
+  # 2024/3/28: add
+  'zap-evolution',
 ]
 
 idx2unit = dict(enumerate(unit_list))

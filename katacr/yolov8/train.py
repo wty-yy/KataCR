@@ -33,6 +33,16 @@ class YOLO_CR(Model):
       },
     }
 
+import argparse
+def parse_args():
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--detector", type=int, default=1, help="The training detector index.")
+  args = parser.parse_args()
+  return args
+
 if __name__ == '__main__':
-  model = YOLO_CR("yolov8x.yaml", task='detect')
-  model.train(**dict(get_cfg('./katacr/yolov8/ClashRoyale.yaml')))
+  args = parse_args()
+  model = YOLO_CR("yolov8n.yaml", task='detect')
+  cfg = dict(get_cfg('./katacr/yolov8/ClashRoyale.yaml'))
+  cfg['data'] = Path(__file__).parent / f"detector{args.detector}/data.yaml"
+  model.train(**cfg)
