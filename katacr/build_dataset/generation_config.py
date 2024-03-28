@@ -99,10 +99,10 @@ background_augment = {
 aug2prob = {  # accumulate probablity
   'red': 0.05,    # 0.05
   'blue': 0.05,   # 0.05
-  'golden': 0.02, # 0.10
-  'white': 0.02,  # 0.05
-  'violet': 0.05,
-  'trans': 0.01,  # 0.05
+  'golden': 0.05, # 0.10
+  'white': 0.05,  # 0.05
+  'violet': 0.02,  # 0.05
+  'trans': 0.05,  # 0.05
 }
 
 aug2unit = {
@@ -142,7 +142,7 @@ unit_stretch = {x: ((0.5, 0.8), 0.0) for x in (except_spell_and_object_unit_list
 tower_intersect_ratio_thre = 0.8
 bar_intersect_ratio_thre = 0.5
 tower_generation_ratio = {
-  'queen-tower': 0.7,
+  'queen-tower': 0.6,
   'cannoneer-tower': 0.3,
 }
 

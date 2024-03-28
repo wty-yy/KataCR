@@ -23,7 +23,7 @@ device: # (int | str | list, optional) device to run on, i.e. cuda device=0 or d
 workers: 4 # (int) number of worker threads for data loading (per RANK if DDP)
 # workers: 16 # (int) number of worker threads for data loading (per RANK if DDP)
 project: # (str, optional) project name
-name: unit40_naive # (str, optional) experiment name, results saved to 'project/name' directory
+name: v0.6. # (str, optional) experiment name, results saved to 'project/name' directory
 exist_ok: False # (bool) whether to overwrite existing experiment
 pretrained: False # (bool | str) whether to use a pretrained model (bool) or a model to load weights from (str)
 optimizer: auto # (str) optimizer to use, choices=[SGD, Adam, Adamax, AdamW, NAdam, RAdam, RMSProp, auto]

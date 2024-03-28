@@ -168,3 +168,11 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 **FIX BUG**
 1. `generator.reset()`时忘记为概率地图的生成进行重置。
+
+### v0.6 (2024.3.23-2024.3.25)
+加入YOLOv8对ClashRoyale Dataset的识别，主要重构内容为：加入对从属部队的类别识别（多标签），修改label的读取路径，具体修改内容请见 [YOLOv8 for ClashRoyale Dataset](./asserts/yolov8_modify.md)
+1. `v0.6.`: 生成式数据集参数为 `unit_nums=40, map_update_mode='naive', intersect_ratio_thre=0.5, train_datasize=100000`，在21epochs达到最高mAP为68.56%，但是在30epoch时学习发生崩溃，原因并不清楚。
+2. `v0.6.2`: 将蒙版概率提高为0.05，每个单位总计有 $0.27$ 概率获得蒙版，修改生成式参数为 `unit_nums=30, map_update_mode='dynamic', intersect_ratio_thre=0.6, train_datasize=50000`，加入附塔的生成概率为0.9，其中queen tower生成概率为0.6，cannoneer tower生成概率为0.3，在52epochs达到最高mAP为66.68%，后基本收敛。
+3. `v0.6.3`: 基于 `v0.6.2` 修改生成式参数为 `unit_nums=40, map_update_mode='naive'`，25epochs达到66.78%，后基本收敛。
+4. `v0.6.4`：基于 `v0.6.3` 修改 `train_datasize=20000`，在91epochs达到67.9%。
+5. `v0.6.5`：基于`v0.6.4`将`map_update_mode='dynamic'`
