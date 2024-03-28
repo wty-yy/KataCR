@@ -176,3 +176,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 3. `v0.6.3`: 基于 `v0.6.2` 修改生成式参数为 `unit_nums=40, map_update_mode='naive'`，25epochs达到66.78%，后基本收敛。
 4. `v0.6.4`：基于 `v0.6.3` 修改 `train_datasize=20000`，在91epochs达到67.9%。
 5. `v0.6.5`：基于`v0.6.4`将`map_update_mode='dynamic'`
+
+### v0.7 (2024.3.28)
+使用两个识别器模型为YOLOv8l，分别识别90个类别，最后将重复识别目标用nms处理，具体重构内容请见 [YOLOv8 for ClashRoyale Dataset 双模型识别](./asserts/yolov8_modify.md#双模型识别)。
+1. `v0.7.`：每个detector使用参数`unit_nums=40, map_update_mode='naive', intersect_ratio_thre=0.6, train_datasize=20000`。

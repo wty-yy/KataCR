@@ -11,7 +11,7 @@ data: # (str, optional) path to data file, add by train.py
 epochs: 100 # (int) number of epochs to train for
 time: # (float, optional) number of hours to train for, overrides epochs if supplied
 patience: 100 # (int) epochs to wait for no observable improvement for early stopping of training
-batch: 16 # (int) number of images per batch (-1 for AutoBatch)
+batch: 32 # (int) number of images per batch (-1 for AutoBatch)
 # batch: 32 # (int) number of images per batch (-1 for AutoBatch)
 imgsz: 896 # (int | list) input images size as int for train and val modes, or list[w,h] for predict and export modes
 # - 576
@@ -19,8 +19,8 @@ imgsz: 896 # (int | list) input images size as int for train and val modes, or l
 save: True # (bool) save train checkpoints and predict results
 save_period: -1 # (int) Save checkpoint every x epochs (disabled if < 1)
 cache: False # (bool) True/ram, disk or False. Use cache for data loading
-device: # (int | str | list, optional) device to run on, i.e. cuda device=0 or device=0,1,2,3 or device=cpu
-workers: 4 # (int) number of worker threads for data loading (per RANK if DDP)
+device: 3,4,5,6 # (int | str | list, optional) device to run on, i.e. cuda device=0 or device=0,1,2,3 or device=cpu
+workers: 16 # (int) number of worker threads for data loading (per RANK if DDP)
 # workers: 16 # (int) number of worker threads for data loading (per RANK if DDP)
 project: # (str, optional) project name
 name: v0.6. # (str, optional) experiment name, results saved to 'project/name' directory

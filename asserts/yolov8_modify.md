@@ -116,3 +116,13 @@ predict -> DetectionPredictor -> self.postprocess -> engine.result.Result
     	-> self.plot(...), self.verbose(...), self.save_txt(...), self.save_crop(...), self.tojson(...)
 ```
 
+## 双模型识别
+使用方法先通过 `yolov8/model_setup.py` 生成模型的配置文件（需要识别的类别等信息），再配置模型训练参数（`batch_size, devices` 等），最后启动训练 `yolov8/train.py --detector 1`（启动第一个 `detector` 的训练）。
+### 模型配置文件
+通过两个 `YOLOv8l` 做两个识别模型，为每个模型做一个 `id->label` 的配置文件，保存在 `katacr/yolov8/detector{1, 2}/data.yaml` 文件下，通过 `katacr/yolov8/model_setup.py` 生成对应的配置文件。
+
+### 解决共享标签文件的问题
+由于两个 `detector` 的验证集需要共享同一个标签文件，但标签文件的类别是按照全部类别进行标记的，所以我们需要筛选出需要识别的目标框做验证，同理，对 `build_dataset/generator.py` 中还需加入对生成单位的种类的控制。
+
+YOLOv8重构内容如下：
+1. `YOLODataset.__getitem__` 和标签读取函数 `verify_image_label`。
