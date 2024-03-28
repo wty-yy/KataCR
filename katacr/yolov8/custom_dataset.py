@@ -13,11 +13,12 @@ class CRDataset(YOLODataset):
       super().__init__(*args, data=data, task=task, **kwargs)
     else:  # train, generation dataset
       self.unit_nums = unit_nums
+      self.name_inv = {n: i for i, n in data['names'].items()}
       self.generator = Generator(
         seed=kwargs['seed'],
         intersect_ratio_thre=intersect_ratio_thre,
         map_update={'mode': map_update_mode, 'size': 5},
-        avail_names=list(data.names.keys()))
+        avail_names=list(data['names'].values()))
   
   def __len__(self):
     if self.img_path is not None:
@@ -35,7 +36,8 @@ class CRDataset(YOLODataset):
       img, box, _ = self.generator.build(box_format='cxcywh', img_size=img_size)
       img = np.ascontiguousarray(img.transpose(2, 0, 1))
       bboxes = box[:, :4]
-      cls = box[:, [5, 4]]  # cls, bel
+      cls = np.array([self.name_inv[idx2unit[i]] for i in box[:, 5]], np.int32)  # Convert global idx to local idx
+      cls = np.stack([cls, box[:, 4]], 1)  # cls, bel
       labels = {
         'img': torch.from_numpy(img),
         'cls': torch.from_numpy(cls),
@@ -190,7 +192,7 @@ def verify_image_label(args):
         name = idx2unit[int(x[0])]
         if name in names_inv:
           x[0] = str(names_inv[name])
-          tmp += x
+          tmp.append(x)
       lb = tmp
       classes = np.array([(x[0], x[5]) for x in lb], dtype=np.float32)  # TODO: Add belong class target
       # segments = [np.array(x[1:5], dtype=np.float32).reshape(-1, 2) for x in lb]  # (cls, bel, xy1...)

@@ -1,5 +1,5 @@
 from katacr.constants.label_list import unit2idx
-unit_nums = 40
+unit_nums = 15
 map_update_mode = 'dynamic'
 intersect_ratio_thre = 0.6
 train_datasize = 20000

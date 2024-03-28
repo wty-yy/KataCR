@@ -292,6 +292,8 @@ class Generator:
         'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
       ] + drop_units or (avail_names is not None and p.name not in avail_names):
         continue
+      for p_img in p.glob('*.png'):
+        assert p_img.name.split('_')[0] == p.name, f"ERROR segment image name: {p_img}"
       self.moveable_unit2idx[p.name] = len(self.moveable_unit_paths)
       self.idx2moveable_unit[len(self.moveable_unit_paths)] = p.name
       self.moveable_unit_paths.append(p)
@@ -697,8 +699,8 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
-  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['bat', 'skeleton', 'musketeer'])
+  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['phoenix-small', 'magic-archer', 'lumberjack'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):

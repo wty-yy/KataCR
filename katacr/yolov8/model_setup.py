@@ -16,7 +16,7 @@ def setup_config_files():
     if n < max_detect_num:
       detector_idx2unit.update({i: f"padding_{i-n}" for i in range(n, max_detect_num-1)})
     detector_idx2unit.update({len(detector_idx2unit): "padding_belong"})
-    data = {'path': path_part2_dataset, 'train': None, 'val': 'annotation.txt', 'test': None, 'names': detector_idx2unit}
+    data = {'path': path_part2_dataset, 'train': None, 'val': 'yolo_annotation.txt', 'test': None, 'names': detector_idx2unit}
     with path_config.joinpath('data.yaml').open('w') as file:
       yaml.dump(data, file, sort_keys=False)
     print(f"Save {name} yaml files 'data.yaml' at {str(path_config)}.")

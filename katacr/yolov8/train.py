@@ -44,5 +44,7 @@ if __name__ == '__main__':
   args = parse_args()
   model = YOLO_CR("yolov8n.yaml", task='detect')
   cfg = dict(get_cfg('./katacr/yolov8/ClashRoyale.yaml'))
-  cfg['data'] = Path(__file__).parent / f"detector{args.detector}/data.yaml"
+  name = f"detector{args.detector}"
+  cfg['name'] = name + '_' + cfg['name']
+  cfg['data'] = Path(__file__).parent / f"{name}/data.yaml"
   model.train(**cfg)
