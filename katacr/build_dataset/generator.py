@@ -487,8 +487,10 @@ class Generator:
       for i in range(2):  # is enermy?
         for j in range(2):  # left or right
           p = random.random()
+          if p > sum(list(tower_generation_ratio.values())):
+            break  # skip generating tower
           for name, prob in tower_generation_ratio.items():
-            if p <= prob or i == 0: break  # our don't have cannoneer images
+            if p <= prob or i == 0: break  # our tower must use queen tower (we don't have)
             p -= prob
           tower = self._sample_elem(self.path_manager.search(subset='images', part='segment', name=name, regex=f"{name}_{i}"))
           # queen = self._sample_elem(
@@ -692,13 +694,13 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5})
+  generator = Generator(seed=42, intersect_ratio_thre=0.6, augment=True, map_update={'mode': 'dynamic', 'size': 5})
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=15)
+    generator.add_unit(n=30)
     x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # print(generator.moveable_unit_frequency)
     # f = generator.moveable_unit_frequency
