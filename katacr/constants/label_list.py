@@ -18,6 +18,8 @@ unit_list = [
   'text',
   'elixir',
   'selected',
+  # 2024/3/7: add
+  'skeleton-king-bar',
   # ==========
   'skeleton',
   'skeleton-evolution',
@@ -164,7 +166,7 @@ unit_list = [
   # 2024/3/6: add
   'goblin-ball',
   # 2024/3/7: add
-  'skeleton-king-bar', 'skeleton-king-skill', 'tesla-evolution-shock',
+  'skeleton-king-skill', 'tesla-evolution-shock',
   # 2024/3/9: add
   'ice-spirit-evolution-symbol',
   # 2024/3/28: add

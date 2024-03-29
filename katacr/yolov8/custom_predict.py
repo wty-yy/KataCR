@@ -1,6 +1,6 @@
 from ultralytics.engine.predictor import BasePredictor
 from katacr.yolov8.custom_utils import non_max_suppression, ops
-from katacr.yolov8.custom_resullt import CRResults
+from katacr.yolov8.custom_result import CRResults
 
 
 class CRDetectionPredictor(BasePredictor):
