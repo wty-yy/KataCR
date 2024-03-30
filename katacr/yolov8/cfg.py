@@ -1,6 +1,6 @@
 from katacr.constants.label_list import unit2idx
-unit_nums = 40
-map_update_mode = 'naive'
+unit_nums = 30
+map_update_mode = 'dynamic'
 intersect_ratio_thre = 0.6
 train_datasize = 20000
 img_size = (576, 896)  # width, height
