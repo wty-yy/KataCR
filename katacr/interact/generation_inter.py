@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import multiprocessing
-from interaction.utils import image_show
+from katacr.interact.utils import image_show
 
 class Displayer:
   def __init__(self):

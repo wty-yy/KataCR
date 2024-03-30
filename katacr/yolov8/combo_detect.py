@@ -9,22 +9,28 @@ import torch, torchvision
 from katacr.yolov8.custom_result import CRResults
 
 path_root = Path(__file__).parents[2]
-path_save_result = path_root / f"logs/detection" / time.strftime("%Y.%m.%d %H:%M:%S")
-path_save_result.mkdir(exist_ok=True, parents=True)
 
 path_detectors = [
-  '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.pt',
-  '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.pt',
+  # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.pt',
+  # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.pt',
+  # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.1.pt',
+  # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.1.pt',
+  # '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.1.pt',
+  '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.2.pt',
+  '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.2.pt',
+  '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.2.pt',
 ]
 
 class ComboDetector:
-  def __init__(self, path_detectors, show_conf=0.25, iou_thre=0.7):
+  def __init__(self, path_detectors, show_conf=True, conf=0.25, iou_thre=0.7):
     self.models = [YOLO_CR(str(p)) for p in path_detectors]
-    self.show_conf = show_conf
+    self.show_conf, self.conf = show_conf, conf
     self.iou_thre = iou_thre
+    self.path_save_result = path_root / f"logs/detection" / time.strftime("%Y.%m.%d %H:%M:%S")
+    self.path_save_result.mkdir(exist_ok=True, parents=True)
   
   def infer(self, x):
-    results = [m.predict(x, verbose=False)[0] for m in self.models]
+    results = [m.predict(x, verbose=False, conf=self.conf)[0] for m in self.models]
     preds = []
     for p in results:
       boxes = p.orig_boxes.clone()
@@ -32,7 +38,10 @@ class ComboDetector:
       for i in range(len(boxes)):
         boxes[i, 5] = unit2idx[p.names[int(boxes[i, 5])]]
         preds.append(boxes[i])
-    preds = torch.cat(preds, 0).reshape(-1, 7)
+    if not preds:
+      preds = torch.zeros(0, 7)
+    else:
+      preds = torch.cat(preds, 0).reshape(-1, 7)
     i = torchvision.ops.nms(preds[:, :4], preds[:, 4], iou_threshold=self.iou_thre)
     preds = preds[i]
     return CRResults(x, path="", names=idx2unit, boxes=preds)
@@ -50,7 +59,7 @@ class ComboDetector:
         pred = self.infer(x)
       if ds.mode in ['image', 'video']:
         img = pred.plot(**plot_kwargs)
-        save_path = str(path_save_result / (f"{Path(p).parent.name}_ep{Path(p).name}"))
+        save_path = str(self.path_save_result / (f"{Path(p).parent.name}_ep{Path(p).name}"))
         if ds.mode == 'image':
           cv2.imwrite(save_path, img)
         else:  # video
@@ -81,6 +90,7 @@ class ComboDetector:
 
 
 if __name__ == '__main__':
-  combo = ComboDetector(path_detectors)
-  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", show=False)
+  combo = ComboDetector(path_detectors, show_conf=True, conf=0.7)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", show=False)
+  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=True)
   # combo.predict("/home/yy/Coding/GitHub/KataCR/logs/split_video/OYASSU_20230203_episodes_2.mp4", show=True)

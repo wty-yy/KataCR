@@ -108,6 +108,12 @@ class MultiModelSetup:
       with path_config.joinpath('data.yaml').open('w') as file:
         yaml.dump(data, file, sort_keys=False)
       print(f"Save {name} yaml files 'data.yaml' at {str(path_config)}.")
+    data = {'path': path_part2_dataset, 'train': None, 'val': 'yolo_annotation.txt', 'test': None, 'names': idx2unit}
+    path_combo_config = Path(__file__).parent / 'detector_combo'
+    path_combo_config.mkdir(exist_ok=True)
+    with path_combo_config.joinpath('data.yaml').open('w') as file:
+      yaml.dump(data, file, sort_keys=False)
+    print(f"Save combo yaml files 'data.yaml' at {str(path_combo_config)}.")
 
 if __name__ == '__main__':
   setup = MultiModelSetup(auto=True)

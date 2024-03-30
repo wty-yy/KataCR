@@ -14,10 +14,11 @@ class CRBoxes(Boxes):
     return self.data[:, 4]  # TODO
 
 class CRResults(Results):
-  def __init__(self, orig_img, path, names, boxes=None, masks=None, probs=None, keypoints=None, obb=None) -> None:
+  def __init__(self, orig_img, path, names, boxes=None, logits_boxes=None, masks=None, probs=None, keypoints=None, obb=None) -> None:
     self.orig_img = orig_img
     self.orig_shape = orig_img.shape[:2]
     self.orig_boxes = boxes
+    self.logits_boxes = logits_boxes
     self.boxes = CRBoxes(boxes, self.orig_shape) if boxes is not None else None  # native size boxes
     self.masks = None
     self.probs = None
