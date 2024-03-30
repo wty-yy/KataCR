@@ -89,6 +89,8 @@ class MultiModelSetup:
       plt.show()
       print(unit2size)
       print(detection_range)
+      for k, v in detection_range.items():
+        print(k, [idx2unit[i] for i in v])
     print("total units:", len(detection_unit), "info:", {k: len(v) for k, v in detection_range.items()})
     if no_img_list:
       print("Don't find image:", no_img_list)
@@ -110,5 +112,5 @@ class MultiModelSetup:
       print(f"Save {name} yaml files 'data.yaml' at {str(path_config)}.")
 
 if __name__ == '__main__':
-  setup = MultiModelSetup(auto=True)
+  setup = MultiModelSetup(auto=True, verbose=True)
   setup.setup_config_files()
