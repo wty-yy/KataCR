@@ -1,5 +1,5 @@
 import multiprocessing, cv2
-from interaction.utils import image_show
+from katacr.interact.utils import image_show
 from katacr.detection.detect import Infer, ImageAndVideoLoader, IMG_FORMATS, VID_FORMATS, parse_args
 from katacr.utils import Stopwatch, second2str
 from pathlib import Path

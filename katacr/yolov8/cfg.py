@@ -14,7 +14,7 @@ detection_range = {  # detector_name: idx_list
   'detector1': detector1_list,
   'detector2': detector2_list,
 }
-invalid_units = ['selected', 'mirror']
+invalid_units = ['selected', 'text', 'mirror']
 for n in invalid_units:
   idx = unit2idx[n]
   for k in detection_range.keys():

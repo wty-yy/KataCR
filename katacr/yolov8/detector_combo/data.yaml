@@ -1,7 +1,6 @@
 path: /home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2
 train: null
 val: yolo_annotation.txt
-# val: val_annotation_mini.txt
 test: null
 names:
   0: king-tower

@@ -12,7 +12,7 @@ unit2level['small-text'] = unit2level['big-text'] = unit2level['text']
 drop_units = [
   'emote', 'small-text', 'elixir', 'bar', 'tower-bar',
   'king-tower-bar', 'clock', 'big-text', 'background-items',
-  'bar-level', 'skeleton-king-skill', 'tesla-evolution-shock'
+  'bar-level', 'skeleton-king-skill', 'tesla-evolution-shock', 'skeleton-king-bar'
 ]
 drop_fliplr = ['text', 'bar', 'bar-level', 'king-tower-bar', 'tower-bar', 'elixir', 'skeleton-king-bar']
 drop_box = background_item_list
@@ -37,7 +37,7 @@ component_prob.update(  # the probability of adding a component
   {x: 0.2 for x in (ground_unit_list + flying_unit_list)}
 )
 important_components = [  # highter prob to use important components, when add components.
-  (('bar', 'bar-level'), 1.0),
+  (('bar', 'bar-level'), None),  # Modify in Generator._add_component(unit)
   ('tesla-evolution-shock', 1.0),
   ('skeleton-king-skill', 1.0),
   ('skeleton-king-bar', 1.0),
@@ -60,7 +60,7 @@ component_cfg = {
 except_object_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list) - set(object_unit_list))
 except_spell_and_object_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list) - set(object_unit_list))
 component2unit = {  # the component below to units, prob
-  'small-text': (except_object_unit_list, 1/3),
+  'small-text': (except_object_unit_list, 0.0),
   'elixir': (except_object_unit_list, 1/3),
   ('bar', 'bar-level'): (except_spell_and_object_unit_list, 1.0),
   'tower-bar': (except_king_tower_unit_list, 1.0),
@@ -74,7 +74,7 @@ bar_xy_range = (-0.3, -0.1)  # (width(bar-level) - width(bar)) / 2
 
 # (prob, [center, dx_range, dy_range, width_range, max_num]*n)
 item_cfg = {
-  'big-text': (0.05, [[(9, 13), (0, 0), (0, 5), None, 1]]),
+  'big-text': (0.00, [[(9, 13), (0, 0), (0, 5), None, 1]]),
   'emote': (0.1, [
     [(1, 3), (0, 0), (0, 28), (1.5, 2), 4],  # left range
     [(17, 3), (0, 0), (0, 28), (1.5, 2), 4],  # right range
@@ -84,7 +84,7 @@ item_cfg = {
   'blood': (0.3, [[(9, 16), (-9, 9), (-8, 8), None, 30]]),  # center range
   'butterfly': (0.1, [[(0, 0), (0, 18), (0, 32), None, 3]]),  # all
   'flower': (0.3, [[(0, 0), (0, 18), (0, 32), None, 5]]),  # all
-  'ribbon': (0.5, [[(0, 0), (0, 18), (0, 32), None, 50]]),  # all
+  'ribbon': (0.5, [[(0, 0), (0, 18), (0, 32), None, 30]]),  # all
   'skull': (0.05, [[(0, 0), (0, 18), (0, 32), None, 3]]),  # all
   'cup': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
   'snow': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
@@ -102,7 +102,7 @@ aug2prob = {  # accumulate probablity
   'golden': 0.02, # 0.05
   'white': 0.02,  # 0.05
   'violet': 0.01,  # 0.02
-  'trans': 0.02,  # 0.05
+  'trans': 0.00,  # 0.05
 }
 
 aug2unit = {

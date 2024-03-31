@@ -18,7 +18,7 @@ from katacr.build_dataset.generation_config import (
   unit_scale, unit_stretch,  # affine transformation
   tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio,
 )
-import random
+import random, glob
 
 cell_size = np.array([(xyxy_grids[3] - xyxy_grids[1]) / grid_size[1], (xyxy_grids[2] - xyxy_grids[0]) / grid_size[0]])[::-1]  # cell pixel: (w, h)
 
@@ -89,7 +89,19 @@ class Unit:
       background (bool): The image is the background.
       fliplr (float): The probability of flip the image left and right.
       augment (bool): If true, augment the image in probability.
+    Variables:
+      cls_name (str): The unit name.
+      cls (int): The unit index.
+      states (ndarray): The belonging of the unit.
+      level (int): The layer level where the unit is on.
+      xy_cell (tuple): The bottom center of the unit, relative to arena grids.np.
+      xyxy (ndarray): The unit xyxy position relative to background.
+      augment (bool): If taggled, the augment of color mask will be used.
+      img (ndarray): The image of the unit, shape=(H,W,3)
+      mask (ndarray): The available range of image, shape=(H,W), dtype=bool.
+      components (List): The relative component units.
     """
+    self.components = []  # This will add by generator._add_components(unit)
     if name is not None or (cls is not None and states is not None):
       if name is not None:
         cls, *states = name.split('_')
@@ -133,7 +145,7 @@ class Unit:
     xy = cell2pixel(self.xy_cell)
     # Note that xyxy is (x0,y0,x1+1,y1+1)
     self.xyxy = np.array((xy[0]-w//2, xy[1]-h, xy[0]+(w+1)//2, xy[1]), np.float32)  # xyxy relative to background
-    if self.cls_name in ['text'] + spell_unit_list:  # if text or spell units, clip the out range
+    if self.cls_name in ['text', 'bar'] + spell_unit_list:  # if text or spell units, clip the out range
       self.xyxy = np.array((
         max(self.xyxy[0], 0),
         max(self.xyxy[1], 0),
@@ -161,6 +173,8 @@ class Unit:
       aug2prob_cp = aug2prob.copy()
       if self.cls_name == 'royal-ghost':
         aug2prob_cp['trans'] = 0.5
+      if self.cls_name == 'archer-queen':
+        aug2prob_cp['trans'] = 0.3
       p = random.random()
       for key, val in aug2prob_cp.items():
         if self.cls_name not in aug2unit[key]: continue
@@ -294,9 +308,13 @@ class Generator:
         continue
       for p_img in p.glob('*.png'):
         assert p_img.name.split('_')[0] == p.name, f"ERROR segment image name: {p_img}"
-      self.moveable_unit2idx[p.name] = len(self.moveable_unit_paths)
-      self.idx2moveable_unit[len(self.moveable_unit_paths)] = p.name
-      self.moveable_unit_paths.append(p)
+      for bel in range(2):
+        p_name = f"{p.name}_{bel}"
+        p_bel = str(p / (p_name + '*.png'))
+        if len(glob.glob(p_bel)):
+          self.moveable_unit2idx[p_name] = len(self.moveable_unit_paths)
+          self.idx2moveable_unit[len(self.moveable_unit_paths)] = p_name
+          self.moveable_unit_paths.append(p_bel)
     self.moveable_unit_frequency = np.zeros(len(self.moveable_unit_paths), np.int32)
   
   def build_background(self):
@@ -381,27 +399,38 @@ class Generator:
   
   def build(self, save_path="", verbose=False, show_box=False, box_format='cxcywh', img_size=None):
     img = self.background.copy()
-    cls = set()
+    cls, box = set(), []
     self.unit_list = sorted(self.unit_list, key=lambda x: (x.level, x.xy_cell[1]))
-    box, mask, unit_avail = [], np.zeros(img.shape[:2], dtype=np.bool_), []  # return box, union of images, available units
-    for u in self.unit_list[::-1]:  # reverse order for NMS
-      ratio = self._intersect_ratio_with_mask(u, mask)
-      if u.cls_name in tower_unit_list:
-        if ratio > tower_intersect_ratio_thre: continue
-      elif u.cls_name == 'bar':
-        if ratio > bar_intersect_ratio_thre: continue
-      elif ratio > self.intersect_ratio_thre: continue
-      u.update_xyxy(mask)
-      u.draw_mask(mask)
+    while True:
+      mask, unit_avail = np.zeros(img.shape[:2], dtype=np.bool_), []  # return box, union of images, available units
+      tmp_unit_list = self.unit_list.copy()
+      for u in self.unit_list[::-1]:  # reverse order for NMS
+        ratio = self._intersect_ratio_with_mask(u, mask)
+        keep_unit = True
+        if u.cls_name in tower_unit_list:
+          if ratio > tower_intersect_ratio_thre: keep_unit = False
+        elif u.cls_name == 'bar':
+          if ratio > bar_intersect_ratio_thre: keep_unit = False
+        elif ratio > self.intersect_ratio_thre: keep_unit = False
+        if not keep_unit:
+          tmp_unit_list.remove(u)
+          for cu in u.components:
+            if cu in tmp_unit_list:
+              tmp_unit_list.remove(cu)
+        else:
+          u.update_xyxy(mask)
+          u.draw_mask(mask)
+          unit_avail.append(u)
+      self.unit_list = tmp_unit_list
+      if len(self.unit_list) == len(unit_avail): break
+    for u in unit_avail[::-1]:  # increase order for drawing
+      u.draw(img)
       cls.add(u.cls)
-      unit_avail.append(u)
+      if u.cls_name in self.moveable_unit2idx:
+        self.moveable_unit_frequency[self.moveable_unit2idx[u.cls_name+'_'+str(u.states[0])]] += 1
       if u.cls != -1:
         # box.append((*u.xyxy_visiable, *u.states, u.cls))  # xyxy visiable is bad
         box.append((*u.xyxy, *u.states, u.cls))
-    for u in unit_avail[::-1]:  # increase order for drawing
-      u.draw(img)
-      if u.cls_name in self.moveable_unit2idx:
-        self.moveable_unit_frequency[self.moveable_unit2idx[u.cls_name]] += 1
     box = np.array(box, np.float32)
     if img_size is not None:
       img, box = self.resize_and_pad(img, box, img_size)
@@ -434,6 +463,7 @@ class Generator:
       xy_format: str = 'bottom_center',  # decide the format of 'xy'
       join: bool = True,
     ):
+    path = Path(path)
     avail_format = ['bottom_center', 'center', 'left_center', 'right_center', 'left_bottom', 'right_bottom']
     assert xy_format in avail_format, f"Need 'xy_format' in {avail_format}"
     img = Image.open(path)
@@ -595,6 +625,8 @@ class Generator:
     cs = []  # seleted components
     # First, check important component probability
     for c, prob in important_components:
+      if c == ('bar', 'bar-level'):
+        prob = 1.0 if unit.states[0] == 1 else 0.25
       if c in components and c not in cs and random.random() < prob:
         components.remove(c)
         cs.append(c)
@@ -633,8 +665,10 @@ class Generator:
         paths_bar_level = sorted(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*"))
         xy_ = xy.copy()
         xy_[0] += 0.08  # 0.08 * 30.8 pixel = 2.464 pixel
-        self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
-      self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format)
+        cu = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
+        unit.components.append(cu)
+      cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format)
+      unit.components.append(cu)
       # if c == 'bar':
       #   delta = (bar_level.img.shape[1] - u.img.shape[1]) // 2
       #   bar_level.xyxy[[0,2]] += delta + 2
@@ -683,11 +717,15 @@ class Generator:
       # DEBUG:
       # p = self.path_manager.path.joinpath("images/segment/tesla-evolution")
       # p = self.path_manager.path.joinpath("images/segment/skeleton-king")
-      level = unit2level[p.name]  # [1, 2, 3]
+      level = unit2level[Path(p).name.split('_')[0]]  # [1, 2, 3]
       xy = self._sample_from_map(level)
       # DEBUG:
       # xy = (9, 20)
-      unit = self._build_unit_from_path(self._sample_elem(sorted(p.glob('*.png'))), xy, level)
+      unit = self._build_unit_from_path(self._sample_elem(sorted(glob.glob(p))), xy, level)
+      # bel = random.randint(0, 1)
+      # if len(list(p.glob(f"{p.stem}_{bel}*.png"))) == 0:
+      #   bel = 1 ^ bel
+      # unit = self._build_unit_from_path(self._sample_elem(sorted(p.glob(f"{p.stem}_{bel}*.png"))), xy, level)
       self._add_component(unit)
   
   def reset(self):
