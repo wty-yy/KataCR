@@ -413,7 +413,8 @@ class Generator:
           if ratio > bar_intersect_ratio_thre: keep_unit = False
         elif ratio > self.intersect_ratio_thre: keep_unit = False
         if not keep_unit:
-          tmp_unit_list.remove(u)
+          if u in tmp_unit_list:
+            tmp_unit_list.remove(u)
           for cu in u.components:
             if cu in tmp_unit_list:
               tmp_unit_list.remove(cu)

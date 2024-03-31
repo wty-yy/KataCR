@@ -158,7 +158,8 @@ class CRDataset(YOLODataset):
     x["hash"] = get_hash(self.label_files + self.im_files)
     x["results"] = nf, nm, ne, nc, len(self.im_files)
     x["msgs"] = msgs  # warnings
-    save_dataset_cache_file(self.prefix, path, x)
+    x["version"] = None  # add cache version
+    # save_dataset_cache_file(self.prefix, path, x)  # TODO: Not save label cache, it will make multi-detector wrong label.
     return x
 
 from ultralytics.data.utils import Image, np, exif_size, IMG_FORMATS, ImageOps, segments2boxes, os

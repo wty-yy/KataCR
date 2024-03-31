@@ -195,4 +195,4 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    7. 对`archer-queen`加入`0.3`的透明概率。
    8. 模型配置修改为`unit_nums=40, intersect_ratio_thre=0.5`
    9. 测试了`yolov8m`，识别效果比`yolov8l`差比较多，不考虑使用。
-`v0.7.5`：将分类器个数重新将为两个，每个分类器识别类别数目为`90`
+`v0.7.5`：将分类器个数重新将为两个，每个分类器识别类别数目为`90`，上调`train_datasize=50000`
