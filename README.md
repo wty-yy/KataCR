@@ -177,9 +177,22 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 4. `v0.6.4`：基于 `v0.6.3` 修改 `train_datasize=20000`，在91epochs达到67.9%。
 5. `v0.6.5`：基于`v0.6.4`将`map_update_mode='dynamic'`
 
-### v0.7 (2024.3.28)
+### v0.7.1~v0.7.3 (2024.3.28-2024.3.30)
 使用两个识别器模型为YOLOv8l，分别识别90个类别，最后将重复识别目标用nms处理，具体重构内容请见 [YOLOv8 for ClashRoyale Dataset 双模型识别](./asserts/yolov8_modify.md#双模型识别)。
 1. `v0.7.`：每个detector使用参数`unit_nums=40, map_update_mode='naive', intersect_ratio_thre=0.6, train_datasize=20000`。
 2. `v0.7.1`：加到3个分类器，分别识别小中大三种不同的目标类型，调整参数`epochs=50`
 3. `v0.7.2`：关闭所有蒙版。效果仍然不好
 4. `v0.7.3`：蒙版全部开为`0.02`，只有`violet`开为`0.01`，调整参数`unit_nums=30, map_update_mode='dynamic'`
+
+### v0.7.4~v0.7.5 (2024.3.31)
+`v0.7.4`: 对 `Generator.py` 加入以下更新内容：
+   1. 对从属阵营分别计算`bar,bar-level`的生成概率，我方单位概率为`0.25`，敌方单位概率为`1.0`
+   2. 关闭YOLO对text文本的识别（改用PaddleOCR进行文本识别），注：这会导致后续mAP指标下降
+   3. 当关联性生成的**主体**消失时，则删去关联性生成的其他部件。
+   4. 敌我双方的切片分布不均匀，生成的数量差距可能很大，将动态概率分布的`moveable_unit_path`中的路径，精确到从属的`belong`。
+   5. 降低`ribbon`生成数量`50->30`。
+   6. 当`bar`超出图片时直接将超出部分进行裁剪。
+   7. 对`archer-queen`加入`0.3`的透明概率。
+   8. 模型配置修改为`unit_nums=40, intersect_ratio_thre=0.5`
+   9. 测试了`yolov8m`，识别效果比`yolov8l`差比较多，不考虑使用。
+`v0.7.5`：将分类器个数重新将为两个，每个分类器识别类别数目为`90`

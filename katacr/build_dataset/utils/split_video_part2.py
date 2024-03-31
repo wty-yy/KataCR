@@ -4,7 +4,8 @@ from pathlib import Path
 from tqdm import tqdm
 
 paths = [
-  "/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4"
+  # "/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4"
+  "/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/detection_test/small_units_test_30fps.mp4"
 ]
 path_root = Path(__file__).parents[3]
 path_logs = path_root / 'logs'

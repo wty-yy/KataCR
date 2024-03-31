@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from katacr.yolov8.cfg import detection_range, max_detect_num, base_idxs, invalid_units
+from katacr.yolov8.cfg import detection_range, max_detect_num, base_idxs, invalid_units, num_detector
 from katacr.build_dataset.constant import path_dataset
 from katacr.constants.label_list import idx2unit, unit2idx
 import numpy as np
@@ -19,13 +19,14 @@ path_logs.mkdir(exist_ok=True)
 path_part2_dataset = str(path_dataset / "images/part2")
 
 class MultiModelSetup:
-  def __init__(self, auto=True, verbose=False):
+  def __init__(self, auto=True, verbose=False, num_detector=num_detector):
     """
       auto divide class by segment images size,
       otherwise use `detection_range` in cfg.py
     """
     self.auto = auto
     self.verbose = verbose
+    self.num_detector = num_detector
     if not self.auto:
       self.detection_range = detection_range
     else:
@@ -67,9 +68,14 @@ class MultiModelSetup:
     detection_range = {}
     rank_list = list(unit2size.keys())
     units, n = rank_list, len(unit2size.keys())
-    step = min((n + 2) // 3, max_detect_num-1)
-    for i in range(3):
+    step = min((n + 2) // self.num_detector, max_detect_num-1)
+    for i in range(self.num_detector):
       tmp_list = list(range(base_idxs)) + [unit2idx[u] for u in rank_list[:step]]
+      for k in invalid_units:
+        ki = unit2idx[k]
+        if ki in tmp_list: tmp_list.remove(ki)
+      if unit2idx['skeleton-king'] not in tmp_list:
+        tmp_list.remove(unit2idx['skeleton-king-bar'])
       rank_list = rank_list[step:]
       for u in tmp_list:
         for related in related_units:
@@ -83,8 +89,8 @@ class MultiModelSetup:
     if self.verbose:
       fig, ax = plt.subplots()
       ax.plot(unit2size.keys(), unit2size.values())
-      ax.plot([units[step], units[step]], [0, 70000], 'r--')
-      ax.plot([units[2*step], units[2*step]], [0, 70000], 'r--')
+      for i in range(1, num_detector):
+        ax.plot([units[step*i], units[step*i]], [0, 70000], 'r--')
       plt.setp(ax.get_xticklabels(), rotation=90)
       plt.show()
       print(unit2size)
@@ -118,5 +124,5 @@ class MultiModelSetup:
     print(f"Save combo yaml files 'data.yaml' at {str(path_combo_config)}.")
 
 if __name__ == '__main__':
-  setup = MultiModelSetup(auto=True, verbose=True)
+  setup = MultiModelSetup(auto=True, verbose=True, num_detector=num_detector)
   setup.setup_config_files()
