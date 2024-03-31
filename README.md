@@ -184,7 +184,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 3. `v0.7.2`：关闭所有蒙版。效果仍然不好
 4. `v0.7.3`：蒙版全部开为`0.02`，只有`violet`开为`0.01`，调整参数`unit_nums=30, map_update_mode='dynamic'`
 
-### v0.7.4~v0.7.5 (2024.3.31)
+### v0.7.4~v0.7.6 (2024.3.31)
 `v0.7.4`: 对 `Generator.py` 加入以下更新内容：
    1. 对从属阵营分别计算`bar,bar-level`的生成概率，我方单位概率为`0.25`，敌方单位概率为`1.0`
    2. 关闭YOLO对text文本的识别（改用PaddleOCR进行文本识别），注：这会导致后续mAP指标下降
@@ -195,4 +195,8 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    7. 对`archer-queen`加入`0.3`的透明概率。
    8. 模型配置修改为`unit_nums=40, intersect_ratio_thre=0.5`
    9. 测试了`yolov8m`，识别效果比`yolov8l`差比较多，不考虑使用。
-`v0.7.5`：将分类器个数重新将为两个，每个分类器识别类别数目为`90`，上调`train_datasize=50000`
+
+- `v0.7.5`：将分类器个数重新将为两个，每个分类器识别类别数目为`90`，上调`train_datasize=50000`，分成两个detector仍然对小目标识别困难（小骷髅不连续）
+- `v0.7.6`：将分类器个数重新分为3个，每个分类器识别62个类别
+
+**FIX BUG**: 修复YOLOv8验证集标签错误（在于读取了之前记录的`cache`文件）

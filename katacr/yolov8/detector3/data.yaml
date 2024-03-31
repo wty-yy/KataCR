@@ -1,4 +1,4 @@
-path: /home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2
+path: /data/user/wutianyang/dataset/Clash-Royale-Dataset/images/part2
 train: null
 val: yolo_annotation.txt
 test: null
@@ -67,29 +67,4 @@ names:
   61: padding_6
   62: padding_7
   63: padding_8
-  64: padding_9
-  65: padding_10
-  66: padding_11
-  67: padding_12
-  68: padding_13
-  69: padding_14
-  70: padding_15
-  71: padding_16
-  72: padding_17
-  73: padding_18
-  74: padding_19
-  75: padding_20
-  76: padding_21
-  77: padding_22
-  78: padding_23
-  79: padding_24
-  80: padding_25
-  81: padding_26
-  82: padding_27
-  83: padding_28
-  84: padding_29
-  85: padding_30
-  86: padding_31
-  87: padding_32
-  88: padding_33
-  89: padding_belong
+  64: padding_belong
