@@ -10,7 +10,7 @@ model: yolov8l.yaml # (str, optional) path to model file, i.e. yolov8n.pt, yolov
 data: # (str, optional) path to data file, add by train.py
 epochs: 50 # (int) number of epochs to train for
 time: # (float, optional) number of hours to train for, overrides epochs if supplied
-patience: 100 # (int) epochs to wait for no observable improvement for early stopping of training
+patience: 10 # (int) epochs to wait for no observable improvement for early stopping of training
 batch: 32 # (int) number of images per batch (-1 for AutoBatch)
 # batch: 32 # (int) number of images per batch (-1 for AutoBatch)
 imgsz: 896 # (int | list) input images size as int for train and val modes, or list[w,h] for predict and export modes
