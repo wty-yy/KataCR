@@ -1,5 +1,5 @@
 from ultralytics.data import YOLODataset
-from ultralytics.data.dataset import load_dataset_cache_file, DATASET_CACHE_VERSION, get_hash, TQDM, LOGGER, LOCAL_RANK, HELP_URL, ThreadPool, NUM_THREADS, repeat, save_dataset_cache_file, Path, torch, cv2
+from ultralytics.data.dataset import load_dataset_cache_file, DATASET_CACHE_VERSION, get_hash, TQDM, LOGGER, LOCAL_RANK, HELP_URL, ThreadPool, NUM_THREADS, repeat, save_dataset_cache_file, Path, torch, cv2, Instances
 from katacr.build_dataset.generator import Generator
 from katacr.yolov8.cfg import unit_nums, map_update_mode, intersect_ratio_thre, train_datasize, img_size
 from katacr.constants.label_list import idx2unit
@@ -19,6 +19,10 @@ class CRDataset(YOLODataset):
         intersect_ratio_thre=intersect_ratio_thre,
         map_update={'mode': map_update_mode, 'size': 5},
         avail_names=list(data['names'].values()))
+      self.data = data
+      self.augment, self.rect, self.imgsz = kwargs['augment'], kwargs['rect'], kwargs['imgsz']
+      self.use_segments = self.use_keypoints = self.use_obb = False
+      self.transforms = self.build_transforms(hyp=kwargs['hyp'])
   
   def __len__(self):
     if self.img_path is not None:
@@ -26,27 +30,67 @@ class CRDataset(YOLODataset):
     else:
       return train_datasize
   
-  def __getitem__(self, index):
-    if self.img_path:
-      return super().__getitem__(index)
-    else:
-      self.generator.reset()
-      self.generator.add_tower()
-      self.generator.add_unit(self.unit_nums)
-      img, box, _ = self.generator.build(box_format='cxcywh', img_size=img_size)
-      img = np.ascontiguousarray(img.transpose(2, 0, 1))
-      bboxes = box[:, :4]
-      cls = np.array([self.name_inv[idx2unit[i]] for i in box[:, 5]], np.int32)  # Convert global idx to local idx
-      cls = np.stack([cls, box[:, 4]], 1)  # cls, bel
-      labels = {
-        'img': torch.from_numpy(img),
-        'cls': torch.from_numpy(cls),
-        'bboxes': torch.from_numpy(bboxes),
-        'batch_idx': torch.zeros(cls.shape[0]),
-        'im_file': None,
-      }
-      return labels
-
+  # def __getitem__(self, index):
+  #   if self.img_path:
+  #     return super().__getitem__(index)
+  #   else:
+  #     self.generator.reset()
+  #     self.generator.add_tower()
+  #     self.generator.add_unit(self.unit_nums)
+  #     img, box, _ = self.generator.build(box_format='cxcywh', img_size=img_size)
+  #     img = np.ascontiguousarray(img.transpose(2, 0, 1))
+  #     bboxes = box[:, :4]
+  #     cls = np.array([self.name_inv[idx2unit[i]] for i in box[:, 5]], np.int32)  # Convert global idx to local idx
+  #     cls = np.stack([cls, box[:, 4]], 1)  # cls, bel
+  #     labels = {
+  #       'img': torch.from_numpy(img),
+  #       'cls': torch.from_numpy(cls),
+  #       'bboxes': torch.from_numpy(bboxes),
+  #       'batch_idx': torch.zeros(cls.shape[0]),
+  #       'im_file': None,
+  #     }
+  #     return labels
+  
+  def get_image_and_label(self, index):
+    if self.img_path is not None:
+      return super().get_image_and_label(index)
+    self.generator.reset()
+    self.generator.add_tower()
+    self.generator.add_unit(self.unit_nums)
+    img, box, _ = self.generator.build(box_format='cxcywh', img_size=img_size)
+    bboxes = box[:, :4]
+    cls = np.array([self.name_inv[idx2unit[i]] for i in box[:, 5]])  # Convert global idx to local idx
+    cls = np.stack([cls, box[:, 4]], 1).astype(np.float32)  # cls, bel
+    # labels = {
+    #   'img': torch.from_numpy(img),
+    #   'cls': torch.from_numpy(cls),
+    #   'bboxes': torch.from_numpy(bboxes),
+    #   'batch_idx': torch.zeros(cls.shape[0]),
+    #   'im_file': None,
+    # }
+    label = {
+      'im_file': None,
+      'ratio_pad': (1.0, 1.0),
+      'rect_shape': np.array(img_size[::-1], np.float32),
+      'ori_shape': img.shape[:2],
+      'resized_shape': img.shape[:2],
+      'cls': cls,
+      # 'bboxes': bboxes,
+      # 'segments': [],
+      # 'keypoints': None,
+      # 'normalized': True,
+      'bbox_format': 'xywh',
+      'img': img[...,::-1],
+      'instances': Instances(bboxes, np.zeros((0, 1000, 2), np.float32), None, 'xywh', True),
+    }
+    return label
+  
+  # def update_labels_info(self, label):
+  #   print(label)
+  #   print(list(label.keys()))
+  #   exit()
+  #   return super().update_labels_info(label)
+    
   def get_labels(self):
     """Returns dictionary of labels for YOLO training."""
     def img2label_paths(img_paths):

@@ -200,3 +200,6 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 - `v0.7.6`：将分类器个数重新分为3个，每个分类器识别62个类别
 
 **FIX BUG**: 修复YOLOv8验证集标签错误（在于读取了之前记录的`cache`文件）
+
+### v0.7.7 (2024.4.1)
+`v0.7.7`：加入图像增强，包括：`hsv_h:0.015, hsv_s: 0.7, hsv_v: 0.4, degrees: 5, translate: 0.05, scale: 0.2, fliplr: 0.5`

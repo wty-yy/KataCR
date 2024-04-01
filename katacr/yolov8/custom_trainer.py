@@ -28,7 +28,8 @@ class CRTrainer(DetectionTrainer):
       img_path=img_path,
       imgsz=self.args.imgsz,
       cache=self.args.cache,
-      augment=False,
+      augment=mode == 'train',
+      hyp=self.args,
       prefix=colorstr(f"{mode} 123: "),
       # rect=self.args.rect,
       rect=True,  # TODO: set rect True, since CR Dataset is same size
@@ -62,7 +63,7 @@ class CRTrainer(DetectionTrainer):
     shuffle = mode == "train"
     if getattr(dataset, "rect", False) and shuffle:
       # LOGGER.warning("WARNING ⚠️ 'rect=True' is incompatible with DataLoader shuffle, setting shuffle=False")
-      LOGGER.info("OK ✅ 'rect=True' is compatible with CR DataLoader shuffle, setting shuffle=Talse")
+      LOGGER.info("OK ✅ 'rect=True' is compatible with CR DataLoader shuffle, setting shuffle=True")
       shuffle = True
     workers = self.args.workers if mode == "train" else self.args.workers * 2
     return build_dataloader(dataset, batch_size, workers, shuffle, rank)  # return dataloader
