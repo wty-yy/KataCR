@@ -119,7 +119,7 @@ def parse_args(input_args=None):
   return args
 
 path_root = Path(__file__).parents[2]
-from interaction.utils import image_show, multiprocessing
+from katacr.interact.utils import image_show, multiprocessing
 def process(args):
   path_source = str(args.source)
   is_file = path_source.rsplit('.', 1)[-1] in (['txt'] + IMG_FORMATS + VID_FORMATS)
