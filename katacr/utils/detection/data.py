@@ -37,7 +37,8 @@ def box_filter_idxs(box1, box2, wh_thr=2, ar_thr=100, area_thr=0.1, eps=1e-6):
   return (w2 > wh_thr) & (h2 > wh_thr) & (area > area_thr) & (ar < ar_thr)
 
 def transform_affine(
-    img, box,       # |   unit       |  random  |   suggestion range |
+    img,
+    box=None,       # |   unit       |  random  |   suggestion range |
     rot=0,          # |  degree      |   +/-    |     [0.0, 45.0]    |
     scale=0.5,      # |  wh scale    |   +/-    |     [0.0, 1.0]     |
     shear=0,        # |  wh degree   |   +/-    |     [0, 45]        |
@@ -67,8 +68,9 @@ def transform_affine(
 
   M = T @ S @ R @ C
   img = cv2.warpAffine(img, M[:2], dsize=(w, h), borderValue=(114,114,114))
-  nb = len(box)
+  if box is None: return img
   if len(box):
+    nb = len(box)
     xy = np.ones((nb * 4, 3))
     xy[:, :2] = box[:, [0,1,2,3,0,3,2,1]].reshape(nb * 4, 2)  # x1y1, x2y2, x1y2, x2y1
     xy = (xy @ M.T)[:, :2].reshape(nb, 8)
@@ -91,7 +93,12 @@ def transform_hsv(img, h=0.015, s=0.7, v=0.4):
   img_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val)))
   return cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
 
-def transform_pad(img, target_shape):
+def transform_resize_and_pad(img, target_shape):
+  shape = img.shape[:2]
+  r = min(target_shape[0]/shape[0], target_shape[1]/shape[1])
+  unpad_shape = int(round(shape[0]*r)), int(round(shape[1]*r))
+  if shape != unpad_shape:
+    img = cv2.resize(img, unpad_shape[::-1], interpolation=cv2.INTER_CUBIC)
   tshape = target_shape
   dw, dh = (tshape[1] - img.shape[1]) / 2, (tshape[0] - img.shape[0]) / 2
   top, bottom = int(round(dh-0.1)), int(round(dh+0.1))

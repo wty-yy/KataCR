@@ -35,6 +35,7 @@ class OCRDisplayer:
         if result is not None and len(result):
           boxes = [line[0] for line in result]
           txts = [line[1][0] for line in result]
+          print(txts)
           scores = [line[1][1] for line in result]
           img_show = draw_ocr(img, boxes, txts, scores, font_path=str(path_root / "katacr/utils/fonts/SimHei.ttf"))
           h, w, _ = img_show.shape

@@ -16,9 +16,9 @@ path_detectors = [
   # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.1.pt',
-  '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.2.pt',
-  '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.2.pt',
-  '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.2.pt',
+  '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.8.pt',
+  '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.8.pt',
+  # '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.7.pt',
 ]
 
 class ComboDetector:
@@ -90,7 +90,9 @@ class ComboDetector:
 
 
 if __name__ == '__main__':
-  combo = ComboDetector(path_detectors, show_conf=True, conf=0.7)
+  combo = ComboDetector(path_detectors, show_conf=True, conf=0.75, iou_thre=0.5)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", show=False)
-  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=True)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=False)
+  combo.predict("/home/yy/Coding/GitHub/KataCR/logs/detection_files_dir.txt", show=False)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/detection_test/small_units_test_30fps.mp4", show=True)
   # combo.predict("/home/yy/Coding/GitHub/KataCR/logs/split_video/OYASSU_20230203_episodes_2.mp4", show=True)
