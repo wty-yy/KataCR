@@ -8,6 +8,8 @@ unit_list = [
   'queen-tower',
   # 2024/1/1: add
   'cannoneer-tower',
+  # 2024/4/1: add
+  'dagger-duchess-tower',
   'tower-bar',
   'king-tower-bar',
   'bar',
@@ -82,6 +84,8 @@ unit_list = [
   'goblin-brawler',
   'valkyrie',
   'battle-ram',  # new 'dash'
+  # 2024/4/1: add
+  'battle-ram-evolution',
   'bomb-tower',
   'bomb',
   'flying-machine',

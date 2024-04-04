@@ -11,8 +11,8 @@ class CheckpointManager(ocp.CheckpointManager):
     super().__init__(
       path_save,
       options=ocp.CheckpointManagerOptions(max_to_keep=max_to_keep, step_format_fixed_length=3),
-      item_names={'params', 'config'},
-      item_handlers={'params': ocp.StandardCheckpointHandler(), 'config': ocp.JsonCheckpointHandler()}
+      item_names={'variables', 'config'},
+      item_handlers={'variables': ocp.StandardCheckpointHandler(), 'config': ocp.JsonCheckpointHandler()}
     )
   
   def save(self, epoch: int, state: train_state.TrainState, config: dict, verbose: bool = True):
@@ -22,8 +22,10 @@ class CheckpointManager(ocp.CheckpointManager):
     config['_step'] = int(state.step)
     if verbose:
       print(f"Save weights at {self.path_save}/{epoch:03}/")
+    variables = {'params': state.params}
+    if hasattr(state, 'batch_stats'): variables.update({'batch_stats': state.batch_stats})
     return super().save(epoch, args=args.Composite(
-      params=args.StandardSave(state.params),
+      variables=args.StandardSave(variables),
       config=args.JsonSave(config)
     ))
   

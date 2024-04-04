@@ -106,7 +106,7 @@ class ResNet(nn.Module):
     self.model_step = jax.jit(model_step, static_argnames='train')
 
     def predict(state: TrainState, x):
-      logits = state.apply_fn({'params': state.params}, x, train=False)
+      logits = state.apply_fn({'params': state.params, 'batch_stats': state.batch_stats}, x, train=False)
       pred = jax.nn.softmax(logits)
       return pred
     self.predict = jax.jit(predict)
@@ -125,7 +125,7 @@ class ResNet(nn.Module):
       )
     verbose_rng, init_rng = jax.random.split(jax.random.PRNGKey(train_cfg.seed), 2)
     if not train:
-      return TrainState.create(apply_fn=self.apply, params={'a': 1}, tx=optax.sgd(1))
+      return TrainState.create(apply_fn=self.apply, params={'a': 1}, tx=optax.sgd(1), batch_stats=None)
     dummy = jnp.zeros((train_cfg.batch_size, *train_cfg.image_size[::-1], 3))
     if verbose: print(self.tabulate(verbose_rng, dummy, train=False))
     variables = self.init(init_rng, dummy, train=False)
@@ -140,12 +140,13 @@ class ResNet(nn.Module):
     )
     return state
 
+import torch
 from torch.utils.data import DataLoader, Dataset
 from katacr.constants.card_list import card_list
 from katacr.utils.detection.data import transform_affine, transform_hsv, transform_resize_and_pad
-import cv2
+import cv2, random
 class CardDataset(Dataset):
-  def __init__(self, path_dataset, mode='train', repeat=20, cfg: TrainConfig = None):
+  def __init__(self, path_dataset, mode='train', repeat=50, cfg: TrainConfig = None):
     self.path_dataset, self.mode, self.repeat, self.cfg = path_dataset, mode, repeat, cfg
     self.idx2card = dict(enumerate(card_list))
     self.card2idx = {c: i for i, c in enumerate(card_list)}
@@ -161,6 +162,7 @@ class CardDataset(Dataset):
   def __getitem__(self, idx):
     idx = idx % len(self.images)
     img = self.images[idx].copy()
+    img[img==0] = 114
     cfg = self.cfg
     if self.mode == 'train':
       img = transform_affine(img, rot=cfg.rotate, scale=cfg.scale, translate=cfg.translate)
@@ -170,12 +172,15 @@ class CardDataset(Dataset):
     return img, self.labels[idx]
 
 class DatasetBuilder:
-  def __init__(self, path_dataset):
+  def __init__(self, path_dataset, seed=42):
     self.path_dataset = path_dataset
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
   
   def get_dataloader(self, train_cfg: TrainConfig, mode='train'):
     return DataLoader(
-      CardDataset(self.path_dataset, mode=mode, repeat=1 if mode=='val' else 20, cfg=train_cfg),
+      CardDataset(self.path_dataset, mode=mode, cfg=train_cfg),
       batch_size=train_cfg.batch_size,
       shuffle=mode=='train',
       num_workers=train_cfg.num_workers,
@@ -218,19 +223,21 @@ def train():
   ### Parse Augmentations and Get WandB Writer ###
   args, writer = get_args_and_writer()
   ### Dataset ###
-  ds_builder = DatasetBuilder(str(path_dataset / "images/card_classification"))
+  ds_builder = DatasetBuilder(str(path_dataset / "images/card_classification"), args.seed)
   train_cfg = TrainConfig(**vars(args))
   model_cfg = ModelConfig(**vars(args))
   train_ds = ds_builder.get_dataloader(train_cfg, mode='train')
   val_ds = ds_builder.get_dataloader(train_cfg, mode='val')
   args.steps_per_epoch = train_cfg.steps_per_epoch = len(train_ds)
+  args.card2idx = train_ds.dataset.card2idx
+  args.idx2card = train_ds.dataset.idx2card
   ### Build Model ###
   model = ResNet(model_cfg)
   model.create_fns()
-  state = model.get_states(train_cfg, verbose=True)
+  state = model.get_states(train_cfg)
   ### Build Checkpoint Manager ###
   from katacr.utils.ckpt_manager import CheckpointManager
-  ckpt_manager = CheckpointManager(args.path_cp)
+  ckpt_manager = CheckpointManager(args.path_cp, remove_old=True)
   ### Train and Evaulate ###
   for ep in range(train_cfg.total_epochs):
     print(f"Epoch: {ep+1}/{train_cfg.total_epochs}")
@@ -255,6 +262,7 @@ def train():
     for x, y in bar:
       x, y = x.numpy().astype(np.float32) / 255., y.numpy().astype(np.int32)
       state, (loss, acc) = model.model_step(state, x, y, train=False)
+      bar.set_description(f"loss={loss:.4f}, acc={acc:.4f}")
       logs.update(['val_loss', 'val_acc'], [loss, acc])
     logs.writer_tensorboard(writer, state.step)
     ckpt_manager.save(ep+1, state, vars(args))
