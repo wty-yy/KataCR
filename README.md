@@ -180,7 +180,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 ### v0.7.1~v0.7.3 (2024.3.28-2024.3.30)
 使用两个识别器模型为YOLOv8l，分别识别90个类别，最后将重复识别目标用nms处理，具体重构内容请见 [YOLOv8 for ClashRoyale Dataset 双模型识别](./asserts/yolov8_modify.md#双模型识别)。
 1. `v0.7.`：每个detector使用参数`unit_nums=40, map_update_mode='naive', intersect_ratio_thre=0.6, train_datasize=20000`。
-2. `v0.7.1`：加到3个分类器，分别识别小中大三种不同的目标类型，调整参数`epochs=50`
+2. `v0.7.1`：加到3个分类器，分别识别小中大三种不同的目标类型，调整参数`epochs=50`, `P,R,AP50,mAP:0.877,0.775,0.834,0.682`
 3. `v0.7.2`：关闭所有蒙版。效果仍然不好
 4. `v0.7.3`：蒙版全部开为`0.02`，只有`violet`开为`0.01`，调整参数`unit_nums=30, map_update_mode='dynamic'`
 
@@ -201,5 +201,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 **FIX BUG**: 修复YOLOv8验证集标签错误（在于读取了之前记录的`cache`文件）
 
-### v0.7.7 (2024.4.1)
-`v0.7.7`：加入图像增强，包括：`hsv_h:0.015, hsv_s: 0.7, hsv_v: 0.4, degrees: 5, translate: 0.05, scale: 0.2, fliplr: 0.5`
+### v0.7.7 (2024.4.1-2024.4.2)
+- `v0.7.7`：加入图像增强，包括：`hsv_h:0.015, hsv_s: 0.7, hsv_v: 0.4, degrees: 5, translate: 0.05, scale: 0.2, fliplr: 0.5`，`P,R,AP50,mAP:0.835,0.768,0.814,0.641`
+- `v0.7.8`：尝试将分类器减少到2个，`P,R,AP50,mAP:0.85,0.766,0.813,0.64`，效果依然可以，且速度更快。
+- `v0.7.8_one`：尝试只用一个分类器`yolov8x`，`epoch=80`识别类别160个。

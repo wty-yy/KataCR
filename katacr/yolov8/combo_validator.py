@@ -10,9 +10,12 @@ path_detectors = [
   # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.1.pt',
-  './runs/detect/detector1_v0.7.6/weights/best.pt',
-  './runs/detect/detector2_v0.7.6/weights/best.pt',
-  './runs/detect/detector3_v0.7.6/weights/best.pt',
+  './runs/detect/detector1_v0.7.1/weights/best.pt',
+  './runs/detect/detector2_v0.7.1/weights/best.pt',
+  './runs/detect/detector3_v0.7.1/weights/best.pt',
+  # './runs/detect/detector1_v0.7.7/weights/best.pt',
+  # './runs/detect/detector2_v0.7.7/weights/best.pt',
+  # './runs/detect/detector3_v0.7.7/weights/best.pt',
 ]
 
 class ComboDetectionValidator(CRDetectionValidator):
@@ -88,6 +91,7 @@ class ComboDetectionValidator(CRDetectionValidator):
 
 class ComboModel:
   def __init__(self, path_detectors=path_detectors):
+    print("Using detectors:", path_detectors)
     self.models = [YOLO_CR(str(p)) for p in path_detectors]
   
   def __call__(self, x):
