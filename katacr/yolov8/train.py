@@ -33,6 +33,15 @@ class YOLO_CR(Model):
       },
     }
 
+  def track(self, source=None, stream=False, persist=False, **kwargs,) -> list:
+    if not hasattr(self.predictor, "trackers"):
+      from katacr.yolov8.custom_trackers import register_tracker
+
+      register_tracker(self, persist)
+    kwargs["conf"] = kwargs.get("conf") or 0.1  # ByteTrack-based method needs low confidence predictions as input
+    kwargs["mode"] = "track"
+    return self.predict(source=source, stream=stream, **kwargs)
+
 import argparse
 def parse_args():
   parser = argparse.ArgumentParser()

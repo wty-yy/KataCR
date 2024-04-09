@@ -1,9 +1,21 @@
-from ultralytics.engine.results import Results, Boxes, ops, torch, Annotator, deepcopy, LetterBox, colors, Path, LOGGER, save_one_box
+from ultralytics.engine.results import Results, Boxes, ops, torch, Annotator, deepcopy, LetterBox, colors, Path, LOGGER, save_one_box, np
 
 class CRBoxes(Boxes):
   def __init__(self, boxes, orig_shape) -> None:
-    super().__init__(boxes, orig_shape)
-    self.is_track = False
+    if boxes.ndim == 1:
+      boxes = boxes[None, :]
+    n = boxes.shape[-1]
+    assert n in (7, 8), f"expected 7 or 8 values but got {n}"  # xyxy, track_id, conf, bel, cls TODO
+    assert isinstance(boxes, (torch.Tensor, np.ndarray))
+    self.data = boxes
+    self.orig_shape = orig_shape
+    self.is_track = n == 8  # TODO
+    self.orig_shape = orig_shape
+
+  @property
+  def id(self):
+    """Return the track IDs of the boxes (if available)."""
+    return self.data[:, -4] if self.is_track else None  # TODO
 
   @property
   def cls(self):
@@ -11,7 +23,7 @@ class CRBoxes(Boxes):
 
   @property
   def conf(self):
-    return self.data[:, 4]  # TODO
+    return self.data[:, -3]  # TODO
 
 class CRResults(Results):
   def __init__(self, orig_img, path, names, boxes=None, logits_boxes=None, masks=None, probs=None, keypoints=None, obb=None) -> None:
@@ -251,7 +263,7 @@ class CRResults(Results):
       name = self.names[class_id]
       result = {"name": name, "class": class_id, "confidence": conf, "box": box, "belong": bel}  # TODO: add bel
       if self.boxes.is_track:
-        result["track_id"] = int(row[-3])  # track ID
+        result["track_id"] = int(row[-4])  # track ID TODO
       if self.masks:
         x, y = self.masks.xy[i][:, 0], self.masks.xy[i][:, 1]  # numpy array
         result["segments"] = {"x": (x / w).tolist(), "y": (y / h).tolist()}
