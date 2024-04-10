@@ -1,4 +1,4 @@
-from ultralytics.trackers.track import check_yaml, IterableSimpleNamespace, yaml_load, partial, on_predict_postprocess_end, torch, Path
+from ultralytics.trackers.track import check_yaml, IterableSimpleNamespace, yaml_load, partial, torch, Path
 from ultralytics.trackers.byte_tracker import BYTETracker, STrack, matching, TrackState, np, xywh2ltwh
 from ultralytics.trackers.bot_sort import BOTSORT
 
@@ -116,7 +116,7 @@ class CRBYTETracker(BYTETracker):
         track.re_activate(det, self.frame_id, new_id=False)
         refind_stracks.append(track)
     # Step 3: Second association, with low score detection boxes association the untrack to the low score detections
-    detections_second = self.init_track(dets_second, scores_second, cls_second, bel_keep, img)
+    detections_second = self.init_track(dets_second, scores_second, cls_second, bel_second, img)
     r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
     # TODO
     dists = matching.iou_distance(r_tracked_stracks, detections_second)
@@ -170,7 +170,7 @@ class CRBYTETracker(BYTETracker):
     self.removed_stracks.extend(removed_stracks)
     if len(self.removed_stracks) > 1000:
       self.removed_stracks = self.removed_stracks[-999:]  # clip remove stracks to 1000 maximum
-
+    
     return np.asarray([x.result for x in self.tracked_stracks if x.is_activated], dtype=np.float32)
 
   def init_track(self, dets, scores, cls, bel, img=None):
@@ -208,6 +208,36 @@ def on_predict_start(predictor: object, persist: bool = False) -> None:
     trackers.append(tracker)
   predictor.trackers = trackers
 
+def on_predict_postprocess_end(predictor: object, persist: bool = False) -> None:
+  """
+  Postprocess detected boxes and update with object tracking.
+
+  Args:
+    predictor (object): The predictor object containing the predictions.
+    persist (bool, optional): Whether to persist the trackers if they already exist. Defaults to False.
+  """
+  bs = predictor.dataset.bs
+  path, im0s = predictor.batch[:2]
+
+  is_obb = predictor.args.task == "obb"
+  for i in range(bs):
+    if not persist and predictor.vid_path[i] != str(predictor.save_dir / Path(path[i]).name):  # new video
+      predictor.trackers[i].reset()
+
+    det = (predictor.results[i].obb if is_obb else predictor.results[i].boxes).cpu().numpy()
+    if len(det) == 0:
+      continue
+    tracks = predictor.trackers[i].update(det, im0s[i])
+    if len(tracks) == 0:
+      continue
+    # idx = tracks[:, -1].astype(int)  # TODO: WHY?
+    # predictor.results[i] = predictor.results[i][idx]
+
+    update_args = dict()
+    update_args["obb" if is_obb else "boxes"] = torch.as_tensor(tracks[:, :-1])
+    print(update_args['boxes'].shape)
+    predictor.results[i].update(**update_args)
+
 def register_tracker(model: object, persist: bool) -> None:
   """
   Register tracking callbacks to the model for object tracking during prediction.
@@ -230,7 +260,6 @@ def cr_on_predict_start(detector, persist: bool = True) -> None:
     raise AssertionError(f"Only 'bytetrack' and 'botsort' are supported for now, but got '{cfg.tracker_type}'")
 
   detector.tracker = TRACKER_MAP[cfg.tracker_type](args=cfg, frame_rate=30)
-
 
 def cr_on_predict_postprocess_end(detector, persist: bool = True) -> None:
   """

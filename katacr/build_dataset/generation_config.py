@@ -12,7 +12,7 @@ unit2level['small-text'] = unit2level['big-text'] = unit2level['text']
 drop_units = [
   'emote', 'small-text', 'elixir', 'bar', 'tower-bar',
   'king-tower-bar', 'clock', 'big-text', 'background-items',
-  'bar-level', 'skeleton-king-skill', 'tesla-evolution-shock', 'skeleton-king-bar'
+  'bar-level', 'skeleton-king-skill', 'skeleton-king-bar', # 'tesla-evolution-shock'
 ]
 drop_fliplr = ['text', 'bar', 'bar-level', 'king-tower-bar', 'tower-bar', 'elixir', 'skeleton-king-bar']
 drop_box = background_item_list
@@ -38,7 +38,7 @@ component_prob.update(  # the probability of adding a component
 )
 important_components = [  # highter prob to use important components, when add components.
   (('bar', 'bar-level'), None),  # Modify in Generator._add_component(unit)
-  ('tesla-evolution-shock', 1.0),
+  # ('tesla-evolution-shock', 1.0),
   ('skeleton-king-skill', 1.0),
   ('skeleton-king-bar', 1.0),
 ]
@@ -53,7 +53,7 @@ component_cfg = {
   'king-tower-bar0': ['bottom_center', (0, 0), (1, 1.5), (4.5, 5.5), 'bottom_center'],
   'king-tower-bar1': ['top_center', (0, 0), (0, 0), (4.5, 5.5), 'bottom_center'],
   'clock': ['bottom_center', (0, 0), (2, 1.5), None, 'bottom_center'],
-  'tesla-evolution-shock': ['center', (0, 0), (0, 0), None, 'center'],
+  # 'tesla-evolution-shock': ['center', (0, 0), (0, 0), None, 'center'],
   'skeleton-king-skill': ['center', (0, 0), (0, 0), None, 'center'],
   'skeleton-king-bar': ['top_center', (0, 0), (-0.5, -0.3), None, 'bottom_center'],
 }
@@ -66,7 +66,7 @@ component2unit = {  # the component below to units, prob
   'tower-bar': (except_king_tower_unit_list, 1.0),
   'king-tower-bar': (['king-tower'], 1.0),
   'clock': (ground_unit_list + except_spell_and_object_unit_list + ['bomb'], 1/3),
-  'tesla-evolution-shock': (['tesla-evolution'], 1.0),
+  # 'tesla-evolution-shock': (['tesla-evolution'], 1.0),
   'skeleton-king-skill': (['skeleton-king'], 1.0),
   'skeleton-king-bar': (['skeleton-king'], 1.0),
 }
@@ -142,8 +142,9 @@ unit_stretch = {x: ((0.5, 0.8), 0.0) for x in (except_spell_and_object_unit_list
 tower_intersect_ratio_thre = 0.8
 bar_intersect_ratio_thre = 0.5
 tower_generation_ratio = {
-  'queen-tower': 0.6,
+  'queen-tower': 0.4,
   'cannoneer-tower': 0.3,
+  'dagger-duchess-tower': 0.3
 }
 
 grid_size = (18, 32)  # (x, y)

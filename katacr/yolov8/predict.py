@@ -23,7 +23,8 @@ IMG_FORMATS = ['jpeg', 'jpg', 'png', 'webp']
 VID_FORMATS = ['avi', 'gif', 'm4v', 'mkv' ,'mp4', 'mpeg', 'mpg', 'wmv']
 
 class ImageAndVideoLoader:
-  def __init__(self, path: str | Sequence):
+  def __init__(self, path: str | Sequence, video_interval=1):
+    self.video_interval = video_interval
     if isinstance(path, str) and Path(path).suffix == '.txt':
       path = Path(path).read_text().split()
     files = []
@@ -53,7 +54,7 @@ class ImageAndVideoLoader:
   def _new_video(self, path):
     self.frame = 0
     self.cap = cv2.VideoCapture(path)
-    self.total_frame = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    self.total_frame = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT)) // self.video_interval
   
   def __len__(self):
     return self.n
@@ -69,15 +70,20 @@ class ImageAndVideoLoader:
 
     if self.video_flag[self.count]:
       self.mode = 'video'
-      flag, img = self.cap.read()
+      # flag, img = self.cap.read()
+      for _ in range(self.video_interval):
+        flag = self.cap.grab()
+      flag, img = self.cap.retrieve()
       while not flag:
         self.count += 1
         self.cap.release()
-        if self.count == self.n:
+        if self.count >= self.n:
           raise StopIteration
         path = self.files[self.count]
         self._new_video(path)
-        flag, img = self.cap.read()
+        for _ in range(self.video_interval):
+          flag = self.cap.grab()
+        flag, img = self.cap.retrieve()
       img = img[...,::-1]
       self.frame += 1
       s = f"video {self.count+1}/{self.n} ({self.frame}/{self.total_frame}) {path}:"

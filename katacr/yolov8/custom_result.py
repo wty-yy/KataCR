@@ -5,7 +5,7 @@ class CRBoxes(Boxes):
     if boxes.ndim == 1:
       boxes = boxes[None, :]
     n = boxes.shape[-1]
-    assert n in (7, 8), f"expected 7 or 8 values but got {n}"  # xyxy, track_id, conf, bel, cls TODO
+    assert n in (7, 8), f"expected 7 or 8 values but got {n}"  # xyxy, track_id, conf, cls, bel TODO
     assert isinstance(boxes, (torch.Tensor, np.ndarray))
     self.data = boxes
     self.orig_shape = orig_shape
@@ -165,6 +165,50 @@ class CRResults(Results):
       annotator.save(filename)
 
     return annotator.result()
+
+  def show_box(self, draw_center_point=False, verbose=True, use_overlay=True, show_conf=False, save_path=None, fontsize=12, show_track=True):
+    from katacr.utils.detection import plot_box_PIL, build_label2colors
+    from katacr.constants.label_list import idx2unit
+    from katacr.constants.state_list import idx2state
+    from PIL import Image
+    img = self.orig_img[...,::-1]  # uint8, RGB
+    box = self.boxes.data.cpu().numpy()  # xyxy, (track_id), conf, cls, bel
+    print(type(box), len(box))
+    img = img.copy()
+    if isinstance(img, np.ndarray):
+      if img.max() <= 1.0: img *= 255
+      img = Image.fromarray(img.astype('uint8'))
+    if use_overlay:
+      overlay = Image.new('RGBA', img.size, (0,0,0,0))  # build a RGBA overlay
+    if len(box):
+      label2color = build_label2colors(box[:,-2])
+    for b in box:
+      bel = int(b[-1])
+      cls = int(b[-2])
+      conf = float(b[-3])
+      text = idx2unit[cls]
+      text += idx2state[int(bel)]
+      if show_track and box.shape[1] == 8:
+        text += ' ' + str(int(b[-4]))
+      if show_conf:
+        text += ' ' + f'{conf:.2f}'
+      plot_box = lambda x: plot_box_PIL(
+          x, b[:4],
+          text=text,
+          box_color=label2color[cls],
+          format='voc', draw_center_point=draw_center_point,
+          fontsize=fontsize
+        )
+      if use_overlay: overlay = plot_box(overlay)
+      else: img = plot_box(img)
+    if use_overlay:
+      img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
+    if verbose:
+      img.show()
+    if save_path is not None:
+      img.save(str(save_path))
+    return np.array(img)[...,::-1]  # BGR
+
 
 
   def verbose(self):

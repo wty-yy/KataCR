@@ -201,7 +201,13 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 **FIX BUG**: 修复YOLOv8验证集标签错误（在于读取了之前记录的`cache`文件）
 
-### v0.7.7 (2024.4.1-2024.4.2)
+### v0.7.7-v0.7.8 (2024.4.1-2024.4.2)
 - `v0.7.7`：加入图像增强，包括：`hsv_h:0.015, hsv_s: 0.7, hsv_v: 0.4, degrees: 5, translate: 0.05, scale: 0.2, fliplr: 0.5`，`P,R,AP50,mAP:0.835,0.768,0.814,0.641`
 - `v0.7.8`：尝试将分类器减少到2个，`P,R,AP50,mAP:0.85,0.766,0.813,0.64`，效果依然可以，且速度更快。
 - `v0.7.8_one`：尝试只用一个分类器`yolov8x`，`epoch=80`识别类别160个。
+
+### v0.7.9 (2024.4.10)
+- 重构YOLOv8自带的目标追踪算法，并优化使其保持多目标追踪中同时追踪相同目标类型。
+- 数据集修改：
+   - 取消对`tesla-evolution-shock`的识别。
+   - 优化`tornado, arrows, zap, lighting`的切片，优化对法术特征的识别。
