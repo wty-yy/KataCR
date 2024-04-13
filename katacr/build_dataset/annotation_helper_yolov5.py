@@ -10,7 +10,7 @@ from katacr.constants.label_list import idx2unit
 import json, argparse
 from PIL import Image
 
-LABELME_VERSION = "5.3.1"  # write into LABELME json file
+LABELME_VERSION = "5.4.1"  # write into LABELME json file
 
 def parse_args(input_args=None):
   parser = argparse.ArgumentParser()

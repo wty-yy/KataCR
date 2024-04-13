@@ -173,7 +173,7 @@ class LabelBuilder:
 
 if __name__ == '__main__':
   import sys, time, socket
-  # sys.stdout = Logger(path=path_dataset/"version_info/label_build.log")
+  sys.stdout = Logger(path=path_dataset/"version_info/label_build.log")
   print(f"Build at {time.strftime('%Y.%m.%d %H:%M:%S')}, by {socket.gethostname()}")
   label_builder = LabelBuilder()
   label_builder.build()

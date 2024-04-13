@@ -3,9 +3,13 @@ from pathlib import Path
 
 xy2idx = {'x0': 0, 'y0': 1, 'x1': 2, 'y1': 3}
 convert_dict = {  # target label: (origin label, position range)
-  'ice-spirit-evolution-symbol1': ('ice-spirit-evoltuion-symbol1', {}),
+  # 'ice-spirit-evolution-symbol1': ('ice-spirit-evoltuion-symbol1', {}),
+  'dagger-duchess-tower1': ('queen-tower1', {}),
+  'cannoneer-tower0': ('queen-tower0', {}),
 }
 remove_list = [  # (label[str | None], remove box range[dict]), None means any label satisfied the box range.
+  # ('ice-spirit-evolution-symbol1', {})
+  # (None, {'y0': (826, 10000)})
   # (None, {'x0': (390, 600), 'y1': (0, 64)}),
   # ('king-tower-bar1', {'x0': (210,220)}),
   # (None, {'x0': (480, 500), 'x1': (530, 550), 'y0': (50, 70), 'y1': (90, 110)}),  # wrong box around top-right elixir text
@@ -112,7 +116,7 @@ def remove_file(path: Path):
   print(f"Remove {json_path}, {img_path}")
     
 if __name__ == '__main__':
-  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240309/WTY_20240309_ice_spirit")
+  path_dir = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part2/WTY_20240412/dagger1_cannoneer0_evolution_ram")
   process_count = 0
   print("Resolve directory:", path_dir)
   if REMOVE_EXTRA_FILES:

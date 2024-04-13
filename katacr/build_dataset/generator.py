@@ -26,6 +26,10 @@ def cell2pixel(xy: tuple):
   if type(xy) != np.ndarray: xy = np.array(xy)
   return (xy * cell_size + xyxy_grids[:2]).astype(np.int32)
 
+def pixel2cell(xy: tuple):
+  if type(xy) != np.ndarray: xy = np.array(xy)
+  return ((xy - xyxy_grids[:2]) / cell_size)
+
 def show_point(img: Image, xy_cell: tuple):
   xy = cell2pixel(xy_cell)
   img = plot_box_PIL(img, (xy[0],xy[1],5,5), draw_center_point=True)
@@ -114,6 +118,8 @@ class Unit:
         self.states = states
       elif self.cls_name not in drop_box:
         self.states = np.array((int(states[0]),), np.int32)
+      else:
+        self.states = np.array([0], np.int32)
         # self.states = np.zeros(7, np.int32)
         # for s in states:
         #   c, i = state2idx[s]
@@ -302,12 +308,11 @@ class Generator:
     self.map_cfg.update(map_update)
     self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit = [], {}, {}
     for p in sorted(self.path_segment.glob('*')):
-      if p.name in [
-        'backgrounds', 'king-tower', 'queen-tower', 'cannoneer-tower',
-      ] + drop_units or (avail_names is not None and p.name not in avail_names):
+      if p.name in (['backgrounds'] + tower_unit_list + drop_units
+        or (avail_names is not None and p.name not in avail_names)):
         continue
       for p_img in p.glob('*.png'):
-        assert p_img.name.split('_')[0] == p.name, f"ERROR segment image name: {p_img}"
+        assert p_img.name.split('_')[0] == p.name, f"ERROR segment image name: {p_img}, make sure the prefix name of segment image is same as its parent directory name."
       for bel in range(2):
         p_name = f"{p.name}_{bel}"
         p_bel = str(p / (p_name + '*.png'))
@@ -465,7 +470,7 @@ class Generator:
       join: bool = True,
     ):
     path = Path(path)
-    avail_format = ['bottom_center', 'center', 'left_center', 'right_center', 'left_bottom', 'right_bottom']
+    avail_format = ['bottom_center', 'center', 'left_center', 'right_center', 'left_bottom', 'right_bottom', 'top_center']
     assert xy_format in avail_format, f"Need 'xy_format' in {avail_format}"
     img = Image.open(path)
     if max_width is not None:
@@ -480,6 +485,8 @@ class Generator:
     xy_bottom_center = list(xy)
     if xy_format in ['center', 'left_center', 'right_center']:
       xy_bottom_center[1] += img.shape[0] / 2 / cell_size[1]
+    if xy_format in ['top_center']:
+      xy_bottom_center[1] += img.shape[0] / cell_size[1]
     if 'left' in xy_format:
       xy_bottom_center[0] += img.shape[1] / 2 / cell_size[0]
     if 'right' in xy_format:
@@ -523,17 +530,16 @@ class Generator:
       for i in range(2):  # is enermy?
         for j in range(2):  # left or right
           p = random.random()
-          if p > sum(list(tower_generation_ratio.values())):
-            break  # skip generating tower
-          for name, prob in tower_generation_ratio.items():
-            if p <= prob or i == 0: break  # our tower must use queen tower (we don't have)
-            p -= prob
-          tower = self._sample_elem(self.path_manager.search(subset='images', part='segment', name=name, regex=f"{name}_{i}"))
-          # queen = self._sample_elem(
-          #   self.path_manager.search(subset='images', part='segment', name='queen-tower', regex=f'queen-tower_{i}') +
-          #   self.path_manager.search(subset='images', part='segment', name='cannoneer-tower', regex=f'cannoneer-tower_{i}')
-          # )
-          unit = self._build_unit_from_path(tower, self.bc_pos[f'queen{i}_{j}'], 1)
+          if p > sum(list(tower_generation_ratio.values())):  # generating tower ruin in background_itmes/ruin{i}.png
+            path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='background-items', regex="ruin_\d+.png"))
+            # continue  # TODO: Add tower ruin
+          else:
+            for name, prob in tower_generation_ratio.items():
+              # if p <= prob or i == 0: break  # our tower must use queen tower (we don't have)
+              if p <= prob: break
+              p -= prob
+            path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name=name, regex=f"{name}_{i}"))
+          unit = self._build_unit_from_path(path, self.bc_pos[f'queen{i}_{j}'], 1)
           unit = self._add_component(unit)
           
   @staticmethod
@@ -654,28 +660,31 @@ class Generator:
       elif center == 'top_center': center = (unit.xy_cell[0], (unit.xyxy[1]-xyxy_grids[1])/cell_size[1])  # xyxy_grids[1] is the top of whold grid in image
       elif center == 'center': center = (unit.xy_cell[0], ((unit.xyxy[1]+unit.xyxy[3])/2-xyxy_grids[1])/cell_size[1])
       xy = self._sample_from_center(center, dx_range, dy_range)
-      path = self.path_manager.path / "images/segment" / c
-      if 'bar' in c:  # determine the side 0/1
+      path = self.path_segment / c
+      if 'bar' in c and c != 'dagger-duchess-tower-bar':  # determine the side 0/1
         paths = sorted(path.glob(f"{c}_{unit.states[0]}*"))
+      elif c in background_item_list:
+        paths = sorted((self.path_segment / 'background-items').glob(c + '*'))
       else:
         paths = sorted(path.glob('*'))
       if len(paths) == 0: return
       level = unit2level[c]
-      if c == 'bar':  # xy is mid of bar-level and bar
+      if c == 'bar':  # update xy, xy is junction of bar-level and bar
         xy[0] += self._sample_range(*bar_xy_range)
-        paths_bar_level = sorted(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*"))
         xy_ = xy.copy()
         xy_[0] += 0.08  # 0.08 * 30.8 pixel = 2.464 pixel
-        cu = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
-        unit.components.append(cu)
+        paths_bar_level = sorted(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*"))
+        bar_level = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
+        unit.components.append(bar_level)
       cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format)
       unit.components.append(cu)
-      # if c == 'bar':
-      #   delta = (bar_level.img.shape[1] - u.img.shape[1]) // 2
-      #   bar_level.xyxy[[0,2]] += delta + 2
-      #   u.xyxy[[0,2]] += delta
+      if c == 'dagger-duchess-tower-bar':
+        junction = pixel2cell((cu.xyxy[0], (cu.xyxy[1] + cu.xyxy[3]) / 2))
+        junction[1] += 0.06
+        bar_icon = self._build_unit_from_path(self.path_segment/"background-items/dagger-duchess-tower-icon.png", junction, level, None, 'right_center')
+        unit.components.append(bar_icon)
   
-  def _add_item(self):
+  def _add_background_item(self):
     """
     Add background items in `background_item_list`, `big-text`, `emote`.
     Look at `item_cfg.keys()`.
@@ -683,16 +692,21 @@ class Generator:
     # (prob, [center, dx_range, dy_range, width_range, max_num]*n)
     for name, (prob, cfgs) in item_cfg.items():
       if random.random() > prob: continue
+      pure_name = file_name = name              # For example:
+      if name[-1] in ['0', '1']:                # name = scoreboard0
+        pure_name = name[:-1]                   # pure_name = scoreboard
+        file_name = pure_name + '_' + name[-1]  # file_name = scoreboard_0
       for cfg in cfgs:
-        if name not in background_item_list:
-          paths = sorted((self.path_segment / name).glob('*'))
+        if pure_name not in background_item_list:
+          paths = sorted((self.path_segment / pure_name).glob('*'))
         else:
-          paths = sorted((self.path_segment / 'background-items').glob(name+'*'))
-        level = unit2level[name]  # [0: background_items, 3: big-text, emote]
+          paths = sorted((self.path_segment / 'background-items').glob(file_name+'*'))
+        level = unit2level[pure_name]  # [0: background_items, 3: big-text, emote]
         center, dx_range, dy_range, w_range, maxn = cfg
-        if maxn == 1:
-          n = self._sample_elem(range(2))
-        else: n = self._sample_elem(range(maxn)) + 1
+        n = self._sample_elem(range(maxn)) + 1
+        # if maxn == 1:
+        #   n = self._sample_elem(range(2))
+        # else: n = self._sample_elem(range(maxn)) + 1
         for _ in range(n):
           xy = self._sample_from_center(center, dx_range, dy_range)
           path = self._sample_elem(paths)
@@ -703,7 +717,7 @@ class Generator:
     Add unit in [ground, flying, others] randomly.
     Unit list looks at `katacr/constants/label_list.py`
     """
-    self._add_item()
+    self._add_background_item()
     # paths = self.moveable_unit_paths
     freq = self.moveable_unit_frequency.copy()
     if self.dynamic_unit:
@@ -738,15 +752,16 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['phoenix-small', 'magic-archer', 'lumberjack'])
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
+  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['phoenix-small', 'magic-archer', 'lumberjack'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=30)
+    generator.add_unit(n=40)
     x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
+    # x, box, _ = generator.build(verbose=True, show_box=False, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # print(generator.moveable_unit_frequency)
     # f = generator.moveable_unit_frequency
     # for i in range(len(f)):

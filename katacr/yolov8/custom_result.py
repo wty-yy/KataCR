@@ -165,6 +165,10 @@ class CRResults(Results):
       annotator.save(filename)
 
     return annotator.result()
+  
+  def get_data(self):
+    # xyxy, (track_id), conf, cls, bel
+    return self.boxes.data.cpu().numpy()
 
   def show_box(self, draw_center_point=False, verbose=True, use_overlay=True, show_conf=False, save_path=None, fontsize=12, show_track=True):
     from katacr.utils.detection import plot_box_PIL, build_label2colors
@@ -172,8 +176,8 @@ class CRResults(Results):
     from katacr.constants.state_list import idx2state
     from PIL import Image
     img = self.orig_img[...,::-1]  # uint8, RGB
-    box = self.boxes.data.cpu().numpy()  # xyxy, (track_id), conf, cls, bel
-    print(type(box), len(box))
+    # box = self.boxes.data.cpu().numpy()  # xyxy, (track_id), conf, cls, bel
+    box = self.get_data()
     img = img.copy()
     if isinstance(img, np.ndarray):
       if img.max() <= 1.0: img *= 255

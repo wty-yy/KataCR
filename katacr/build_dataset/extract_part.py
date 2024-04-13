@@ -86,7 +86,7 @@ if __name__ == '__main__':
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="fast_pig_2.6/WTY_20240218_episodes/1.mp4", regex="^\d+.mp4$")
   # paths = path_manager.search('videos', video_name="segment_test/WTY_20240309/WTY_20240309_barbarian.mp4")
-  paths = path_manager.search('videos', part='segment_test', video_name="WTY_20240404")
+  paths = path_manager.search('videos', part='segment_test', video_name="WTY_20240413")
   # paths = path_manager.search('videos', part='patch_detection')
   for path in paths:
     parts = list(path.parts)
@@ -100,5 +100,5 @@ if __name__ == '__main__':
       parts[-3] = 'images'
       parts = parts[:-1]
       parts.append(path.stem)
-    extract_part(path, path_parts=parts, part_mode=[2], interval=15, playback=True, limit=(0, float('inf')))
+    extract_part(path, path_parts=parts, part_mode=[2], interval=15, playback=False, limit=(0, float('inf')))
     

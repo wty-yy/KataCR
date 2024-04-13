@@ -18,25 +18,27 @@ path_detectors = [
   # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.1.pt',
-  # './runs/detector1_v0.7.6.pt',
-  # './runs/detector2_v0.7.6.pt',
-  # './runs/detector3_v0.7.6.pt',
-  './runs/detector1_v0.7.8.pt',
-  './runs/detector2_v0.7.8.pt',
+  path_root / './runs/detector1_v0.7.6.pt',
+  path_root / './runs/detector2_v0.7.6.pt',
+  path_root / './runs/detector3_v0.7.6.pt',
+  # path_root / './runs/detector1_v0.7.8.pt',
+  # path_root / './runs/detector2_v0.7.8.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.7.pt',
 ]
 
 class ComboDetector:
-  def __init__(self, path_detectors, show_conf=True, conf=0.1, iou_thre=0.5, tracker='bytetrack'):
+  def __init__(self, path_detectors, show_conf=True, conf=0.7, iou_thre=0.6, tracker='bytetrack'):
     self.models = [YOLO_CR(str(p)) for p in path_detectors]
     self.show_conf, self.conf = show_conf, conf
     self.iou_thre = iou_thre
     self.tracker = None
     if tracker == 'bytetrack':
+      self.conf = 0.1
       self.tracker_cfg_path = str(path_root/'./katacr/yolov8/bytetrack.yaml')
       cr_on_predict_start(self, persist=True)
   
-  def infer(self, x):
+  def infer(self, x, pil=False):
+    if pil: x = x[..., ::-1]  # RGB -> BGR
     results = [m.predict(x, verbose=False, conf=self.conf)[0] for m in self.models]
     preds = []
     for p in results:
@@ -51,7 +53,8 @@ class ComboDetector:
     i = torchvision.ops.nms(preds[:, :4], preds[:, 4], iou_threshold=self.iou_thre)
     preds = preds[i]
     self.result = CRResults(x, path="", names=idx2unit, boxes=preds)
-    cr_on_predict_postprocess_end(self, persist=True)
+    if self.tracker is not None:
+      cr_on_predict_postprocess_end(self, persist=True)
     return self.result
 
   def predict(self, source, show=False, save=True, video_interval=1):
@@ -106,12 +109,13 @@ class ComboDetector:
 
 
 if __name__ == '__main__':
-  combo = ComboDetector(path_detectors, show_conf=True, conf=0.1, iou_thre=0.7)
+  combo = ComboDetector(path_detectors, show_conf=True, conf=0.7, iou_thre=0.6, tracker=None)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4", show=True, save=True, video_interval=7)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", show=True, save=True, video_interval=7)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=False)
   # combo.predict("./logs/detection_files.txt", show=True, save=False)
-  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=True, save=True, video_interval=7)
-  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240227_miners/1.mp4", show=True, save=True, video_interval=7)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=False, save=True, video_interval=1)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240227_miners/1.mp4", show=True, save=True, video_interval=7)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240222_8spells/1.mp4")
   # combo.predict("/home/yy/Coding/GitHub/KataCR/logs/split_video/OYASSU_20230203_episodes_2.mp4", show=True)
+  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240412/dagger0_cannoneer1_1.mp4", show=True, save=True, video_interval=3)

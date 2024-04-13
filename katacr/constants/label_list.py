@@ -10,6 +10,8 @@ unit_list = [
   'cannoneer-tower',
   # 2024/4/1: add
   'dagger-duchess-tower',
+  # 2024/4/12: add
+  'dagger-duchess-tower-bar',
   'tower-bar',
   'king-tower-bar',
   'bar',
@@ -192,6 +194,7 @@ ground_unit_list = [
   'barbarian-hut',
   'battle-healer',
   'battle-ram',
+  'battle-ram-evolution',
   'bomb',
   'bomb-tower',
   'bomber',
@@ -293,7 +296,6 @@ ground_unit_list = [
   'witch',
   'wizard',
   'the-log',
-  'tornado',
   'x-bow',
   'zappy',
 ]
@@ -301,6 +303,7 @@ tower_unit_list = [
   'king-tower',
   'queen-tower',
   'cannoneer-tower',
+  'dagger-duchess-tower',
 ]
 flying_unit_list = [
   'arrows',
@@ -322,6 +325,7 @@ flying_unit_list = [
   'rocket',
   'skeleton-barrel',
   'skeleton-dragon',
+  'tornado',
   'zap',
 ]
 spell_unit_list = [
@@ -345,25 +349,30 @@ spell_unit_list = [
 other_unit_list = [
   'bar',
   'bar-level',
-  'skeleton-king-bar',
-  'evolution-symbol',
-  'ice-spirit-evolution-symbol',
-  'tower-bar',
-  'king-tower-bar',
   'clock',
-  'text',
+  'dagger-duchess-tower-bar',
   'elixir',
   'emote',
+  'evolution-symbol',
+  'ice-spirit-evolution-symbol',
+  'king-tower-bar',
+  'skeleton-king-bar',
+  'text',
+  'tower-bar',
 ]
 background_item_list = [
   'blood',
   'butterfly',
-  'flower',
-  'ribbon',
-  'skull',
   'cup',
+  'dagger-duchess-tower-icon',
+  'flower',
+  'grave',
+  'crown-icon',
+  'ribbon',
+  'ruin',
+  'skull',
+  'scoreboard',
   'snow',
-  'grave'
 ]
 object_unit_list = [
   'axe',

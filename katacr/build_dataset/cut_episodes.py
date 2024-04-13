@@ -8,19 +8,24 @@
 @Desc  : 提取视频中的所有回合，基于底部卡牌栏判断回合的开始，OCR识别文字来判断回合的结束，从而实现对视频文件进行划分：
 |  Start episode  |  End episode  |
 |   card table    |  center word  |
+2024.4.11: 将OCR识别从CRNN转为paddleOCR，识别目标修改如下：右上角时间以及中间区域的文字，
+判断episode方式如下：
+  Start episdoe: Time <= 10s or 'fight' in center_text
+  End episode: Had started a episode and (
+    ['match', 'over', 'break'] in center_text
+    or satisfy start episode conditions
 '''
 import os, sys
 sys.path.append(os.getcwd())
-import moviepy.editor as mp
 from katacr.utils.ffmpeg_tools import ffmpeg_extract_subclip
 from katacr.utils.related_pkgs.utility import *
-from katacr.utils.related_pkgs.jax_flax_optax_orbax import *
 from katacr.build_dataset.utils.split_part import split_part
 from katacr.utils import load_image_array, colorstr, second2str
 import constant as const
 import cv2
-from katacr.ocr_text.ocr_predict import OCRText
-ocr_text = OCRText()
+# from katacr.ocr_text.ocr_predict import OCRText
+from katacr.ocr_text.paddle_ocr import OCR
+ocr = OCR()
 
 def get_features(path_features: Path) -> Sequence[np.ndarray]:
   features = []
@@ -42,54 +47,6 @@ def get_features(path_features: Path) -> Sequence[np.ndarray]:
       features.append(feature)
   return features
 
-def split_episodes(path_video: Path):
-  # clip = mp.VideoFileClip(str(path_video))
-  # fps, duration = clip.fps, clip.duration
-  cap = cv2.VideoCapture(str(path_video))
-  fps = cap.get(cv2.CAP_PROP_FPS)
-  frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-  duration = frames / fps
-  print(fps, frames, duration)
-
-  print(colorstr("[Video info]") + f" fps={fps:.2f}, duration={second2str(duration)}")
-  file_name = path_video.name[:-4]
-  path_episodes = path_video.parent.joinpath(file_name+"_episodes")
-  # if path_episodes.exists():
-  #   print(f"The episodes path '{str(path_episodes)} is exists, still continue? [Enter]'"); input()
-  path_episodes.mkdir(exist_ok=True)
-
-  start_features = get_features(const.path_features.joinpath("start_episode"))
-
-  episode_num, start_frame = 0, -1
-  # bar = tqdm(clip.iter_frames(), total=int(fps*duration)+1)
-  bar = tqdm(range(1, int(frames)+1))
-  for frame in bar:
-    flag, image = cap.read()
-    if not flag: break
-    hw_ratio = image.shape[0] / image.shape[1]
-    if 2.22 <= hw_ratio <= 2.23:
-      image = cv2.resize(image, const.image_size_222)
-    elif 2.16 <= hw_ratio <= 2.17:
-      image = cv2.resize(image, const.image_size)
-    else:
-      raise f"Error: Don't know height/weight ratio: {hw_ratio:.2f}!"
-    # image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    if start_frame == -1 and check_feature_exists(image_gray, start_features):
-      episode_num += 1
-      start_frame = frame
-    if start_frame != -1 and check_text_exists(
-      list(split_part(image_gray, 4).values()),  # images
-      const.text_features_episode_end  # texts
-    ):
-      path = path_episodes.joinpath(f"{episode_num}.mp4")
-      ffmpeg_extract_subclip(str(path_video), start_frame/fps, frame/fps+1, str(path))
-      print(f"Split episode{episode_num} in {second2str(start_frame/fps)}~{second2str(frame/fps)}")
-      start_frame = -1
-    bar.set_description(f"Process {episode_num} episode" + f", start at {second2str(start_frame/fps)}" if start_frame != -1 else "")
-  # clip.close()
-  cap.release()
-
 def match_feature(image, feature: dict):
   result = cv2.matchTemplate(image, feature['feature'], cv2.TM_SQDIFF_NORMED)
   return result.min() < const.mse_feature_match_threshold
@@ -103,23 +60,147 @@ def check_feature_exists(
       return True
   return False
 
-import cv2
-def check_text_exists(
-    images: np.ndarray,
-    texts: Sequence[str]
-  ):
-  pred_list, conf = ocr_text.predict(images)
-  pred = "".join(pred_list).lower()
-  if np.max(conf) < const.text_confidence_threshold:
-    return False  # no text
-  for text in texts:
-    if text in pred:
-      return True
-  return False
+def split_episodes(path_video: Path, show=True, interval=10):
+  cap = cv2.VideoCapture(str(path_video))
+  fps = cap.get(cv2.CAP_PROP_FPS)
+  frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+  duration = frames / fps
+  print(fps, frames, duration)
+
+  print(colorstr("[Video info]") + f" fps={fps:.2f}, duration={second2str(duration)}")
+  path_video = Path(path_video)
+  file_name = path_video.name[:-4]
+  path_episodes = path_video.parent.joinpath(file_name+"_episodes")
+  # if path_episodes.exists():
+  #   print(f"The episodes path '{str(path_episodes)} is exists, still continue? [Enter]'"); input()
+  path_episodes.mkdir(exist_ok=True)
+
+  # start_features = get_features(const.path_features.joinpath("start_episode"))
+
+  episode_num, start_frame = 0, -1
+  # bar = tqdm(clip.iter_frames(), total=int(fps*duration)+1)
+  bar = tqdm(range(1, int(frames//interval)))
+  for frame in bar:
+    for _ in range(interval):
+      falg = cap.grab()
+    flag, image = cap.retrieve()
+    if not flag: break
+    hw_ratio = image.shape[0] / image.shape[1]
+    if 2.22 <= hw_ratio <= 2.23:
+      image = cv2.resize(image, const.image_size_222)
+    elif 2.16 <= hw_ratio <= 2.17 or 2.13 <= hw_ratio <= 2.14:
+      image = cv2.resize(image, const.image_size)
+    else:
+      raise f"Error: Don't know height/weight ratio: {hw_ratio:.2f}!"
+    # image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # if start_frame == -1 and check_feature_exists(image_gray, start_features):
+    #   episode_num += 1
+    #   start_frame = frame
+    # if start_frame != -1 and check_text_exists(
+    #   list(split_part(image_gray, 4).values()),  # images
+    #   const.text_features_episode_end  # texts
+    # ):
+    time = get_time(image_gray, show=show)
+    # print("Time now", time)
+    center_texts = get_center_texts(image_gray, show=show)
+    def check_has_texts(texts):
+      for i in center_texts:
+        for j in texts:
+          if j.lower() in i.lower(): return True
+      return False
+    # print('check1', check_has_texts(['fight']))
+    # print('check2', check_has_texts(const.text_features_episode_end))
+    start_flag = check_has_texts(['fight']) or time < 10
+    if start_frame != -1 and (
+      check_has_texts(const.text_features_episode_end)
+      or ((frame - start_frame) * interval / fps > 15 and start_flag)):  # WE think each episode length will longer than 30s
+      dt_end = 0
+      if start_flag:
+        dt_end = -1.4
+      path = path_episodes.joinpath(f"{episode_num}.mp4")
+      ffmpeg_extract_subclip(str(path_video), start_frame*interval/fps, frame*interval/fps+1+dt_end, str(path))
+      print(f"Split episode{episode_num} in {second2str(start_frame*interval/fps)}~{second2str(frame*interval/fps)}")
+      start_frame = -1
+    if start_frame == -1 and start_flag:
+      episode_num += 1
+      start_frame = frame
+    bar.set_description(f"Process {episode_num} episode" + f", start at {second2str(start_frame*interval/fps)}" if start_frame != -1 else "")
+    if show:
+      info = f"time: {time},\ncenter text: {center_texts}"
+      for i, line in enumerate(info.split('\n')):
+        y = (i+1) * 25
+        cv2.putText(image, line, (0, y), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0,0,255), thickness=2)
+      cv2.imshow('ocr', image)
+      cv2.waitKey(1)
+  cap.release()
+
+# from katacr.ocr_text.ocr_predict import OCRText
+# ocr = OCR()
+# def check_text_exists_jax(
+#     images: np.ndarray,
+#     texts: Sequence[str]
+#   ):
+#   pred_list, conf = ocr(images)
+#   pred = "".join(pred_list).lower()
+#   if np.max(conf) < const.text_confidence_threshold:
+#     return False  # no text
+#   for text in texts:
+#     if text in pred:
+#       return True
+#   return False
+def get_center_texts(img: Sequence[np.ndarray], show=False):
+  h, w = img.shape
+  center_h = int(h * 0.43)
+  center_w = int(w / 2)
+  target = 300
+  x0,y0,x1,y1 = [0, center_h-target//2, w, center_h+target//2]
+  # print(x0,y0,x1,y1)
+  center_img = img[y0:y1, x0:x1]
+  # print(center_img.shape)
+  if show:
+    cv2.imshow('center', center_img)
+    cv2.waitKey(1)
+  results = ocr(center_img)[0]
+  if results is None: return []
+  recs = [info[1][0] for info in results]
+  return recs
+
+def get_time(img, show=False):
+  time_img = img[:150, -150:]
+  if show:
+    cv2.imshow('time', time_img)
+    cv2.waitKey(1)
+  results = ocr(time_img)[0]
+  if results is None: return math.inf
+  stage = m = s = None
+  for info in results:
+    det, rec = info
+    rec = rec[0]
+    # print(rec)
+    if 'left' in rec:
+      stage = 0
+    if 'over' in rec:
+      stage = 1
+    if ':' in rec:
+      m, s = rec.split(':')
+      try:
+        m = int(m.strip())
+        s = int(s.strip())
+      except ValueError:
+        m = s = None
+  if stage is None or m is None or s is None: return math.inf
+  t = m * 60 + s
+  if stage == 0:
+    return 180 - t
+  return 180 + 120 - t
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/CR/videos/WTY_20240213.mp4")
+  # parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/CR/videos/WTY_20240213.mp4")
+  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240412/SVID_20240412_145946_1_30fps.mp4")
   args = parser.parse_args()
-  split_episodes(args.path_video)
+  split_episodes(args.path_video, show=True)
+  # for p in Path("/home/yy/Videos/CR_Videos/30fps_an").glob('*.mp4'):
+  #   split_episodes(str(p), show=True)
   

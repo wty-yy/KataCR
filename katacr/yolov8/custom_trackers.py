@@ -235,7 +235,6 @@ def on_predict_postprocess_end(predictor: object, persist: bool = False) -> None
 
     update_args = dict()
     update_args["obb" if is_obb else "boxes"] = torch.as_tensor(tracks[:, :-1])
-    print(update_args['boxes'].shape)
     predictor.results[i].update(**update_args)
 
 def register_tracker(model: object, persist: bool) -> None:
