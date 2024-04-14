@@ -43,10 +43,14 @@ class MultiModelSetup:
       4. Don't contain `invalid_units`.
     """
     detection_unit = unit2idx.copy()
+    total_unit = []
     for k in invalid_units + list(range(base_idxs)):
       if isinstance(k, int): k = idx2unit[k]
       if k in detection_unit:
         detection_unit.pop(k)
+        if k not in invalid_units:
+          total_unit.append(k)
+    total_unit.extend(detection_unit.keys())
     unit2size, no_img_list = {}, []
     for k in detection_unit:
       sizes = []
@@ -97,7 +101,8 @@ class MultiModelSetup:
       print(detection_range)
       for k, v in detection_range.items():
         print(k, [idx2unit[i] for i in v])
-    print("total units:", len(detection_unit), "info:", {k: len(v) for k, v in detection_range.items()})
+    print("total units:", len(total_unit), "info:", {k: len(v) for k, v in detection_range.items()})
+    print("drop units:", set(unit2idx.keys()) - set(total_unit))
     if no_img_list:
       print("Don't find image:", no_img_list)
     return detection_range
@@ -117,11 +122,11 @@ class MultiModelSetup:
         yaml.dump(data, file, sort_keys=False)
       print(f"Save {name} yaml files 'data.yaml' at {str(path_config)}.")
     data = {'path': path_part2_dataset, 'train': None, 'val': 'yolo_annotation.txt', 'test': None, 'names': idx2unit}
-    path_combo_config = Path(__file__).parent / 'detector_combo'
-    path_combo_config.mkdir(exist_ok=True)
-    with path_combo_config.joinpath('data.yaml').open('w') as file:
-      yaml.dump(data, file, sort_keys=False)
-    print(f"Save combo yaml files 'data.yaml' at {str(path_combo_config)}.")
+    # path_combo_config = Path(__file__).parent / 'detector_combo'
+    # path_combo_config.mkdir(exist_ok=True)
+    # with path_combo_config.joinpath('data.yaml').open('w') as file:
+    #   yaml.dump(data, file, sort_keys=False)
+    # print(f"Save combo yaml files 'data.yaml' at {str(path_combo_config)}.")
 
 if __name__ == '__main__':
   setup = MultiModelSetup(auto=True, verbose=True, num_detector=num_detector)

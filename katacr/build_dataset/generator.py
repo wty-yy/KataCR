@@ -308,7 +308,7 @@ class Generator:
     self.map_cfg.update(map_update)
     self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit = [], {}, {}
     for p in sorted(self.path_segment.glob('*')):
-      if p.name in (['backgrounds'] + tower_unit_list + drop_units
+      if ((p.name in ['backgrounds'] + tower_unit_list + drop_units)
         or (avail_names is not None and p.name not in avail_names)):
         continue
       for p_img in p.glob('*.png'):
@@ -753,7 +753,7 @@ class Generator:
 
 if __name__ == '__main__':
   generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
-  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['phoenix-small', 'magic-archer', 'lumberjack'])
+  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
@@ -761,6 +761,8 @@ if __name__ == '__main__':
     generator.add_tower()
     generator.add_unit(n=40)
     x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
+    # for b in box:
+    #   assert idx2unit[b[5]] != 'skeleton-king-skill'
     # x, box, _ = generator.build(verbose=True, show_box=False, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # print(generator.moveable_unit_frequency)
     # f = generator.moveable_unit_frequency

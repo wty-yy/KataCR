@@ -409,6 +409,6 @@ if __name__ == '__main__':
   # print(segment_units['0'])
   # print(segment_units['1'])
   # print(segment_units['0'] - segment_units['1'])
-  residue_set = set(unit_list) - {'text', 'emote', 'evolution-symbol', 'dirt', 'elixir', 'axe'}
+  residue_set = set(unit_list) - {'text', 'emote', 'evolution-symbol', 'dirt', 'elixir', 'axe', 'dagger-duchess-tower-bar'}
   residue_set_1 = residue_set - segment_units['1']
   print(f"{colorstr(f'Residue unit with 1 (n={len(residue_set_1)}, N-n={total_units-len(residue_set_1)})')}", sorted(residue_set_1))
