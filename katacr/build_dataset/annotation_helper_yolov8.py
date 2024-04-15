@@ -22,7 +22,7 @@ LABELME_VERSION = "5.4.1"  # write into LABELME json file
 
 def parse_args(input_args=None):
   parser = argparse.ArgumentParser()
-  parser.add_argument("--model-version", default="v0.7.8",
+  parser.add_argument("--model-version", default="v0.7.9",
     help="The model weights in `KataCR/runs/detector{i}_{model_version}`")
   parser.add_argument("--video-name", default=None,
     help="The name of the preprocessing video in `CR/images/part2/{video_name}`")

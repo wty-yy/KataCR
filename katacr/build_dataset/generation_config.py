@@ -23,7 +23,7 @@ drop_box = background_item_list
 
 background_size = (568, 896)
 xyxy_grids = (6, 64, 562, 864)  # xyxy pixel size of the whold grid
-bottom_center_grid_position = {
+towers_bottom_center_grid_position = {
   'king1': (9, 4.7),
   'queen1_0': (3.5, 7.7),
   'queen1_1': (14.5, 7.7),

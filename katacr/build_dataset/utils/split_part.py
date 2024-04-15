@@ -9,6 +9,7 @@
 This script is used to split different part from the origin image.
 '''
 from PIL import Image
+import cv2
 import numpy as np
 from pathlib import Path
 import katacr.build_dataset.constant as const
@@ -21,7 +22,7 @@ def ratio2name(img):
     if ratio[0] <= r <= ratio[1]:
       return name
 
-def extract_bbox(image, x, y, w, h):
+def extract_bbox(image, x, y, w, h, target_size=None):
   """
   - `(x, y)`: The left top proportion point of the whole image.
   - `(w, h)`: The width and height of the proportion the whole image.
@@ -33,24 +34,38 @@ def extract_bbox(image, x, y, w, h):
   w, h = int(shape[1] * w), int(shape[0] * h)
   image = image[y:y+h, x:x+w, :]
   if len(shape) == 2: image = image[..., 0]
+  if target_size is not None:
+    image = cv2.resize(image, target_size, cv2.INTER_CUBIC)
   return image
 
 def to_gray(image):
   return np.array(Image.fromarray(image).convert('L'))
 
-def process_part(img, part_id: int | str, playback: bool = False):
-  if not (isinstance(part_id, str) and 'part' in part_id):
-    part = f"part{part_id}"
-  name = ratio2name(img)
+def process_part(img, part: int | str, playback: bool = False, resize=True):
+  if not isinstance(part, str):
+    part = f"part{part}"
+  target_size = None
+  if resize:
+    target_size = const.part_sizes[part]
   if playback: part += '_playback'
-  if name == '2400p': part += '_' + name
+  name = ratio2name(img)
+  part += '_' + name
   bbox_params = const.split_bbox_params[part]
   if type(bbox_params) == dict:
     ret = {}
     for key, value in bbox_params.items():
-      ret[key] = extract_bbox(img, *value)
+      ret[key] = extract_bbox(img, *value, target_size)
   else:
-    ret = extract_bbox(img, *bbox_params)
+    ret = extract_bbox(img, *bbox_params, target_size)
+  return ret
+
+def process_part3(img):
+  from katacr.build_dataset.constant import part3_bbox_params
+  params = part3_bbox_params
+  ret = {}
+  for n, param in params.items():
+    x = extract_bbox(img, *param)  # xywh for next image position
+    ret[n] = x
   return ret
 
 def preprocess_background():
@@ -61,9 +76,9 @@ def preprocess_background():
   for i, path in enumerate(paths):
     img = np.array(Image.open(str(path)))
     if 1 <= i+1 <= 25:
-      img = process_part(img, '2_playback_2400p')
+      img = process_part(img, '2_playback_2.22')
     elif i+1 == 26:
-      img = process_part(img, '2_2400p')
+      img = process_part(img, '2_2.22')
     Image.fromarray(img).save(str(path_save / path.name))
 
 # def split_part2(x):  # based ratio
@@ -82,20 +97,16 @@ def split_part(x):
 
 def split_part(x, part: str | int):  # based ratio
   part = str(part)
-  name = ratio2name(x)
-  if name == 'oyassu':
-    x = process_part(x, part)
-  elif name == '2400p':
-    x = process_part(x, part+'_2400p')
+  x = process_part(x, part)
   return x
 
 def test():
   path_logs = const.path_logs
-  path_extract = path_logs.joinpath("extract_frames")
+  # path_extract = path_logs.joinpath("extract_frames")
   # path_frame = path_extract.joinpath("OYASSU_20230201")
   # path_frame = path_extract.joinpath("OYASSU_20230211")
   # path_frame = path_extract.joinpath("OYASSU_20210528")
-  path_frame = path_extract.joinpath("11")
+  # path_frame = path_extract.joinpath("11")
 
   # image = Image.open(str(path_logs.joinpath("start_frame.jpg")))
   # image = Image.open(str(path_logs.joinpath("show_king_tower_hp.jpg")))
@@ -103,7 +114,10 @@ def test():
   # image = Image.open(str(path_frame.joinpath("end_episode1.jpg")))
   # image = Image.open(str(const.path_dataset / "images/background/background26.jpg"))
   # image = Image.open(str(path_frame / "start_episode1.jpg"))
-  image = Image.open(str(path_frame / "test1.jpg"))
+  # image = Image.open(str(path_frame / "test1.jpg"))
+  image = Image.open("/home/yy/Pictures/ClashRoyale/demos/576x1280/test2.png")
+  # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/600x1280/test1.png")
+  # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/592x1280/test1.png")
   # import matplotlib.pyplot as plt
   # plt.imshow(image)
   # plt.show()
@@ -126,9 +140,9 @@ def test():
 
   # part2_playback = process_part(image, '2_playback')
   # Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
-  part2_2400p = process_part(image, '2_2400p')
-  Image.fromarray(part2_2400p).save(str(path_image_save / "part2_2400p.jpg"))
-  Image.fromarray(part2_2400p).show()
+  part2 = Image.fromarray(process_part(image, 3, resize=True))
+  part2.save(str(path_image_save / "part3_2.22.jpg"))
+  part2.show()
   # part3_2400p = process_part(image, '3_2400p')
   # Image.fromarray(part3_2400p).save(str(path_image_save / "part3_2400p.jpg"))
   # part4_2400p = process_part(image, '4_2400p')

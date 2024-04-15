@@ -206,10 +206,24 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 - `v0.7.8`：尝试将分类器减少到2个，`P,R,AP50,mAP:0.85,0.766,0.813,0.64`，效果依然可以，且速度更快。
 - `v0.7.8_one`：尝试只用一个分类器`yolov8x`，`epoch=80`识别类别160个。
 
-### v0.7.9 (2024.4.10-2024.4.12)
+### v0.7.9 (2024.4.10-2024.4.13)
 - 重构YOLOv8自带的目标追踪算法，并优化使其保持多目标追踪中同时追踪相同目标类型。
 - 数据集修改：
    - 取消对`tesla-evolution-shock`的识别。
    - 优化`tornado, arrows, zap, lighting`的切片，优化对法术特征的识别。
-   - 标记37帧，加入`battle-ram-evolution1, dagger-duchess-tower, dagger-duchess-tower-bar`
-   - 优化`barbarian, barbarian-evolution, elite-barbarian`切片特征。
+   - 标记37帧，加入`battle-ram-evolution1, dagger-duchess-tower, dagger-duchess-tower-bar`（不区分0/1）
+   - 优化`barbarian, barbarian-evolution, elite-barbarian, knight, knight-evolution, golden-knight`切片特征。
+- 生成算法修改：
+   - `background-items`：加入防御塔的废墟背景，加入右侧小皇冠背景，飞起的皇冠，阵亡时紫色圣水。
+   - `dagger-duchess-tower`与`dagger-duchess-tower-bar`以及`dagger-duchess-tower-icon`的组合生成。
+   - 右侧计分板点位设置为`red:(17.5,14.2), blue:(17.5, 21.2)`，生成概率为`0.01`
+   - 飞起的皇冠与防御塔背景废墟进行关联性生成。
+- 完成不同分辨率下对`part3`中5个卡牌位的选取。
+
+**NEW TOOL**
+- 在`extract_part.py`中加入对卡牌类别的截图提取，使用方法设置`part_mode=['cards']`，则会将卡牌的切片保存于`images/cards/video_name/frame_{0,1,2,3,4}.jpg`
+- 完成`classification/predict.py`中`Predictor.process_part3`对`part3`中五个卡牌类别的分类网络（ResNet，参数量24820(可学习参数大小99.3KB，全部大小187.3KB，包括BatchNorm参数)）
+
+### v0.7.10 (2024.4.15)
+- 加入`ice-spirit-evolution0`
+- 测试噪声类别，将`目标类别:噪声类别`比例设置为`3:1`。

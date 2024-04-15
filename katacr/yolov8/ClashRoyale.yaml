@@ -8,7 +8,7 @@ mode: train # (str) YOLO mode, i.e. train, val, predict, export, track, benchmar
 model: yolov8l.yaml # (str, optional) path to model file, i.e. yolov8n.pt, yolov8n.yaml
 # data: ./katacr/yolov8/ClashRoyale_detection_mini.yaml # (str, optional) path to data file, i.e. coco128.yaml
 data: # (str, optional) path to data file, add by train.py
-epochs: 80 # (int) number of epochs to train for
+epochs: 50 # (int) number of epochs to train for
 time: # (float, optional) number of hours to train for, overrides epochs if supplied
 patience: 10 # (int) epochs to wait for no observable improvement for early stopping of training
 batch: 16 # (int) number of images per batch (-1 for AutoBatch)

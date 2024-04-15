@@ -11,7 +11,7 @@ from katacr.constants.label_list import unit2idx, idx2unit
 from katacr.constants.state_list import state2idx, idx2state
 from katacr.build_dataset.generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list, spell_unit_list,
-  drop_units, xyxy_grids, bottom_center_grid_position, drop_fliplr, 
+  drop_units, xyxy_grids, towers_bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
   component_prob, component2unit, component_cfg, important_components, bar_xy_range,  # component configs
   item_cfg, drop_box, background_item_list,  # background item
@@ -76,6 +76,7 @@ class Unit:
       states: list | np.ndarray = None,
       fliplr: float = 0.5,
       augment: bool = True,
+      drop: bool = False,
     ):
     """
     Args:
@@ -92,7 +93,8 @@ class Unit:
       states (str | np.ndarray): The states of the unit. (Side)
       background (bool): The image is the background.
       fliplr (float): The probability of flip the image left and right.
-      augment (bool): If true, augment the image in probability.
+      augment (bool): If taggled, augment the image in probability.
+      drop (bool): If taggled, the bounding box of the unit will be ignored.
     Variables:
       cls_name (str): The unit name.
       cls (int): The unit index.
@@ -105,13 +107,14 @@ class Unit:
       mask (ndarray): The available range of image, shape=(H,W), dtype=bool.
       components (List): The relative component units.
     """
+    self.drop = drop
     self.components = []  # This will add by generator._add_components(unit)
     if name is not None or (cls is not None and states is not None):
       if name is not None:
         cls, *states = name.split('_')
       self.cls_name = cls if isinstance(cls, str) else idx2unit[cls]
       if isinstance(cls, str):
-        if cls in drop_box: self.cls = -1  # background items
+        if cls in drop_box or drop: self.cls = -1  # background items
         else: self.cls = unit2idx[cls]
       else: self.cls = cls
       if isinstance(states, np.ndarray):
@@ -261,7 +264,7 @@ class Unit:
     return plot_box_PIL(img, self.xyxy, text=self.get_name(), format='voc', box_color=color)
 
 class Generator:
-  bc_pos: dict = bottom_center_grid_position  # with keys: ['king0', 'king1', 'queen0_0', 'queen0_1', 'queen1_0', 'queen1_1']
+  towers_bc_pos: dict = towers_bottom_center_grid_position  # with keys: ['king0', 'king1', 'queen0_0', 'queen0_1', 'queen1_0', 'queen1_1']
 
   def __init__(
       self, background_index: int | None = None,
@@ -272,6 +275,7 @@ class Generator:
       augment: bool = True,
       dynamic_unit: bool = True,
       avail_names: Sequence[str] = None,
+      noise_unit_ratio: float = 0.0,
     ):
     """
     Args:
@@ -283,6 +287,7 @@ class Generator:
       augment: If taggled, the mask augmentation will be used.
       dynamic_unit: If taggled, the frequency of each unit will tend to average.
       avail_names: Specify the generation classes.
+      noise_unit_ratio: The ratio of inavailable unit (noise unit) in whole units.
     Variables:
       map_cfg (dict):
         'ground': The 0/1 ground unit map in `katacr/build_dataset/generation_config.py`.
@@ -295,6 +300,7 @@ class Generator:
     self.background_index = background_index
     self.augment = augment
     self.dynamic_unit = dynamic_unit
+    self.noise_unit_ratio = noise_unit_ratio
 
     self.path_manager = PathManager()
     self.path_segment = self.path_manager.path / "images/segment"
@@ -307,9 +313,9 @@ class Generator:
     }
     self.map_cfg.update(map_update)
     self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit = [], {}, {}
+    self.noise_unit_paths, self.noise_unit2idx, self.idx2noise_unit = [], {}, {}
     for p in sorted(self.path_segment.glob('*')):
-      if ((p.name in ['backgrounds'] + tower_unit_list + drop_units)
-        or (avail_names is not None and p.name not in avail_names)):
+      if p.name in ['backgrounds'] + tower_unit_list + drop_units:
         continue
       for p_img in p.glob('*.png'):
         assert p_img.name.split('_')[0] == p.name, f"ERROR segment image name: {p_img}, make sure the prefix name of segment image is same as its parent directory name."
@@ -317,10 +323,16 @@ class Generator:
         p_name = f"{p.name}_{bel}"
         p_bel = str(p / (p_name + '*.png'))
         if len(glob.glob(p_bel)):
-          self.moveable_unit2idx[p_name] = len(self.moveable_unit_paths)
-          self.idx2moveable_unit[len(self.moveable_unit_paths)] = p_name
-          self.moveable_unit_paths.append(p_bel)
+          if avail_names is not None and p.name not in avail_names:  # noise unit
+            paths, u2i, i2u = self.noise_unit_paths, self.noise_unit2idx, self.idx2noise_unit
+          else:
+            paths, u2i, i2u = self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit
+          i = len(self.noise_unit_paths)
+          u2i[p_name] = i
+          i2u[i] = p_name
+          paths.append(p_bel)
     self.moveable_unit_frequency = np.zeros(len(self.moveable_unit_paths), np.int32)
+    self.noise_unit_frequency = np.zeros(len(self.noise_unit_paths), np.int32)
   
   def build_background(self):
     background_index = self.background_index
@@ -407,7 +419,8 @@ class Generator:
     cls, box = set(), []
     self.unit_list = sorted(self.unit_list, key=lambda x: (x.level, x.xy_cell[1]))
     while True:
-      mask, unit_avail = np.zeros(img.shape[:2], dtype=np.bool_), []  # return box, union of images, available units
+      mask = np.zeros(img.shape[:2], dtype=np.bool_)  # union of images
+      unit_avail: List[Unit] = []  # available units
       tmp_unit_list = self.unit_list.copy()
       for u in self.unit_list[::-1]:  # reverse order for NMS
         ratio = self._intersect_ratio_with_mask(u, mask)
@@ -434,6 +447,8 @@ class Generator:
       cls.add(u.cls)
       if u.cls_name in self.moveable_unit2idx:
         self.moveable_unit_frequency[self.moveable_unit2idx[u.cls_name+'_'+str(u.states[0])]] += 1
+      if u.cls_name in self.noise_unit2idx:
+        self.noise_unit_frequency[self.noise_unit2idx[u.cls_name+'_'+str(u.states[0])]] += 1
       if u.cls != -1:
         # box.append((*u.xyxy_visiable, *u.states, u.cls))  # xyxy visiable is bad
         box.append((*u.xyxy, *u.states, u.cls))
@@ -467,8 +482,21 @@ class Generator:
       level: int,
       max_width: float | tuple = None,  # relative to cell
       xy_format: str = 'bottom_center',  # decide the format of 'xy'
+      drop: bool = False,
       join: bool = True,
     ):
+    """
+    Args:
+      path (str | Path): The image path of the unit.
+      xy (tuple): The xy position of the unit which satisfied `xy_format`.
+      level (int): The graphic layer level of the unit.
+      max_width (float | tuple): The max width of the unit which relative to cell.
+      xy_format (str): The xy position format which has these options: 
+        ['bottom_center', 'center', 'left_center', 'right_center',
+         'left_bottom', 'right_bottom', 'top_center']
+      drop (bool): If taggled, the unit's box will be drop, which is used to the noise units.
+      join (bool): If taggled, the unit will be joined to `self.unit_list`.
+    """
     path = Path(path)
     avail_format = ['bottom_center', 'center', 'left_center', 'right_center', 'left_bottom', 'right_bottom', 'top_center']
     assert xy_format in avail_format, f"Need 'xy_format' in {avail_format}"
@@ -491,7 +519,7 @@ class Generator:
       xy_bottom_center[0] += img.shape[1] / 2 / cell_size[0]
     if 'right' in xy_format:
       xy_bottom_center[0] -= img.shape[1] / 2 / cell_size[0]
-    unit = Unit(img=img, xy_bottom_center=xy_bottom_center, level=level, background_size=self.background_size, name=name, augment=self.augment)
+    unit = Unit(img=img, xy_bottom_center=xy_bottom_center, level=level, background_size=self.background_size, name=name, augment=self.augment, drop=drop)
     if join: self.unit_list.append(unit)
     return unit
   
@@ -521,10 +549,10 @@ class Generator:
   def add_tower(self, king=True, queen=True):
     if king:
       king0 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
-      unit = self._build_unit_from_path(king0, self.bc_pos['king0'], 1)
+      unit = self._build_unit_from_path(king0, self.towers_bc_pos['king0'], 1)
       self._add_component(unit)
       king1 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
-      unit = self._build_unit_from_path(king1, self.bc_pos['king1'], 1)
+      unit = self._build_unit_from_path(king1, self.towers_bc_pos['king1'], 1)
       self._add_component(unit)
     if queen:
       for i in range(2):  # is enermy?
@@ -539,7 +567,7 @@ class Generator:
               if p <= prob: break
               p -= prob
             path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name=name, regex=f"{name}_{i}"))
-          unit = self._build_unit_from_path(path, self.bc_pos[f'queen{i}_{j}'], 1)
+          unit = self._build_unit_from_path(path, self.towers_bc_pos[f'queen{i}_{j}'], 1)
           unit = self._add_component(unit)
           
   @staticmethod
@@ -674,14 +702,14 @@ class Generator:
         xy_ = xy.copy()
         xy_[0] += 0.08  # 0.08 * 30.8 pixel = 2.464 pixel
         paths_bar_level = sorted(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*"))
-        bar_level = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
+        bar_level = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center', drop=unit.drop)
         unit.components.append(bar_level)
-      cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format)
+      cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format, drop=unit.drop)
       unit.components.append(cu)
       if c == 'dagger-duchess-tower-bar':
         junction = pixel2cell((cu.xyxy[0], (cu.xyxy[1] + cu.xyxy[3]) / 2))
         junction[1] += 0.06
-        bar_icon = self._build_unit_from_path(self.path_segment/"background-items/dagger-duchess-tower-icon.png", junction, level, None, 'right_center')
+        bar_icon = self._build_unit_from_path(self.path_segment/"background-items/dagger-duchess-tower-icon.png", junction, level, None, 'right_center', drop=unit.drop)
         unit.components.append(bar_icon)
   
   def _add_background_item(self):
@@ -718,30 +746,24 @@ class Generator:
     Unit list looks at `katacr/constants/label_list.py`
     """
     self._add_background_item()
-    # paths = self.moveable_unit_paths
-    freq = self.moveable_unit_frequency.copy()
-    if self.dynamic_unit:
-      freq -= freq.min() - 1
-      freq = 1 / freq
-    else:
-      freq = np.ones_like(freq)
-    idxs = self._sample_prob(freq, size=n, replace=True).reshape(-1)
-    for i in idxs:
-      # p: Path = self._sample_elem(paths)
-      p = self.moveable_unit_paths[i]
-      # DEBUG:
-      # p = self.path_manager.path.joinpath("images/segment/tesla-evolution")
-      # p = self.path_manager.path.joinpath("images/segment/skeleton-king")
-      level = unit2level[Path(p).name.split('_')[0]]  # [1, 2, 3]
-      xy = self._sample_from_map(level)
-      # DEBUG:
-      # xy = (9, 20)
-      unit = self._build_unit_from_path(self._sample_elem(sorted(glob.glob(p))), xy, level)
-      # bel = random.randint(0, 1)
-      # if len(list(p.glob(f"{p.stem}_{bel}*.png"))) == 0:
-      #   bel = 1 ^ bel
-      # unit = self._build_unit_from_path(self._sample_elem(sorted(p.glob(f"{p.stem}_{bel}*.png"))), xy, level)
-      self._add_component(unit)
+    def get_freq(freq):
+      if self.dynamic_unit:
+        return 1 / (freq - freq.min() + 1)
+      else:
+        return np.ones_like(freq)
+    noise_freq = get_freq(self.noise_unit_frequency)
+    moveable_freq = get_freq(self.moveable_unit_frequency)
+    def add_compoents(freq, drop, paths):
+      ratio = self.noise_unit_ratio if drop else (1 - self.noise_unit_ratio)
+      idxs = self._sample_prob(freq, size=int(n*ratio), replace=True).reshape(-1)
+      for i in idxs:
+        p = paths[i]
+        level = unit2level[Path(p).name.split('_')[0]]  # [1, 2, 3]
+        xy = self._sample_from_map(level)
+        unit = self._build_unit_from_path(self._sample_elem(sorted(glob.glob(p))), xy, level, drop=drop)
+        self._add_component(unit)
+    add_compoents(noise_freq, True, self.noise_unit_paths)
+    add_compoents(moveable_freq, False, self.moveable_unit_paths)
   
   def reset(self):
     self.build_background()
@@ -752,8 +774,8 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
-  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
+  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'dynamic', 'size': 5}, noise_unit_ratio=1/4, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
