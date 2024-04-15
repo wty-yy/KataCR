@@ -203,7 +203,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 ### v0.7.7-v0.7.8 (2024.4.1-2024.4.2)
 - `v0.7.7`：加入图像增强，包括：`hsv_h:0.015, hsv_s: 0.7, hsv_v: 0.4, degrees: 5, translate: 0.05, scale: 0.2, fliplr: 0.5`，`P,R,AP50,mAP:0.835,0.768,0.814,0.641`
-- `v0.7.8`：尝试将分类器减少到2个，`P,R,AP50,mAP:0.85,0.766,0.813,0.64`，效果依然可以，且速度更快。
+- `v0.7.8`：尝试将分类器减少到2个，`P,R,AP50,mAP: 0.85,0.766,0.813,0.64`，效果依然可以，且速度更快。
 - `v0.7.8_one`：尝试只用一个分类器`yolov8x`，`epoch=80`识别类别160个。
 
 ### v0.7.9 (2024.4.10-2024.4.12)
@@ -213,3 +213,4 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    - 优化`tornado, arrows, zap, lighting`的切片，优化对法术特征的识别。
    - 标记37帧，加入`battle-ram-evolution1, dagger-duchess-tower, dagger-duchess-tower-bar`
    - 优化`barbarian, barbarian-evolution, elite-barbarian`切片特征。
+- 模型性能：`P,R,AP50,mAP: 0.847,0.763,0.807,0.634`
