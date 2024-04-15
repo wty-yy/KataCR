@@ -1,3 +1,4 @@
+# Reference: https://github.com/wty-yy/KataCV/blob/master/katacv/resnet/resnet.py
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parents[2]))
@@ -9,13 +10,15 @@ import optax
 from typing import Callable, Tuple, Any, Sequence
 from functools import partial
 from katacr.utils import Config
-from katacr.constants.card_list import card_list
 import numpy as np
 
-class ModelConfig(Config):
-  stage_sizes = [3, 3, 3]
-  filters = 16
-  num_class = len(card_list)
+class ModelConfig(Config):  # Mini ResNet   # ResNet50
+  stage_sizes = [1, 1, 2, 1]                # (3, 4, 6, 3)
+  filters = 4                               # 64
+  num_class: int
+  def __init__(self, num_class, **kwargs):
+    self.num_class = num_class
+    super().__init__(**kwargs)
 
 class TrainConfig(Config):
   lr_fn: Callable
@@ -34,9 +37,9 @@ class TrainConfig(Config):
   h_hsv = 0.015
   s_hsv = 0.7
   v_hsv = 0.4
-  rotate = 10
-  scale = 0.3
-  translate = 0.05
+  rotate = 0
+  scale = 0.2
+  translate = 0.20
 
 class TrainState(train_state.TrainState):
   batch_stats: dict
@@ -56,11 +59,11 @@ class BottleneckResNetBlock(nn.Module):
     y = self.act(self.norm()(y))
     y = self.conv(self.filters, (3, 3), self.strides)(y)
     y = self.act(self.norm()(y))
-    y = self.conv(self.filters * 4, (1, 1))(y)
+    y = self.conv(self.filters * 2, (1, 1))(y)
     y = self.norm(scale_init=nn.initializers.zeros_init())(y)
     if residual.shape != y.shape:
       residual = self.conv(
-        self.filters * 4, (1, 1), self.strides, name='conv_proj'
+        self.filters * 2, (1, 1), self.strides, name='conv_proj'
       )(residual)
       residual = self.norm(name='norm_proj')(residual)
     return self.act(y + residual)
@@ -126,7 +129,7 @@ class ResNet(nn.Module):
     verbose_rng, init_rng = jax.random.split(jax.random.PRNGKey(train_cfg.seed), 2)
     if not train:
       return TrainState.create(apply_fn=self.apply, params={'a': 1}, tx=optax.sgd(1), batch_stats=None)
-    dummy = jnp.zeros((train_cfg.batch_size, *train_cfg.image_size[::-1], 3))
+    dummy = jnp.zeros((train_cfg.batch_size, *train_cfg.image_size[::-1], 1))  # GRAY
     if verbose: print(self.tabulate(verbose_rng, dummy, train=False))
     variables = self.init(init_rng, dummy, train=False)
     print("Model parameters:", sum([np.prod(x.shape) for x in jax.tree_util.tree_flatten(variables)[0]]))
@@ -142,33 +145,29 @@ class ResNet(nn.Module):
 
 import torch
 from torch.utils.data import DataLoader, Dataset
-from katacr.constants.card_list import card_list
+# from katacr.constants.card_list import card_list
 from katacr.utils.detection.data import transform_affine, transform_hsv, transform_resize_and_pad
 import cv2, random
 class CardDataset(Dataset):
-  def __init__(self, path_dataset, mode='train', repeat=50, cfg: TrainConfig = None):
-    self.path_dataset, self.mode, self.repeat, self.cfg = path_dataset, mode, repeat, cfg
-    self.idx2card = dict(enumerate(card_list))
-    self.card2idx = {c: i for i, c in enumerate(card_list)}
-    self.paths = sorted(Path(self.path_dataset).glob('*.jpg'))
-    self.images, self.labels = [], []
-    for p in self.paths:
-      self.images.append(cv2.imread(str(p)))
-      self.labels.append(self.card2idx[p.stem])
+  def __init__(self, images, labels, mode='train', repeat=50, cfg: TrainConfig = None):
+    self.images, self.labels, self.mode, self.repeat, self.cfg = images, labels, mode, repeat, cfg
   
-  def __len__(self):
+  def __len__(self):  # dataset for val is origin and gray image
     return len(self.images) * (1 if self.mode == 'val' else self.repeat)
   
   def __getitem__(self, idx):
     idx = idx % len(self.images)
     img = self.images[idx].copy()
-    img[img==0] = 114
     cfg = self.cfg
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     if self.mode == 'train':
-      img = transform_affine(img, rot=cfg.rotate, scale=cfg.scale, translate=cfg.translate)
-      img = transform_hsv(img, cfg.h_hsv, cfg.s_hsv, cfg.v_hsv)
-    img, _ = transform_resize_and_pad(img, cfg.image_size[::-1])
-    img = np.ascontiguousarray(img[..., ::-1])
+      img = transform_affine(img, rot=cfg.rotate, scale=cfg.scale, translate=cfg.translate, pad_value=114)
+      img, _ = transform_resize_and_pad(img, cfg.image_size[::-1], pad_value=114)
+      img = img.astype(np.int32)
+      img = np.clip(img + random.randint(-50, 50), 0, 255).astype(np.uint8)
+    if self.mode == 'val':
+      img, _ = transform_resize_and_pad(img, cfg.image_size[::-1], pad_value=114)
+    img = np.ascontiguousarray(img[..., None])
     return img, self.labels[idx]
 
 class DatasetBuilder:
@@ -177,15 +176,28 @@ class DatasetBuilder:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    self.preprocss()
+  
+  def preprocss(self):
+    path_dirs = sorted(list(x for x in Path(self.path_dataset).glob('*')))
+    self.card_list = [x.name for x in path_dirs]
+    self.idx2card = dict(enumerate(self.card_list))
+    self.card2idx = {c: i for i, c in enumerate(self.card_list)}
+    self.images, self.labels = [], []
+    for d in path_dirs:
+      cls = d.name
+      for p in d.glob('*.jpg'):
+        self.images.append(cv2.imread(str(p)))
+        self.labels.append(self.card2idx[cls])
   
   def get_dataloader(self, train_cfg: TrainConfig, mode='train'):
     return DataLoader(
-      CardDataset(self.path_dataset, mode=mode, cfg=train_cfg),
+      CardDataset(self.images, self.labels, mode=mode, cfg=train_cfg),
       batch_size=train_cfg.batch_size,
       shuffle=mode=='train',
       num_workers=train_cfg.num_workers,
       persistent_workers=train_cfg.num_workers > 0,
-      drop_last=True,
+      drop_last=mode=='train',
     )
 
 from katacr.utils.logs import Logs, MeanMetric
@@ -217,24 +229,25 @@ def get_args_and_writer():
     writer = parser.get_writer(args)
     return args, writer
 
-from katacr.build_dataset.constant import path_dataset
+from katacr.build_dataset.constant import path_dataset as path_dataset_root
 from tqdm import tqdm
 def train():
   ### Parse Augmentations and Get WandB Writer ###
   args, writer = get_args_and_writer()
   ### Dataset ###
-  ds_builder = DatasetBuilder(str(path_dataset / "images/card_classification"), args.seed)
+  ds_builder = DatasetBuilder(str(path_dataset_root / "images/card_classification"), args.seed)
+  args.num_class = len(ds_builder.card_list)
   train_cfg = TrainConfig(**vars(args))
   model_cfg = ModelConfig(**vars(args))
   train_ds = ds_builder.get_dataloader(train_cfg, mode='train')
   val_ds = ds_builder.get_dataloader(train_cfg, mode='val')
   args.steps_per_epoch = train_cfg.steps_per_epoch = len(train_ds)
-  args.card2idx = train_ds.dataset.card2idx
-  args.idx2card = train_ds.dataset.idx2card
+  args.card2idx = ds_builder.card2idx
+  args.idx2card = ds_builder.idx2card
   ### Build Model ###
   model = ResNet(model_cfg)
   model.create_fns()
-  state = model.get_states(train_cfg)
+  state = model.get_states(train_cfg, verbose=True)
   ### Build Checkpoint Manager ###
   from katacr.utils.ckpt_manager import CheckpointManager
   ckpt_manager = CheckpointManager(args.path_cp, remove_old=True)

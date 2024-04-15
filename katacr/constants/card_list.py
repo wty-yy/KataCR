@@ -2,6 +2,26 @@
 2023/10/30: Total card numbers: 116
 2024/04/02: Total card numbers: 125
 """
+# elixir2card = {
+#   1: [
+#     'ice-spirit',
+#     'ice-spirit-evolution',
+#     'skeletons',
+#     'skeletons-evolution',
+#   ],
+#   2: [
+#     'ice-golem',
+#     'the-log',
+#   ],
+#   3: [
+#     'cannon',
+#   ],
+#   4: [
+#     'fireball',
+#     'hog-rider',
+#     'musketeer',
+#   ],
+# }
 elixir2card = {
   -1: [
     'mirror',

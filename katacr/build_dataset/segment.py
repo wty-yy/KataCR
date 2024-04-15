@@ -142,6 +142,7 @@ class Segment:
 if __name__ == '__main__':
   segment = Segment()
   # segment.process(video_name="background")
-  segment.process(video_name="WTY_20240412")  # None means all
+  # segment.process(video_name="WTY_20240412")
+  segment.process(video_name="lan77_20240406_episodes")
   # segment.background()
 

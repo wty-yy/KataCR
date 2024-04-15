@@ -43,7 +43,8 @@ def transform_affine(
     scale=0.5,      # |  wh scale    |   +/-    |     [0.0, 1.0]     |
     shear=0,        # |  wh degree   |   +/-    |     [0, 45]        |
     translate=0.1,  # |  fraction    |   +/-    |     [0, 0.5]       |
-    border=0
+    border=0,
+    pad_value=(114,114,114),
 ):
   h = img.shape[0] - border * 2
   w = img.shape[1] - border * 2
@@ -67,7 +68,7 @@ def transform_affine(
   T[1, 2] = random.uniform(0.5 - translate, 0.5 + translate) * h
 
   M = T @ S @ R @ C
-  img = cv2.warpAffine(img, M[:2], dsize=(w, h), borderValue=(114,114,114))
+  img = cv2.warpAffine(img, M[:2], dsize=(w, h), borderValue=pad_value)
   if box is None: return img
   if len(box):
     nb = len(box)
@@ -93,7 +94,7 @@ def transform_hsv(img, h=0.015, s=0.7, v=0.4):
   img_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val)))
   return cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
 
-def transform_resize_and_pad(img, target_shape):
+def transform_resize_and_pad(img, target_shape, pad_value=(114,114,114)):
   shape = img.shape[:2]
   r = min(target_shape[0]/shape[0], target_shape[1]/shape[1])
   unpad_shape = int(round(shape[0]*r)), int(round(shape[1]*r))
@@ -103,7 +104,8 @@ def transform_resize_and_pad(img, target_shape):
   dw, dh = (tshape[1] - img.shape[1]) / 2, (tshape[0] - img.shape[0]) / 2
   top, bottom = int(round(dh-0.1)), int(round(dh+0.1))
   left, right = int(round(dw-0.1)), int(round(dw+0.1))
-  img = np.pad(img, ((top, bottom), (left, right), (0, 0)), mode="constant", constant_values=114)
+  # img = np.pad(img, ((top, bottom), (left, right), (0, 0)), mode="constant", constant_values=114)
+  img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=pad_value)  # add border
   return img, (top, left)
 
 def show_box(img, box, draw_center_point=False, verbose=True, format='yolo', use_overlay=True, num_state=1, show_conf=False, save_path=None, fontsize=12):
