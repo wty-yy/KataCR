@@ -203,7 +203,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 ### v0.7.7-v0.7.8 (2024.4.1-2024.4.2)
 - `v0.7.7`：加入图像增强，包括：`hsv_h:0.015, hsv_s: 0.7, hsv_v: 0.4, degrees: 5, translate: 0.05, scale: 0.2, fliplr: 0.5`，`P,R,AP50,mAP:0.835,0.768,0.814,0.641`
-- `v0.7.8`：尝试将分类器减少到2个，`P,R,AP50,mAP:0.85,0.766,0.813,0.64`，效果依然可以，且速度更快。
+- `v0.7.8`：尝试将分类器减少到2个，`P,R,AP50,mAP: 0.85,0.766,0.813,0.64`，效果依然可以，且速度更快。
 - `v0.7.8_one`：尝试只用一个分类器`yolov8x`，`epoch=80`识别类别160个。
 
 ### v0.7.9 (2024.4.10-2024.4.13)
@@ -219,6 +219,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    - 右侧计分板点位设置为`red:(17.5,14.2), blue:(17.5, 21.2)`，生成概率为`0.01`
    - 飞起的皇冠与防御塔背景废墟进行关联性生成。
 - 完成不同分辨率下对`part3`中5个卡牌位的选取。
+- 模型性能：`P,R,AP50,mAP: 0.847,0.763,0.807,0.634`
 
 **NEW TOOL**
 - 在`extract_part.py`中加入对卡牌类别的截图提取，使用方法设置`part_mode=['cards']`，则会将卡牌的切片保存于`images/cards/video_name/frame_{0,1,2,3,4}.jpg`
@@ -227,3 +228,4 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 ### v0.7.10 (2024.4.15)
 - 加入`ice-spirit-evolution0`
 - 测试噪声类别，将`目标类别:噪声类别`比例设置为`3:1`。
+>>>>>>> 785f1f34e5cd5a5d2416d95e31726fe5803dbbb3

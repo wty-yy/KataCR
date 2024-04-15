@@ -4,18 +4,22 @@ from ultralytics.models.yolo.detect.val import converter, os, ConfusionMatrix
 from katacr.yolov8.train import YOLO_CR, get_cfg, Path
 from katacr.yolov8.combo_detect import unit2idx, idx2unit, torchvision
 
+path_root = Path(__file__).parents[2]
+
 path_detectors = [
   # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.1.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector3_v0.7.1.pt',
-  './runs/detect/detector1_v0.7.1/weights/best.pt',
-  './runs/detect/detector2_v0.7.1/weights/best.pt',
-  './runs/detect/detector3_v0.7.1/weights/best.pt',
+  # './runs/detect/detector1_v0.7.1/weights/best.pt',
+  # './runs/detect/detector2_v0.7.1/weights/best.pt',
+  # './runs/detect/detector3_v0.7.1/weights/best.pt',
   # './runs/detect/detector1_v0.7.7/weights/best.pt',
   # './runs/detect/detector2_v0.7.7/weights/best.pt',
   # './runs/detect/detector3_v0.7.7/weights/best.pt',
+  path_root / './runs/detector1_v0.7.9.pt',
+  path_root / './runs/detector2_v0.7.9.pt',
 ]
 
 class ComboDetectionValidator(CRDetectionValidator):
