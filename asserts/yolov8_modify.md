@@ -126,3 +126,7 @@ predict -> DetectionPredictor -> self.postprocess -> engine.result.Result
 
 YOLOv8重构内容如下：
 1. `YOLODataset.__getitem__` 和标签读取函数 `verify_image_label`。
+
+## 目标追踪
+重构`on_predict_start`和`on_predict_postprocess_end`，重载内容：
+1. `trackers.`

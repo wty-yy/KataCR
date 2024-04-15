@@ -9,7 +9,7 @@ from katacr.build_dataset.utils.datapath_manager import PathManager
 from katacr.build_dataset.constant import path_logs
 from katacr.constants.label_list import unit2idx, idx2unit
 from katacr.constants.state_list import state2idx, idx2state
-from katacr.build_dataset.generation_config import (
+from generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list, spell_unit_list,
   drop_units, xyxy_grids, towers_bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
@@ -453,6 +453,8 @@ class Generator:
         # box.append((*u.xyxy_visiable, *u.states, u.cls))  # xyxy visiable is bad
         box.append((*u.xyxy, *u.states, u.cls))
     box = np.array(box, np.float32)
+    if len(box) == 0:
+      box = np.empty((0, 6), np.float32)
     if img_size is not None:
       img, box = self.resize_and_pad(img, box, img_size)
     if box_format == 'cxcywh':
@@ -463,7 +465,7 @@ class Generator:
       raise RuntimeError(f"Don't know {box_format=}")
     origin_img = img
     img = Image.fromarray(img)
-    if show_box:
+    if show_box and len(box):
       cls2color = build_label2colors(list(cls))
       for u in unit_avail:
         img = u.show_box(img, cls2color)
@@ -775,14 +777,14 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'dynamic', 'size': 5}, noise_unit_ratio=1/4, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
+  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
+  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'dynamic', 'size': 5}, noise_unit_ratio=0, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
-  for i in range(10):
+  for i in range(5):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=40)
+    generator.add_unit(n=30)
     x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # for b in box:
     #   assert idx2unit[b[5]] != 'skeleton-king-skill'
