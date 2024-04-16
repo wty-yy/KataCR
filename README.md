@@ -229,3 +229,10 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 - 加入`ice-spirit-evolution0`
 - 测试噪声类别，将`目标类别:噪声类别`比例设置为`3:1`。
 - 模型性能：`P,R,AP50,mAP:0.891,0.794,0.842,0.67`
+
+### v0.7.11 (2024.4.16)
+- 提高圣水以及clock的生成概率到`0.067->0.2`
+**NEW TOOL**
+- `policy/visual_displayer.py` 感知融合可视化：将YOLOv8,PaddleOCR,classifier识别结果进行实时可视化。
+**FIX BUG**
+- 修复noise_unit生成时component_unit未加入到box中的问题。

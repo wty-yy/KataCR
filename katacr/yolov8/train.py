@@ -51,7 +51,7 @@ def parse_args():
 
 if __name__ == '__main__':
   args = parse_args()
-  model = YOLO_CR("yolov8x.yaml", task='detect')
+  model = YOLO_CR("yolov8l.yaml", task='detect')
   cfg = dict(get_cfg('./katacr/yolov8/ClashRoyale.yaml'))
   name = f"detector{args.detector}"
   cfg['name'] = name + '_' + cfg['name']
