@@ -228,4 +228,4 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 ### v0.7.10 (2024.4.15)
 - 加入`ice-spirit-evolution0`
 - 测试噪声类别，将`目标类别:噪声类别`比例设置为`3:1`。
->>>>>>> 785f1f34e5cd5a5d2416d95e31726fe5803dbbb3
+- 模型性能：`P,R,AP50,mAP:0.891,0.794,0.842,0.67`

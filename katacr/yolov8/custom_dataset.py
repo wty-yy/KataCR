@@ -1,7 +1,7 @@
 from ultralytics.data import YOLODataset
 from ultralytics.data.dataset import load_dataset_cache_file, DATASET_CACHE_VERSION, get_hash, TQDM, LOGGER, LOCAL_RANK, HELP_URL, ThreadPool, NUM_THREADS, repeat, save_dataset_cache_file, Path, torch, cv2, Instances
 from katacr.build_dataset.generator import Generator
-from katacr.yolov8.cfg import unit_nums, map_update_mode, intersect_ratio_thre, train_datasize, img_size
+from katacr.yolov8.cfg import unit_nums, map_update_mode, intersect_ratio_thre, train_datasize, img_size, noise_unit_ratio
 from katacr.constants.label_list import idx2unit
 
 class CRDataset(YOLODataset):
@@ -18,7 +18,8 @@ class CRDataset(YOLODataset):
         seed=kwargs['seed'],
         intersect_ratio_thre=intersect_ratio_thre,
         map_update={'mode': map_update_mode, 'size': 5},
-        avail_names=list(data['names'].values()))
+        avail_names=list(data['names'].values()),
+        noise_unit_ratio=noise_unit_ratio)
       self.data = data
       self.augment, self.rect, self.imgsz = kwargs['augment'], kwargs['rect'], kwargs['imgsz']
       self.use_segments = self.use_keypoints = self.use_obb = False

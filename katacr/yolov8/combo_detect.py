@@ -39,6 +39,18 @@ class ComboDetector:
       cr_on_predict_start(self, persist=True)
   
   def infer(self, x, pil=False):
+    """
+    Infer one image at once.
+
+    Args:
+      x (np.ndarray): Image with shape=(H,W,3).
+      pil (bool): If taggled, input image is RGB mode else BGR.
+    
+    Returns:
+      result (CRResult): with functions:
+        - get_data(): get box information `xyxy, (track_id), conf, cls, bel`
+        - show_box(verbose=True, show_conf=False, ...): return image with box (np.ndarray)
+    """
     if pil: x = x[..., ::-1]  # RGB -> BGR
     results = [m.predict(x, verbose=False, conf=self.conf)[0] for m in self.models]
     preds = []
@@ -53,10 +65,10 @@ class ComboDetector:
       preds = torch.cat(preds, 0).reshape(-1, 7)
     i = torchvision.ops.nms(preds[:, :4], preds[:, 4], iou_threshold=self.iou_thre)
     preds = preds[i]
-    self.result = CRResults(x, path="", names=idx2unit, boxes=preds)
+    result = CRResults(x, path="", names=idx2unit, boxes=preds)
     if self.tracker is not None:
       cr_on_predict_postprocess_end(self, persist=True)
-    return self.result
+    return result
 
   def predict(self, source, show=False, save=True, video_interval=1):
     path_source = source

@@ -18,8 +18,8 @@ path_detectors = [
   # './runs/detect/detector1_v0.7.7/weights/best.pt',
   # './runs/detect/detector2_v0.7.7/weights/best.pt',
   # './runs/detect/detector3_v0.7.7/weights/best.pt',
-  path_root / './runs/detector1_v0.7.9.pt',
-  path_root / './runs/detector2_v0.7.9.pt',
+  path_root / './runs/detector1_v0.7.10.pt',
+  path_root / './runs/detector2_v0.7.10.pt',
 ]
 
 class ComboDetectionValidator(CRDetectionValidator):
