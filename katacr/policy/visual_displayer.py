@@ -4,23 +4,18 @@ sudo modprobe v4l2loopback
 scrcpy --v4l2-sink=/dev/video2 --no-video-playback
 """
 import cv2
-from katacr.yolov8.combo_detect import ComboDetector
+from katacr.policy.visual_fusion import VisualFusion
 from katacr.utils import Stopwatch, second2str
 from pathlib import Path
 import numpy as np
 import time
 
-path_root = Path(__file__).parents[2]
-path_detectors = [
-  path_root / './runs/detector1_v0.7.10.pt',
-  path_root / './runs/detector2_v0.7.10.pt',
-]
 cap = cv2.VideoCapture(2)  # open stream
 cv2.namedWindow("Detection", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
 
-class Visualizer:
+class Displayer:
   def __init__(self, interval: int=3):
-    self.model = ComboDetector(path_detectors)
+    self.visual = VisualFusion()
     self.interval = interval
   
   def __call__(self):
@@ -29,8 +24,11 @@ class Visualizer:
         flag = cap.grab()
       flag, img = cap.retrieve()
       if not flag: break
-      cv2.imshow("Detection", img)
+      rimg = self.visual.render(img, verbose=True)
+      cv2.imshow("Detection", rimg)
+      # cv2.imshow("Detection", img)
+      cv2.waitKey(1)
 
 if __name__ == '__main__':
-  visualizer = Visualizer()
+  visualizer = Displayer()
   visualizer()

@@ -38,7 +38,7 @@ except_king_tower_unit_list.remove('king-tower')
 component_prob = {x: 1.0 for x in (except_king_tower_unit_list + ['ruin'])}  # defence tower and ruin
 component_prob.update({'king-tower': 0.5})  # king-tower-bar
 component_prob.update(  # the probability of adding a component
-  {x: 0.2 for x in (ground_unit_list + flying_unit_list)}
+  {x: 0.4 for x in (ground_unit_list + flying_unit_list)}
 )
 important_components = [  # highter prob to use important components, when add components.
   (('bar', 'bar-level'), None),  # Modify in Generator._add_component(unit)
@@ -68,13 +68,13 @@ except_object_unit_list = list(set(ground_unit_list).union(flying_unit_list) - s
 except_spell_and_object_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list) - set(object_unit_list))
 component2unit = {  # the component below to units, prob
   'small-text': (except_object_unit_list, 0.0),
-  'elixir': (except_object_unit_list, 1/3),
+  'elixir': (except_object_unit_list, 1/2),
   ('bar', 'bar-level'): (except_spell_and_object_unit_list, 1.0),
   'tower-bar': (except_king_tower_unit_list, 1.0),
   'dagger-duchess-tower-bar': (['dagger-duchess-tower'], 1.0),
   'king-tower-bar': (['king-tower'], 1.0),
   'crown-icon': (['ruin'], 0.5),
-  'clock': (ground_unit_list + except_spell_and_object_unit_list + ['bomb'], 1/3),
+  'clock': (ground_unit_list + except_spell_and_object_unit_list + ['bomb'], 1/2),
   # 'tesla-evolution-shock': (['tesla-evolution'], 1.0),
   'skeleton-king-skill': (['skeleton-king'], 1.0),
   'skeleton-king-bar': (['skeleton-king'], 1.0),

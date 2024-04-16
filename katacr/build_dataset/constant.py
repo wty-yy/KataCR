@@ -18,14 +18,15 @@ path_logs.mkdir(exist_ok=True)
 path_features = root / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
 # path_dataset = Path("/home/wty/Coding/datasets/CR")
-# path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
-path_dataset = Path("/data/user/wutianyang/dataset/Clash-Royale-Dataset")
+path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
+# path_dataset = Path("/data/user/wutianyang/dataset/Clash-Royale-Dataset")
 assert path_dataset.exists(), "Dataset not exist!"
 
 image_size_part2 = (568, 896)  # ratio: 1.57~1.58
 split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
   # Forall height/width = 2.16~2.17
-  'part1_2.16': (0.835, 0.054, 0.165, 0.025),  # just time
+  # 'part1_2.16': (0.835, 0.075, 0.165, 0.025),  # just time
+  'part1_2.16': (0.835, 0.063, 0.165, 0.038),  # time and head text
   # 'part1': {  # number ocr
   #   'time': (0.835, 0.074, 0.165, 0.025),
   #   'hp0':  (0.166, 0.180, 0.090, 0.020),
@@ -42,7 +43,8 @@ split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
     'mid': (0.180, 0.410, 0.650, 0.050),
   },
   # Forall height/width = 2.22~2.23, 576x1280 or 450x1000
-  'part1_2.22': (0.835, 0.074, 0.165, 0.025),  # just time
+  # 'part1_2.22': (0.835, 0.074, 0.165, 0.025),  # just time
+  'part1_2.22': (0.835, 0.058, 0.165, 0.038),  # time and head text
   'part2_playback_2.22': (0.024, 0.196, 0.954, 0.685),  # 1080x2400, ratio: 2.22~2.23
   'part2_2.22': (0.020, 0.070, 0.960, 0.690),  # old: 'part2_2400p': (0.020, 0.090, 0.960, 0.680),
   'part3_2.22': (0.000, 0.850, 1.000, 0.150),
@@ -50,7 +52,7 @@ split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
     'up': (0.130, 0.352, 0.747, 0.051)
   },
   # 600x1280
-  'part1_2.13': (0.855, 0.049, 0.130, 0.025),  # just time
+  'part1_2.13': (0.845, 0.037, 0.165, 0.038),  # just time
   # 'part2_playback_2.13': (0.024, 0.196, 0.954, 0.685),
   'part2_2.13': (0.026, 0.048, 0.960, 0.710),
   'part3_2.13': (0.000, 0.845, 1.000, 0.160),
@@ -70,7 +72,7 @@ MAX_NUM_BBOXES = 200  # 36 in OYASSU_20210528, 42 in OYASSU_20230305
 ### NOT Used ###
 
 part_sizes = {
-  'part1': (97, 32),
+  'part1': (97, 48),
   'part2': (568, 896),
   'part3': (600, 200),
 }
@@ -81,3 +83,4 @@ part3_bbox_params = {  # Configure for card positions in part3, card position is
   3: (0.600, 0.000, 0.185, 0.745),  # card3
   4: (0.785, 0.000, 0.185, 0.745),  # card4
 }
+part3_elixir_params = (0.262, 0.700, 0.067, 0.160)

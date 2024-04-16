@@ -12,7 +12,7 @@ import cv2
 
 weight_path = path_root / 'logs/CardClassification-checkpoints'
 
-class Predictor:
+class Classifier:
   def __init__(self, weight_path, load_step=None):
     ckpt_mngr = CheckpointManager(weight_path)
     if load_step is None:
@@ -21,7 +21,7 @@ class Predictor:
     variables, cfg = load_info['variables'], load_info['config']
     self.img_size = cfg['image_size']
     self.idx2card = cfg['idx2card']
-    print(self.idx2card)
+    # print(self.idx2card)
     model_cfg = ModelConfig(**cfg)
     train_cfg = TrainConfig(**cfg)
     self.model = ResNet(cfg=model_cfg)
@@ -31,7 +31,7 @@ class Predictor:
     dummy = np.zeros((*train_cfg.image_size[::-1], 3), np.uint8)
     self.__call__(dummy)
   
-  def __call__(self, x, keepdim=False, cvt_label=True):
+  def __call__(self, x, keepdim=False, cvt_label=True, verbose=False):
     """
     Args:
       x (np.ndarray): RGB img.
@@ -50,33 +50,35 @@ class Predictor:
     if x.dtype == np.uint8: x = x.astype(np.float32) / 255.
     logits = jax.device_get(self.model.predict(self.state, x))
     pred = np.argmax(logits, -1)
-    print(pred, logits[0][pred[0]])
     if x.shape[0] == 0 and not keepdim:
       return pred[0]
     if cvt_label:
       cards = []
       for i in pred: cards.append(self.idx2card[str(i)])
       pred = cards
-    print(pred)
-    cv2.imshow('img', x[0,...,::-1])
-    cv2.waitKey(0)
+    if verbose:
+      print("class:", logits[0][pred[0]], "conf:", pred)
+      cv2.imshow('img', x[0,...,::-1])
+      cv2.waitKey(0)
     return pred
   
-  def process_part3(self, x: np.ndarray, cvt_label=True):
+  def process_part3(self, x: np.ndarray, pil=False, cvt_label=True, verbose=False):
     """
     Args:
       x (np.ndarray): The part3 split by katacr/build_dataset/utils/split_part.py process_part(),
         only accept one image (x.ndim==3).
+      pil (bool): If taggled, the image `x` is RGB format.
       cvt_label (bool): If taggled, the classification index will be converted to label name.
+      verbose (bool): If taggled, each card image will be showed.
     """
     from katacr.build_dataset.utils.split_part import extract_bbox
     from katacr.build_dataset.constant import part3_bbox_params
-    from PIL import Image
+    if pil: x = x[...,::-1]
     params = part3_bbox_params
     results = {}
     for n, param in params.items():
       img = extract_bbox(x, *param)  # xywh for next image position
-      results[n] = self(img, cvt_label=cvt_label)
+      results[n] = self(img, cvt_label=cvt_label, verbose=verbose)
     return results
 
 def test_cls():
@@ -92,7 +94,7 @@ def test_part3():
   root_path = "/home/yy/Coding/GitHub/KataCR/logs/split_image"
   for p in Path(root_path).glob("part3_*.jpg"):
     img = cv2.imread(str(p))[...,::-1]
-    pred = predictor.process_part3(img)
+    pred = predictor.process_part3(img, pil=False)
     print(pred)
     cv2.imshow("pred", img[...,::-1])
     cv2.waitKey(0)
@@ -112,7 +114,7 @@ def test_val():
       cv2.waitKey(0)
 
 if __name__ == '__main__':
-  predictor = Predictor(weight_path)
+  predictor = Classifier(weight_path)
   # test_cls()
   # test_val()
   test_part3()

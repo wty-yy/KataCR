@@ -13,6 +13,7 @@ from paddleocr.tools.infer.predict_system import TextSystem
 import numpy as np
 import logging
 from pathlib import Path
+import math
 root_path = Path(__file__).parents[2]
 
 onnx_weight_paths = {
@@ -29,7 +30,7 @@ class OCR:
       kwargs.update({(k + '_model_dir'): str(v) for k, v in onnx_weight_paths.items()})
     self.ocr = PaddleOCR(use_angle_cls=use_angle_cls, show_log=False, **kwargs)
   
-  def __call__(self, x: np.ndarray, det=True, rec=True, cls=False, bin=False):
+  def __call__(self, x: np.ndarray, det=True, rec=True, cls=False, bin=False, pil=True, gray=False):
     """
     Args:
       x (np.ndarray | path | list): img for OCR.
@@ -37,6 +38,8 @@ class OCR:
       rec (bool): If taggled, use text recognition.
       cls (bool): If taggled, the text rotation with 180 degrees will be recognized.
       bin (bool): If taggled, binarize img to gray.
+      pil (bool): If taggled, image is RGB format.
+      gray (bool): If taggled, image x has one color channel.
     Returns:
       [img1_info, img2_info, ...]:
         img{i}_info = [(det)_rec_info1, (det)_rec_info2, ...]:
@@ -44,10 +47,58 @@ class OCR:
             det_info = [x0, y0, x1, y1]
             rec_info = ('rec_text', confidence)
     """
+    if not pil and not gray:
+      if isinstance(x, list):
+        for i in range(len(x)):
+          if isinstance(x[i], np.ndarray):
+            x[i] = x[i][...,::-1]
+      elif isinstance(x, np.ndarray):
+        x = x[...,::-1]
     cls = cls & self.use_angle_cls
     # if x.ndim == 3: x = x[None,...]
     result = self.ocr.ocr(x, det=det, rec=rec, cls=cls, bin=bin)
     return result
+  
+  def process_part1(self, img_time, pil=False, show=False):
+    results = self(img_time, pil=pil)[0]
+    if show:
+      print("OCR results:", results)
+      cv2.imshow('time', img_time)
+      cv2.waitKey(1)
+    if results is None: return math.inf
+    stage = m = s = None
+    for info in results:
+      det, rec = info
+      rec = rec[0].lower()
+      if 'left' in rec:
+        stage = 0
+      if 'over' in rec:
+        stage = 1
+      if (':' in rec) or ('：' in rec):
+        m, s = rec.split(':' if ':' in rec else '：')
+        try:
+          m = int(m.strip())
+          s = int(s.strip())
+        except ValueError:
+          m = s = None
+    if stage is None or m is None or s is None: return math.inf
+    t = m * 60 + s
+    if stage == 0:
+      return 180 - t
+    return 180 + 120 - t
+
+  def process_part3_elixir(self, img_part3, pil=False):
+    from katacr.build_dataset.utils.split_part import extract_bbox
+    from katacr.build_dataset.constant import part3_elixir_params
+    img = extract_bbox(img_part3, *part3_elixir_params)
+    results = self(img, pil=pil, det=False)
+    for info in results:
+      rec = info[0][0].lower()
+      try:
+        m = int(rec.strip())
+      except ValueError:
+        m = None
+    return m
 
 def ocr_test(img, det=True, show_time=True, show_result=False, info=""):
   name = ""
@@ -56,7 +107,7 @@ def ocr_test(img, det=True, show_time=True, show_result=False, info=""):
     img = cv2.imread(img)
   result = ocr(img, det=det)
   with sw:
-    result = ocr(img, det=det)
+    result = ocr(img, det=det, pil=False)
   if show_time: print("time:", sw.dt)
   if show_result:
     print(name, result)

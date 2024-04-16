@@ -170,7 +170,7 @@ class CRResults(Results):
     # xyxy, (track_id), conf, cls, bel
     return self.boxes.data.cpu().numpy()
 
-  def show_box(self, draw_center_point=False, verbose=True, use_overlay=True, show_conf=False, save_path=None, fontsize=12, show_track=True):
+  def show_box(self, draw_center_point=False, verbose=False, use_overlay=True, show_conf=False, save_path=None, fontsize=12, show_track=True):
     from katacr.utils.detection import plot_box_PIL, build_label2colors
     from katacr.constants.label_list import idx2unit
     from katacr.constants.state_list import idx2state

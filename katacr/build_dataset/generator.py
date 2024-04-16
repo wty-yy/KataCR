@@ -702,14 +702,14 @@ class Generator:
         xy_ = xy.copy()
         xy_[0] += 0.08  # 0.08 * 30.8 pixel = 2.464 pixel
         paths_bar_level = sorted(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*"))
-        bar_level = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center', drop=unit.drop)
+        bar_level = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
         unit.components.append(bar_level)
-      cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format, drop=unit.drop)
+      cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format)
       unit.components.append(cu)
       if c == 'dagger-duchess-tower-bar':
         junction = pixel2cell((cu.xyxy[0], (cu.xyxy[1] + cu.xyxy[3]) / 2))
         junction[1] += 0.06
-        bar_icon = self._build_unit_from_path(self.path_segment/"background-items/dagger-duchess-tower-icon.png", junction, level, None, 'right_center', drop=unit.drop)
+        bar_icon = self._build_unit_from_path(self.path_segment/"background-items/dagger-duchess-tower-icon.png", junction, level, None, 'right_center')
         unit.components.append(bar_icon)
   
   def _add_background_item(self):

@@ -41,7 +41,7 @@ def extract_bbox(image, x, y, w, h, target_size=None):
 def to_gray(image):
   return np.array(Image.fromarray(image).convert('L'))
 
-def process_part(img, part: int | str, playback: bool = False, resize=True):
+def process_part(img, part: int | str, playback: bool = False, resize=True, verbose=False):
   if not isinstance(part, str):
     part = f"part{part}"
   target_size = None
@@ -57,7 +57,8 @@ def process_part(img, part: int | str, playback: bool = False, resize=True):
       ret[key] = extract_bbox(img, *value, target_size)
   else:
     ret = extract_bbox(img, *bbox_params, target_size)
-  return ret
+  if not verbose: return ret
+  else: return ret, bbox_params
 
 def process_part3(img):
   from katacr.build_dataset.constant import part3_bbox_params
@@ -115,9 +116,9 @@ def test():
   # image = Image.open(str(const.path_dataset / "images/background/background26.jpg"))
   # image = Image.open(str(path_frame / "start_episode1.jpg"))
   # image = Image.open(str(path_frame / "test1.jpg"))
-  image = Image.open("/home/yy/Pictures/ClashRoyale/demos/576x1280/test2.png")
-  # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/600x1280/test1.png")
   # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/592x1280/test1.png")
+  # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/576x1280/test2.png")
+  image = Image.open("/home/yy/Pictures/ClashRoyale/demos/600x1280/test1.png")
   # import matplotlib.pyplot as plt
   # plt.imshow(image)
   # plt.show()
@@ -140,9 +141,10 @@ def test():
 
   # part2_playback = process_part(image, '2_playback')
   # Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
-  part2 = Image.fromarray(process_part(image, 3, resize=True))
-  part2.save(str(path_image_save / "part3_2.22.jpg"))
-  part2.show()
+  for i in range(1):
+    part = Image.fromarray(process_part(image, i+1, resize=True))
+    part.save(str(path_image_save / f"part{i+1}.jpg"))
+    part.show()
   # part3_2400p = process_part(image, '3_2400p')
   # Image.fromarray(part3_2400p).save(str(path_image_save / "part3_2400p.jpg"))
   # part4_2400p = process_part(image, '4_2400p')
