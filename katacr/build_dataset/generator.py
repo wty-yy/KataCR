@@ -314,6 +314,7 @@ class Generator:
     self.map_cfg.update(map_update)
     self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit = [], {}, {}
     self.noise_unit_paths, self.noise_unit2idx, self.idx2noise_unit = [], {}, {}
+    self.avail_names = avail_names
     for p in sorted(self.path_segment.glob('*')):
       if p.name in ['backgrounds'] + tower_unit_list + drop_units:
         continue
@@ -519,6 +520,7 @@ class Generator:
       xy_bottom_center[0] += img.shape[1] / 2 / cell_size[0]
     if 'right' in xy_format:
       xy_bottom_center[0] -= img.shape[1] / 2 / cell_size[0]
+    if name.split('_')[0] not in self.avail_names: drop = True
     unit = Unit(img=img, xy_bottom_center=xy_bottom_center, level=level, background_size=self.background_size, name=name, augment=self.augment, drop=drop)
     if join: self.unit_list.append(unit)
     return unit
