@@ -236,3 +236,4 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 - `policy/visual_displayer.py` 感知融合可视化：将YOLOv8,PaddleOCR,classifier识别结果进行实时可视化。
 **FIX BUG**
 - 修复noise_unit生成时component_unit未加入到box中的问题。
+- 模型性能：`P,R,AP50,mAP:0.899,0.796,0.846,0.672`

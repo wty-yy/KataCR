@@ -23,8 +23,8 @@ path_detectors = [
   # path_root / './runs/detector3_v0.7.6.pt',
   # path_root / './runs/detector1_v0.7.8.pt',
   # path_root / './runs/detector2_v0.7.8.pt',
-  path_root / './runs/detector1_v0.7.10.pt',
-  path_root / './runs/detector2_v0.7.10.pt',
+  path_root / './runs/detector1_v0.7.11.pt',
+  path_root / './runs/detector2_v0.7.11.pt',
 ]
 
 class ComboDetector:
@@ -69,6 +69,7 @@ class ComboDetector:
     self.result = CRResults(x, path="", names=idx2unit, boxes=preds)
     if self.tracker is not None:
       cr_on_predict_postprocess_end(self, persist=True)
+    self.result.boxes.data = self.result.get_data()  # cuda -> cpu
     return self.result
 
   def predict(self, source, show=False, save=True, video_interval=1):
@@ -91,6 +92,7 @@ class ComboDetector:
         if ds.mode == 'image':
           if show:
             cv2.imshow('Detection', img)
+            cv2.waitKey(0)
           if save:
             cv2.imwrite(save_path, img)
         else:  # video
@@ -123,15 +125,16 @@ class ComboDetector:
 
 
 if __name__ == '__main__':
-  # combo = ComboDetector(path_detectors, show_conf=True, conf=0.7, iou_thre=0.6, tracker='bytetrack')
-  combo = ComboDetector(path_detectors, show_conf=True, conf=0.7, iou_thre=0.6, tracker=None)
-  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4", show=True, save=True, video_interval=7)
-  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", show=True, save=True, video_interval=7)
+  combo = ComboDetector(path_detectors, show_conf=True, conf=0.7, iou_thre=0.6, tracker='bytetrack')
+  # combo = ComboDetector(path_detectors, show_conf=True, conf=0.7, iou_thre=0.6, tracker=None)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20210528_episodes/1.mp4", show=True, save=True, video_interval=6)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/OYASSU_20230203_episodes/2.mp4", show=True, save=True, video_interval=3)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=False)
   # combo.predict("./logs/detection_files.txt", show=True, save=False)
-  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=True, save=True, video_interval=3)
-  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240227_miners/1.mp4", show=True, save=True, video_interval=7)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240218_episodes/1.mp4", show=True, save=True, video_interval=3)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240227_miners/1.mp4", show=True, save=True, video_interval=3)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240222_8spells/1.mp4")
   # combo.predict("/home/yy/Coding/GitHub/KataCR/logs/split_video/OYASSU_20230203_episodes_2.mp4", show=True)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240412/dagger0_cannoneer1_1.mp4", show=True, save=True, video_interval=3)
   # combo.predict("/home/yy/Videos/CR_Videos/expert_videos/lan77_20240406_30fps_an_episodes/13.mp4", show=True, save=True, video_interval=3)
+  combo.predict("/home/yy/Videos/CR_Videos/musketeer_and_hogrider_insecond.mp4", show=True, save=True, video_interval=3)

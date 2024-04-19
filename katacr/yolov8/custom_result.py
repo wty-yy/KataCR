@@ -167,15 +167,23 @@ class CRResults(Results):
     return annotator.result()
   
   def get_data(self):
-    # xyxy, (track_id), conf, cls, bel
-    return self.boxes.data.cpu().numpy()
+    if isinstance(self.boxes.data, np.ndarray):
+      return self.boxes.data
+    elif self.boxes.data.device != 'cpu':
+      # xyxy, (track_id), conf, cls, bel
+      return self.boxes.data.cpu().numpy()
+    else:
+      return self.boxes.data.numpy()
+  
+  def get_rgb(self):
+    return self.orig_img[...,::-1]  # uint8, RGB
 
   def show_box(self, draw_center_point=False, verbose=False, use_overlay=True, show_conf=False, save_path=None, fontsize=12, show_track=True):
     from katacr.utils.detection import plot_box_PIL, build_label2colors
     from katacr.constants.label_list import idx2unit
     from katacr.constants.state_list import idx2state
     from PIL import Image
-    img = self.orig_img[...,::-1]  # uint8, RGB
+    img = self.get_rgb()
     # box = self.boxes.data.cpu().numpy()  # xyxy, (track_id), conf, cls, bel
     box = self.get_data()
     img = img.copy()
@@ -212,8 +220,6 @@ class CRResults(Results):
     if save_path is not None:
       img.save(str(save_path))
     return np.array(img)[...,::-1]  # BGR
-
-
 
   def verbose(self):
     """Return log string for each task."""

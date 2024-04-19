@@ -23,8 +23,9 @@ IMG_FORMATS = ['jpeg', 'jpg', 'png', 'webp']
 VID_FORMATS = ['avi', 'gif', 'm4v', 'mkv' ,'mp4', 'mpeg', 'mpg', 'wmv']
 
 class ImageAndVideoLoader:
-  def __init__(self, path: str | Sequence, video_interval=1):
+  def __init__(self, path: str | Sequence, video_interval=1, cvt_part2=True):
     self.video_interval = video_interval
+    self.cvt_part2 = cvt_part2
     if isinstance(path, str) and Path(path).suffix == '.txt':
       path = Path(path).read_text().split()
     files = []
@@ -93,7 +94,8 @@ class ImageAndVideoLoader:
       img = np.array(Image.open(path).convert("RGB"))
       s = f"image {self.count}/{self.n} {path}:"
     
-    img = process_part(img, 2)  # check whether should split part2
+    if self.cvt_part2:
+      img = process_part(img, 2)  # check whether should split part2
     # img = img[None,...]
     img = np.ascontiguousarray(img[...,::-1])
 

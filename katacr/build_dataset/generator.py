@@ -20,13 +20,14 @@ from katacr.build_dataset.generation_config import (
 )
 import random, glob
 
+# background_size = (568, 896), cell_size = (30.9, 25)
 cell_size = np.array([(xyxy_grids[3] - xyxy_grids[1]) / grid_size[1], (xyxy_grids[2] - xyxy_grids[0]) / grid_size[0]])[::-1]  # cell pixel: (w, h)
 
-def cell2pixel(xy: tuple):
+def cell2pixel(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
   return (xy * cell_size + xyxy_grids[:2]).astype(np.int32)
 
-def pixel2cell(xy: tuple):
+def pixel2cell(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
   return ((xy - xyxy_grids[:2]) / cell_size)
 

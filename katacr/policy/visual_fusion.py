@@ -8,8 +8,8 @@ import numpy as np
 
 path_root = Path(__file__).parents[2]
 path_detectors = [
-  path_root / './runs/detector1_v0.7.10.pt',
-  path_root / './runs/detector2_v0.7.10.pt',
+  path_root / './runs/detector1_v0.7.11.pt',
+  path_root / './runs/detector2_v0.7.11.pt',
 ]
 classifier_path = path_root / 'logs/CardClassification-checkpoints'
 
@@ -44,7 +44,7 @@ class VisualFusion:
       info (dict): with keys:
         time (int): Time passed. (Part1)
         arena (CRResults inherited from Results): The result is given by YOLOv8. (Part2)
-        cards (dict): {'0': card_name0, '1': card_name1, '2': card_name2, '3': card_name3, '4': card_name4}. (Part3)
+        cards (dict): {0: card_name0, 1: card_name1, 2: card_name2, 3: card_name3, 4: card_name4}. (Part3)
         elixir (int): The elixir we have. (Part3)
     """
     self.parts = parts = []

@@ -18,8 +18,8 @@ path_logs.mkdir(exist_ok=True)
 path_features = root / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
 # path_dataset = Path("/home/wty/Coding/datasets/CR")
-# path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
-path_dataset = Path("/data/user/wutianyang/dataset/Clash-Royale-Dataset")
+path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
+# path_dataset = Path("/data/user/wutianyang/dataset/Clash-Royale-Dataset")
 assert path_dataset.exists(), "Dataset not exist!"
 
 image_size_part2 = (568, 896)  # ratio: 1.57~1.58
@@ -73,7 +73,7 @@ MAX_NUM_BBOXES = 200  # 36 in OYASSU_20210528, 42 in OYASSU_20230305
 
 part_sizes = {
   'part1': (97, 48),
-  'part2': (568, 896),
+  'part2': (576, 896),  # (568, 896),
   'part3': (600, 200),
 }
 part3_bbox_params = {  # Configure for card positions in part3, card position is left to right
