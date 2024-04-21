@@ -30,6 +30,7 @@ class Stopwatch(contextlib.ContextDecorator):
     self.avg_dt = 0
     self.avg_per_s = 0
     self.count = 0
+    self.dt = 0
   
   def __enter__(self):
     self.start = time.time()

@@ -23,12 +23,12 @@ onnx_weight_paths = {
 }
 
 class OCR:
-  def __init__(self, use_angle_cls=False, onnx=False, tensorrt=False, use_gpu=True):
+  def __init__(self, use_angle_cls=False, onnx=False, tensorrt=False, use_gpu=True, lang='ch'):
     self.use_angle_cls = use_angle_cls
     kwargs = dict(use_onnx=onnx, use_tensorrt=tensorrt, use_gpu=use_gpu)
     if onnx:
       kwargs.update({(k + '_model_dir'): str(v) for k, v in onnx_weight_paths.items()})
-    self.ocr = PaddleOCR(use_angle_cls=use_angle_cls, show_log=False, **kwargs)
+    self.ocr = PaddleOCR(use_angle_cls=use_angle_cls, show_log=False, lang=lang, **kwargs)
   
   def __call__(self, x: np.ndarray, det=True, rec=True, cls=False, bin=False, pil=True, gray=False):
     """
@@ -62,6 +62,7 @@ class OCR:
   def process_part1(self, img_time, pil=False, show=False):
     results = self(img_time, pil=pil)[0]
     if show:
+      import cv2
       print("OCR results:", results)
       cv2.imshow('time', img_time)
       cv2.waitKey(1)
@@ -94,8 +95,9 @@ class OCR:
     results = self(img, pil=pil, det=False)
     for info in results:
       rec = info[0][0].lower()
+      num = ''.join([c for c in rec.strip() if c.isnumeric()])
       try:
-        m = int(rec.strip())
+        m = int(num)
       except ValueError:
         m = None
     return m

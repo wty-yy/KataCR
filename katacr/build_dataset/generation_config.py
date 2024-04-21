@@ -19,7 +19,7 @@ drop_fliplr = [
   'text', 'bar', 'bar-level', 'king-tower-bar', 'tower-bar', 'elixir',
   'skeleton-king-bar', 'dagger-duchess-tower-bar', 'dagger-duchess-tower-icon'
 ]
-drop_box = background_item_list
+drop_box = background_item_list + ['text']
 
 background_size = (568, 896)
 xyxy_grids = (6, 64, 562, 864)  # xyxy pixel size of the whold grid
@@ -35,7 +35,7 @@ towers_bottom_center_grid_position = {
 except_king_tower_unit_list = tower_unit_list.copy()
 except_king_tower_unit_list.remove('king-tower')
 # Start component generation probability
-component_prob = {x: 1.0 for x in (except_king_tower_unit_list + ['ruin'])}  # defence tower and ruin
+component_prob = {x: 1.0 for x in (except_king_tower_unit_list + ['ruin', 'king-tower-ruin'])}  # defence tower and ruin
 component_prob.update({'king-tower': 0.5})  # king-tower-bar
 component_prob.update(  # the probability of adding a component
   {x: 0.4 for x in (ground_unit_list + flying_unit_list)}
@@ -73,7 +73,8 @@ component2unit = {  # the component below to units, prob
   'tower-bar': (except_king_tower_unit_list, 1.0),
   'dagger-duchess-tower-bar': (['dagger-duchess-tower'], 1.0),
   'king-tower-bar': (['king-tower'], 1.0),
-  'crown-icon': (['ruin'], 0.5),
+  'crown-icon': (['ruin'], 0.1),
+  'crown-icon': (['king-tower-ruin'], 0.1),
   'clock': (ground_unit_list + except_spell_and_object_unit_list + ['bomb'], 1/2),
   # 'tesla-evolution-shock': (['tesla-evolution'], 1.0),
   'skeleton-king-skill': (['skeleton-king'], 1.0),
@@ -83,7 +84,8 @@ bar_xy_range = (-0.3, -0.1)  # (width(bar-level) - width(bar)) / 2
 
 # (prob, [bottom_center, dx_range, dy_range, width_range, max_num]*n)
 item_cfg = {
-  'big-text': (0.00, [[(9, 13), (0, 0), (0, 5), None, 1]]),
+  'big-text': (0.01, [[(9, 13), (0, 0), (0, 5), None, 1]]),  # center
+  'small-text': (0.02, [[(0, 0), (0, 18), (0, 32), None, 2]]),  # all
   'emote': (0.1, [
     [(1, 3), (0, 0), (0, 28), (1.5, 2), 4],  # left range
     [(17, 3), (0, 0), (0, 28), (1.5, 2), 4],  # right range
@@ -153,7 +155,8 @@ unit_scale = {x: ((0.5, 1.0), 1.0) for x in ('elixir', 'clock')}
 unit_stretch = {x: ((0.5, 0.8), 0.0) for x in (except_spell_and_object_unit_list)}
 tower_intersect_ratio_thre = 0.8
 bar_intersect_ratio_thre = 0.5
-tower_generation_ratio = {  # skip generate tower 1 - sum(probs)
+king_tower_generation_ratio = 0.95  # generate king-tower ruin 1-prob
+tower_generation_ratio = {  # generate tower ruin 1 - sum(probs)
   'queen-tower': 0.25,
   'cannoneer-tower': 0.25,
   'dagger-duchess-tower': 0.25,

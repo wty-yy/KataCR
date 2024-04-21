@@ -118,7 +118,8 @@ def test():
   # image = Image.open(str(path_frame / "test1.jpg"))
   # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/592x1280/test1.png")
   # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/576x1280/test2.png")
-  image = Image.open("/home/yy/Pictures/ClashRoyale/demos/600x1280/test1.png")
+  # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/600x1280/test1.png")
+  image = Image.open("/home/yy/Pictures/vlcsnap-2024-04-21-15h52m55s852.png")
   # import matplotlib.pyplot as plt
   # plt.imshow(image)
   # plt.show()
@@ -141,7 +142,7 @@ def test():
 
   # part2_playback = process_part(image, '2_playback')
   # Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
-  for i in range(1):
+  for i in range(3):
     part = Image.fromarray(process_part(image, i+1, resize=True))
     part.save(str(path_image_save / f"part{i+1}.jpg"))
     part.show()

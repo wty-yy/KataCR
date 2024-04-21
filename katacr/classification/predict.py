@@ -21,6 +21,7 @@ class Classifier:
     variables, cfg = load_info['variables'], load_info['config']
     self.img_size = cfg['image_size']
     self.idx2card = cfg['idx2card']
+    self.card2idx = cfg['card2idx']
     # print(self.idx2card)
     model_cfg = ModelConfig(**cfg)
     train_cfg = TrainConfig(**cfg)
@@ -50,8 +51,6 @@ class Classifier:
     if x.dtype == np.uint8: x = x.astype(np.float32) / 255.
     logits = jax.device_get(self.model.predict(self.state, x))
     pred = np.argmax(logits, -1)
-    if x.shape[0] == 0 and not keepdim:
-      return pred[0]
     if cvt_label:
       cards = []
       for i in pred: cards.append(self.idx2card[str(i)])
@@ -60,6 +59,8 @@ class Classifier:
       print("class:", logits[0][pred[0]], "conf:", pred)
       cv2.imshow('img', x[0,...,::-1])
       cv2.waitKey(0)
+    if x.shape[0] == 1 and not keepdim:
+      return pred[0]
     return pred
   
   def process_part3(self, x: np.ndarray, pil=False, cvt_label=True, verbose=False):

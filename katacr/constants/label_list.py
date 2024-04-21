@@ -370,6 +370,7 @@ background_item_list = [
   'crown-icon',
   'ribbon',
   'ruin',
+  'king-tower-ruin',
   'skull',
   'scoreboard',
   'snow',
@@ -381,8 +382,7 @@ object_unit_list = [
   'bomb',
 ]
 # Use in features building
-tower_bar2_unit_list = ['dagger-duchess-tower-bar']
-moveable_bar2_unit_list = ['skeleton-king-bar']
+bar2_unit_list = ['dagger-duchess-tower-bar', 'skeleton-king-bar']
 
 if __name__ == '__main__':
   from katacr.utils import colorstr

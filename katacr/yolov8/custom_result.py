@@ -167,13 +167,13 @@ class CRResults(Results):
     return annotator.result()
   
   def get_data(self):
-    if isinstance(self.boxes.data, np.ndarray):
-      return self.boxes.data
-    elif self.boxes.data.device != 'cpu':
-      # xyxy, (track_id), conf, cls, bel
-      return self.boxes.data.cpu().numpy()
-    else:
-      return self.boxes.data.numpy()
+    if not isinstance(self.boxes.data, np.ndarray):
+      if self.boxes.data.device != 'cpu':
+        # xyxy, (track_id), conf, cls, bel
+        self.boxes.data = self.boxes.data.cpu().numpy()
+      else:
+        self.boxes.data = self.boxes.data.numpy()
+    return self.boxes.data
   
   def get_rgb(self):
     return self.orig_img[...,::-1]  # uint8, RGB

@@ -29,3 +29,13 @@ def cell2pixel(xy):
 
 def xyxy2center(xyxy):
   return np.array([(xyxy[0]+xyxy[2])/2, (xyxy[1]+xyxy[3])/2], np.float32)
+
+def xyxy2sub(xyxy, sub):
+  """
+  'sub' is the sub-xyxy postion relative to xyxy
+  """
+  w, h = xyxy[2:] - xyxy[:2]
+  if not isinstance(sub, np.ndarray):
+    sub = np.array(sub)
+  delta = sub * np.array([w, h, w, h])
+  return np.concatenate([xyxy[:2], xyxy[:2]]) + delta

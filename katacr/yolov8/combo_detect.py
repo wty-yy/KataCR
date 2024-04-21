@@ -69,7 +69,8 @@ class ComboDetector:
     self.result = CRResults(x, path="", names=idx2unit, boxes=preds)
     if self.tracker is not None:
       cr_on_predict_postprocess_end(self, persist=True)
-    self.result.boxes.data = self.result.get_data()  # cuda -> cpu
+    data = self.result.get_data()
+    self.result.boxes.data = data[~(((data[:,0]>390) & (data[:,3]<120)) | ((data[:,2]<280) & (data[:,3]<80)))]
     return self.result
 
   def predict(self, source, show=False, save=True, video_interval=1):
@@ -97,9 +98,9 @@ class ComboDetector:
             cv2.imwrite(save_path, img)
         else:  # video
           if vid_path != save_path:  # new video
-            vid_path = save_path
-            if self.tracker is not None:
+            if vid_path is not None and self.tracker is not None:
               self.tracker.reset()
+            vid_path = save_path
             if isinstance(vid_writer, cv2.VideoWriter):
               vid_writer.release()
             if cap:  # video
@@ -136,5 +137,5 @@ if __name__ == '__main__':
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240222_8spells/1.mp4")
   # combo.predict("/home/yy/Coding/GitHub/KataCR/logs/split_video/OYASSU_20230203_episodes_2.mp4", show=True)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240412/dagger0_cannoneer1_1.mp4", show=True, save=True, video_interval=3)
-  # combo.predict("/home/yy/Videos/CR_Videos/expert_videos/lan77_20240406_30fps_an_episodes/13.mp4", show=True, save=True, video_interval=3)
-  combo.predict("/home/yy/Videos/CR_Videos/musketeer_and_hogrider_insecond.mp4", show=True, save=True, video_interval=3)
+  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/2.mp4", show=True, save=False, video_interval=3)
+  # combo.predict("/home/yy/Videos/CR_Videos/musketeer_and_hogrider_insecond.mp4", show=True, save=True, video_interval=3)

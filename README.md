@@ -209,31 +209,38 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 ### v0.7.9 (2024.4.10-2024.4.13)
 - 重构YOLOv8自带的目标追踪算法，并优化使其保持多目标追踪中同时追踪相同目标类型。
 - 数据集修改：
-   - 取消对`tesla-evolution-shock`的识别。
-   - 优化`tornado, arrows, zap, lighting`的切片，优化对法术特征的识别。
-   - 标记37帧，加入`battle-ram-evolution1, dagger-duchess-tower, dagger-duchess-tower-bar`（不区分0/1）
-   - 优化`barbarian, barbarian-evolution, elite-barbarian, knight, knight-evolution, golden-knight`切片特征。
+   1. 取消对`tesla-evolution-shock`的识别。
+   2. 优化`tornado, arrows, zap, lighting`的切片，优化对法术特征的识别。
+   3. 标记37帧，加入`battle-ram-evolution1, dagger-duchess-tower, dagger-duchess-tower-bar`（不区分0/1）
+   4. 优化`barbarian, barbarian-evolution, elite-barbarian, knight, knight-evolution, golden-knight`切片特征。
 - 生成算法修改：
-   - `background-items`：加入防御塔的废墟背景，加入右侧小皇冠背景，飞起的皇冠，阵亡时紫色圣水。
-   - `dagger-duchess-tower`与`dagger-duchess-tower-bar`以及`dagger-duchess-tower-icon`的组合生成。
-   - 右侧计分板点位设置为`red:(17.5,14.2), blue:(17.5, 21.2)`，生成概率为`0.01`
-   - 飞起的皇冠与防御塔背景废墟进行关联性生成。
+   1. `background-items`：加入防御塔的废墟背景，加入右侧小皇冠背景，飞起的皇冠，阵亡时紫色圣水。
+   2. `dagger-duchess-tower`与`dagger-duchess-tower-bar`以及`dagger-duchess-tower-icon`的组合生成。
+   3. 右侧计分板点位设置为`red:(17.5,14.2), blue:(17.5, 21.2)`，生成概率为`0.01`
+   4. 飞起的皇冠与防御塔背景废墟进行关联性生成。
 - 完成不同分辨率下对`part3`中5个卡牌位的选取。
 - 模型性能：`P,R,AP50,mAP: 0.847,0.763,0.807,0.634`
 
 **NEW TOOL**
-- 在`extract_part.py`中加入对卡牌类别的截图提取，使用方法设置`part_mode=['cards']`，则会将卡牌的切片保存于`images/cards/video_name/frame_{0,1,2,3,4}.jpg`
-- 完成`classification/predict.py`中`Predictor.process_part3`对`part3`中五个卡牌类别的分类网络（ResNet，参数量24820(可学习参数大小99.3KB，全部大小187.3KB，包括BatchNorm参数)）
+1. 在`extract_part.py`中加入对卡牌类别的截图提取，使用方法设置`part_mode=['cards']`，则会将卡牌的切片保存于`images/cards/video_name/frame_{0,1,2,3,4}.jpg`
+2. 完成`classification/predict.py`中`Predictor.process_part3`对`part3`中五个卡牌类别的分类网络（ResNet，参数量24820(可学习参数大小99.3KB，全部大小187.3KB，包括BatchNorm参数)）
 
 ### v0.7.10 (2024.4.15)
-- 加入`ice-spirit-evolution0`
-- 测试噪声类别，将`目标类别:噪声类别`比例设置为`3:1`。
-- 模型性能：`P,R,AP50,mAP:0.891,0.794,0.842,0.67`
+1. 加入`ice-spirit-evolution0`
+2. 测试噪声类别，将`目标类别:噪声类别`比例设置为`3:1`。
+3. 模型性能：`P,R,AP50,mAP:0.891,0.794,0.842,0.67`
 
 ### v0.7.11 (2024.4.16)
-- 提高圣水以及clock的生成概率到`0.067->0.2`
+1. 提高圣水以及clock的生成概率到`0.067->0.2`
 **NEW TOOL**
 - `policy/visual_displayer.py` 感知融合可视化：将YOLOv8,PaddleOCR,classifier识别结果进行实时可视化。
 **FIX BUG**
-- 修复noise_unit生成时component_unit未加入到box中的问题。
-- 模型性能：`P,R,AP50,mAP:0.899,0.796,0.846,0.672`
+1. 修复noise_unit生成时component_unit未加入到box中的问题。
+2. 模型性能：`P,R,AP50,mAP:0.899,0.796,0.846,0.672`
+
+### v0.7.12 (2024.4.21)
+1. 将YOLO检测中左上角和右上角的误识别框删去。
+2. 将text作为噪声类别混合入Generator中。
+3. 加入`king-tower-ruin`到`background-items`中。
+**NEW TOOL**
+- `Offline Dataset` 完成 `StateBuilder, RewardBuilder`

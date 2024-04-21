@@ -16,7 +16,7 @@ from katacr.build_dataset.generation_config import (
   component_prob, component2unit, component_cfg, important_components, bar_xy_range,  # component configs
   item_cfg, drop_box, background_item_list,  # background item
   unit_scale, unit_stretch,  # affine transformation
-  tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio,
+  tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio, king_tower_generation_ratio
 )
 import random, glob
 
@@ -551,18 +551,25 @@ class Generator:
   
   def add_tower(self, king=True, queen=True):
     if king:
-      king0 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
-      unit = self._build_unit_from_path(king0, self.towers_bc_pos['king0'], 1)
-      self._add_component(unit)
-      king1 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
-      unit = self._build_unit_from_path(king1, self.towers_bc_pos['king1'], 1)
-      self._add_component(unit)
+      for i in range(2):  # is enermy?
+        if random.random() < king_tower_generation_ratio:
+          path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex=f'king-tower_{i}'))
+        else:
+          path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='background-items', regex='^king-tower-ruin_\d+.png'))
+        unit = self._build_unit_from_path(path, self.towers_bc_pos[f'king{i}'], 1)
+        self._add_component(unit)
+      # king0 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
+      # unit = self._build_unit_from_path(king0, self.towers_bc_pos['king0'], 1)
+      # self._add_component(unit)
+      # king1 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
+      # unit = self._build_unit_from_path(king1, self.towers_bc_pos['king1'], 1)
+      # self._add_component(unit)
     if queen:
       for i in range(2):  # is enermy?
         for j in range(2):  # left or right
           p = random.random()
           if p > sum(list(tower_generation_ratio.values())):  # generating tower ruin in background_itmes/ruin{i}.png
-            path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='background-items', regex="ruin_\d+.png"))
+            path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='background-items', regex='^ruin_\d+.png'))
             # continue  # TODO: Add tower ruin
           else:
             for name, prob in tower_generation_ratio.items():
@@ -717,7 +724,7 @@ class Generator:
   
   def _add_background_item(self):
     """
-    Add background items in `background_item_list`, `big-text`, `emote`.
+    Add background items in `background_item_list`, `big-text`, `small-text`, `emote`.
     Look at `item_cfg.keys()`.
     """
     # (prob, [center, dx_range, dy_range, width_range, max_num]*n)
@@ -785,7 +792,7 @@ if __name__ == '__main__':
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=40)
+    generator.add_unit(n=1)
     x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # for b in box:
     #   assert idx2unit[b[5]] != 'skeleton-king-skill'
