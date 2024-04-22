@@ -238,9 +238,11 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 1. 修复noise_unit生成时component_unit未加入到box中的问题。
 2. 模型性能：`P,R,AP50,mAP:0.899,0.796,0.846,0.672`
 
-### v0.7.12 (2024.4.21)
+### v0.7.12 (2024.4.21~2024.4.22)
 1. 将YOLO检测中左上角和右上角的误识别框删去。
 2. 将text作为噪声类别混合入Generator中。
-3. 加入`king-tower-ruin`到`background-items`中。
+3. 加入`king-tower-ruin, king-tower-level`到`background-items`中。
 **NEW TOOL**
-- `Offline Dataset` 完成 `StateBuilder, RewardBuilder`
+- `Offline Dataset` 完成 `StateBuilder, RewardBuilder`。
+**FIX BUG**
+- 修复`king-tower-bar`生成概率为100%的问题，当前和`king-tower-level`对半出现。
