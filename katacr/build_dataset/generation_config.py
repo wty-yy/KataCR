@@ -5,7 +5,7 @@ level2units = {
   0: ground_spell_list + ['blood', 'butterfly', 'flower', 'skull', 'cup', 'snow', 'grave', 'ruin'],
   1: ground_unit_except_spell_list + tower_unit_list,
   2: flying_unit_list,
-  3: other_unit_list + ['ribbon', 'scoreboard', 'crown-icon'],
+  3: other_unit_list + ['ribbon', 'scoreboard', 'crown-icon', 'king-tower-level'],
 }
 unit2level = {unit: level for level, units in level2units.items() for unit in units}
 unit2level['small-text'] = unit2level['big-text'] = unit2level['text']
@@ -17,7 +17,8 @@ drop_units = [
 ]
 drop_fliplr = [
   'text', 'bar', 'bar-level', 'king-tower-bar', 'tower-bar', 'elixir',
-  'skeleton-king-bar', 'dagger-duchess-tower-bar', 'dagger-duchess-tower-icon'
+  'skeleton-king-bar', 'dagger-duchess-tower-bar', 'dagger-duchess-tower-icon',
+  'king-tower-level'
 ]
 drop_box = background_item_list + ['text']
 
@@ -46,6 +47,9 @@ important_components = [  # highter prob to use important components, when add c
   ('skeleton-king-skill', 1.0),
   ('skeleton-king-bar', 1.0),
 ]
+option_components = [  # choose one option by probs
+  (('king-tower-bar', 'king-tower-level'), (0.5, 0.5))
+]
 # center [cell pos | top_center | bottom_center], dx_range, dy_range, width, component generation format [bottom_center | center]
 component_cfg = {
   'small-text': ['top_center', (0, 0), (-1, -0.5), None, 'bottom_center'],
@@ -58,6 +62,8 @@ component_cfg = {
   'dagger-duchess-tower-bar1': ['top_center', (0.2, 0.2), (-1.2, -1.2), (2.5, 3), 'bottom_center'],
   'king-tower-bar0': ['bottom_center', (0, 0), (1, 1.5), (4.5, 5.5), 'bottom_center'],
   'king-tower-bar1': ['top_center', (0, 0), (0, 0), (4.5, 5.5), 'bottom_center'],
+  'king-tower-level0': ['bottom_center', (0, 0), (1, 1.5), (4.5, 5.5), 'bottom_center'],
+  'king-tower-level1': ['top_center', (0, 0), (0, 0), (4.5, 5.5), 'bottom_center'],
   'crown-icon': ['top_center', (-0.5, 0.5), (0.2, -0.5), (2, 3), 'bottom_center'],
   'clock': ['bottom_center', (0, 0), (2, 1.5), None, 'bottom_center'],
   # 'tesla-evolution-shock': ['center', (0, 0), (0, 0), None, 'center'],
@@ -72,7 +78,7 @@ component2unit = {  # the component below to units, prob
   ('bar', 'bar-level'): (except_spell_and_object_unit_list, 1.0),
   'tower-bar': (except_king_tower_unit_list, 1.0),
   'dagger-duchess-tower-bar': (['dagger-duchess-tower'], 1.0),
-  'king-tower-bar': (['king-tower'], 1.0),
+  ('king-tower-bar', 'king-tower-level'): (['king-tower'], 1.0),
   'crown-icon': (['ruin'], 0.1),
   'crown-icon': (['king-tower-ruin'], 0.1),
   'clock': (ground_unit_list + except_spell_and_object_unit_list + ['bomb'], 1/2),

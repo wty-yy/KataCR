@@ -33,7 +33,7 @@ class OfflineDatasetBuilder:
   
   def process(
       self, path, show=False, save=True, video_interval=3, save_freq=2,
-      debug=False):
+      verbose=False):
     vid_writer, vid_path = None, None
     ds = ImageAndVideoLoader(path, video_interval=video_interval, cvt_part2=False)
     open_window = False
@@ -41,7 +41,7 @@ class OfflineDatasetBuilder:
     for p, x, cap, s in ds:  # path, image ,capture, verbose string
       with sw[0]:
         visual_info = self.visual_fusion.process(x)
-      if debug:
+      if verbose:
         cv2.imwrite(str(self.path_save_result / f"debug_org.jpg"), x)
         cv2.imwrite(str(self.path_save_result / f"debug_det.jpg"), visual_info['arena'].show_box())
       with sw[1]:
@@ -51,15 +51,19 @@ class OfflineDatasetBuilder:
       self.count += 1
       if self.count % save_freq == 0:
         with sw[3]:
-          self.data['state'].append(self.state_builder.get_state())
-          self.data['reward'].append(self.reward_builder.get_reward(debug=debug))
+          self.data['state'].append(self.state_builder.get_state(verbose=verbose))
+          self.data['reward'].append(self.reward_builder.get_reward(verbose=verbose))
       else: sw[3].dt = 0
-      img = self.state_builder.render()
-      # img = self.state_builder.render(verbose=debug)
+      # img = self.state_builder.render()
+      if show or save:
+        img = self.state_builder.render()
+        r = self.data['reward'][-1] if len(self.data['reward']) else None
+        img = self.reward_builder.render(img, r)
       save_path = str(self.path_save_result / (f"{Path(p).parent.name}_{Path(p).name}"))
       if ds.mode == 'image':
-        cv2.imshow('Detection', img)
-        cv2.waitKey(0)
+        if show:
+          cv2.imshow('Detection', img)
+          cv2.waitKey(0)
         if save:
           cv2.imwrite(save_path, img)
       else:  # video
@@ -113,8 +117,8 @@ if __name__ == '__main__':
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2.mp4", debug=True)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/2.mp4", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2_sub.mp4", debug=True)
-  # odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2.mp4", debug=True)
-  odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240410_132216_1_episodes/7.mp4", debug=True)
+  odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2.mp4", verbose=True, show=True)
+  # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240410_132216_1_episodes/7.mp4", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2_sub_end_sub.mp4", debug=True)
   # odb.process("/home/yy/Pictures/ClashRoyale/build_policy/multi_bar3.png", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2_sub_sub.mp4", debug=True)

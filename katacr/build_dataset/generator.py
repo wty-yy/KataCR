@@ -13,7 +13,7 @@ from katacr.build_dataset.generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list, spell_unit_list,
   drop_units, xyxy_grids, towers_bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
-  component_prob, component2unit, component_cfg, important_components, bar_xy_range,  # component configs
+  component_prob, component2unit, component_cfg, important_components, option_components, bar_xy_range,  # component configs
   item_cfg, drop_box, background_item_list,  # background item
   unit_scale, unit_stretch,  # affine transformation
   tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio, king_tower_generation_ratio
@@ -521,7 +521,7 @@ class Generator:
       xy_bottom_center[0] += img.shape[1] / 2 / cell_size[0]
     if 'right' in xy_format:
       xy_bottom_center[0] -= img.shape[1] / 2 / cell_size[0]
-    if name.split('_')[0] not in self.avail_names: drop = True
+    if (self.avail_names is not None) and (name.split('_')[0] not in self.avail_names): drop = True
     unit = Unit(img=img, xy_bottom_center=xy_bottom_center, level=level, background_size=self.background_size, name=name, augment=self.augment, drop=drop)
     if join: self.unit_list.append(unit)
     return unit
@@ -675,9 +675,16 @@ class Generator:
       if c in components and c not in cs and random.random() < prob:
         components.remove(c)
         cs.append(c)
+    for oc, prob in option_components:
+      if oc in components:
+        rand = random.random()
+        for c, p in zip(oc, prob):
+          if rand > p: rand -= p
+          else: break
+        components.remove(oc)
+        cs.append(c)
     # Second, check normal component probability
-    for ns, prob in component_prob.items():
-      if unit.cls_name in ns: break
+    prob = component_prob[unit.cls_name]
     if random.random() < prob:
       # Third, check single component probability
       for c in components:
@@ -785,14 +792,14 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
+  # generator = Generator(seed=42, background_index=25, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
   generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'dynamic', 'size': 5}, noise_unit_ratio=1/4, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
   for i in range(10):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
     generator.add_tower()
-    generator.add_unit(n=1)
+    generator.add_unit(n=40)
     x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # for b in box:
     #   assert idx2unit[b[5]] != 'skeleton-king-skill'

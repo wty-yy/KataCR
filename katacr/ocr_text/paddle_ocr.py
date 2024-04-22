@@ -98,6 +98,8 @@ class OCR:
       num = ''.join([c for c in rec.strip() if c.isnumeric()])
       try:
         m = int(num)
+        if m > 10:
+          m = m % 10  # wrong detection
       except ValueError:
         m = None
     return m

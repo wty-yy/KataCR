@@ -5,7 +5,6 @@ from katacr.constants.label_list import unit2idx
 from katacr.policy.utils import extract_img, xyxy2center, xyxy2sub
 from katacr.build_dataset.generation_config import except_king_tower_unit_list
 import cv2
-from PIL import Image
 
 TARGET_SIZE_KING_TOWER_BAR = (140, 40)
 TARGET_SIZE_TOWER_BAR = (96, 30)
@@ -67,7 +66,26 @@ class RewardBuilder:
     inter = (np.minimum(a2, b2) - np.maximum(a1, b1)).clip(0).prod(2)  # (N, M)
     return inter.sum() > 0
   
-  def get_reward(self, debug=False):
+  def render(self, img, reward):
+    """
+    Write reward at (0, 0) in (BGR) image.
+    """
+    from PIL import ImageFont, ImageDraw, Image
+    from katacr.utils.detection import FONT_PATH
+    font_color = (255,255,255)  # white
+    font = ImageFont.truetype(FONT_PATH, 24)
+    import PIL
+    pil_version = int(PIL.__version__.split('.')[0])
+    text = f"Reward: {reward:.4f}" if reward is not None else f"Reward: None"
+    w_text, h_text = font.getbbox(text)[-2:] if pil_version >= 10 else font.getsize(text)
+    x_text, y_text = 0, 0
+    img = Image.fromarray(img[...,::-1])
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([x_text, y_text, x_text+w_text, y_text+h_text], radius=1.5, fill=(0,0,0))
+    draw.text((x_text, y_text), text, fill=font_color, font=font)
+    return np.array(img)[...,::-1]
+  
+  def get_reward(self, verbose=False):
     now_hp_tower = np.full((2, 2), -1, np.int32)
     now_hp_king_tower = np.full((2,), -1, np.int32)
     ### King Tower ###
@@ -167,7 +185,7 @@ class RewardBuilder:
       reward['elixir'] -= 0.05
     self.last_elixir = self.elixir
     total_reward = sum(reward.values())
-    if debug:
+    if verbose:
       print(f"Time={self.time}, {reward=}, {total_reward=}")
     return total_reward
   

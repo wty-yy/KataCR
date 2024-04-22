@@ -2,8 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import jax, jax.numpy as jnp
 
+
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+FONT_PATH = str(Path(__file__).parent.joinpath("../fonts/Consolas.ttf").resolve())
 def plot_box_PIL(
     image:Image.Image, box_params: tuple | np.ndarray,
     text="", fontsize=12, box_color='red',

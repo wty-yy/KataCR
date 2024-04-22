@@ -23,8 +23,8 @@ path_detectors = [
   # path_root / './runs/detector3_v0.7.6.pt',
   # path_root / './runs/detector1_v0.7.8.pt',
   # path_root / './runs/detector2_v0.7.8.pt',
-  path_root / './runs/detector1_v0.7.11.pt',
-  path_root / './runs/detector2_v0.7.11.pt',
+  path_root / './runs/detector1_v0.7.12.pt',
+  path_root / './runs/detector2_v0.7.12.pt',
 ]
 
 class ComboDetector:
@@ -137,5 +137,7 @@ if __name__ == '__main__':
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240222_8spells/1.mp4")
   # combo.predict("/home/yy/Coding/GitHub/KataCR/logs/split_video/OYASSU_20230203_episodes_2.mp4", show=True)
   # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240412/dagger0_cannoneer1_1.mp4", show=True, save=True, video_interval=3)
-  combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/2.mp4", show=True, save=False, video_interval=3)
+  # combo.predict("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/2.mp4", show=True, save=False, video_interval=3)
+  # combo.predict("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2_sub_sub.mp4", show=True, save=True, video_interval=3)
+  combo.predict("/home/yy/Videos/CR_Videos/test/test_feature_build2_sub_end.mp4", show=True, save=True, video_interval=3)
   # combo.predict("/home/yy/Videos/CR_Videos/musketeer_and_hogrider_insecond.mp4", show=True, save=True, video_interval=3)

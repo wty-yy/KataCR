@@ -1,0 +1,106 @@
+import lzma
+import cv2
+from io import BytesIO
+import numpy as np
+import time
+
+import scipy.spatial
+from katacr.utils import Stopwatch
+from katacr.utils.detection import build_label2colors
+from PIL import Image, ImageDraw, ImageFont
+from katacr.policy.utils import background_size
+from katacr.utils.detection import FONT_PATH
+from katacr.constants.label_list import idx2unit
+import scipy
+
+DISPLAY_SCALE = 1
+
+class GridDrawer:
+  def __init__(self, r=32*DISPLAY_SCALE, c=18*DISPLAY_SCALE, size=background_size):
+    self.r, self.c, self.size = r, c, size
+    cell_w = self.size[0] // c
+    cell_h = self.size[1] // r
+    self.cell = np.array([cell_w, cell_h])
+    image = self.image = Image.new('RGB', size, color='black')
+    draw = self.draw = ImageDraw.Draw(image)
+    for x in list(range(0, size[0], cell_w)) + [size[0]-1]:
+      draw.line((x, 0, x, size[1]), fill='white', width=1)
+    for y in list(range(0, size[1], cell_h)) + [size[1]-1]:
+      draw.line((0, y, size[0], y), fill='white', width=1)
+    self.used = np.zeros((r, c), np.bool_)
+    self.center = np.swapaxes(np.array(np.meshgrid(np.arange(r), np.arange(c))), 0, -1) + 0.5  # (r, c, 2)
+  
+  def paint(self, xy, color, bel=None, fontsize=14):
+    cell, draw = self.cell, self.draw
+    xy = np.array(xy) * cell
+    xyxy = ((int(xy[0])+1, int(xy[1])+1), (int(xy[0]+cell[0])-1, int(xy[1]+cell[1])-1))
+    draw.rectangle(xyxy, color)
+    if bel is not None:
+      font = ImageFont.truetype(FONT_PATH, fontsize)
+      draw.text((xyxy[0][0]+4, xyxy[0][1]-2), str(bel), (255,255,255), font)
+  
+  def find_near_pos(self, xy):
+    yx = np.array(xy)[::-1]
+    y, x = yx.astype(np.int32)
+    if self.used[y, x]:
+      avail_center = self.center[~self.used]
+      map_index = np.argwhere(~self.used)
+      dis = scipy.spatial.distance.cdist(yx.reshape(1, 2), avail_center)
+      y, x = map_index[np.argmin(dis)]
+    self.used[y, x] = True
+    return x, y
+
+class DataDisplayer:
+  def __init__(self, path_data):
+    self.path_data = path_data
+    sw = Stopwatch()
+    with sw:
+      bytes = lzma.open(self.path_data).read()
+      self.data = np.load(BytesIO(bytes), allow_pickle=True).item()
+    print("Load data time used:", sw.dt)
+    self.open_windows = set()
+  
+  def check_new_window(self, name, size, rate=3):
+    if name not in self.open_windows:
+      self.open_windows.add(name)
+      cv2.namedWindow(name, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+      cv2.resizeWindow(name, (np.array(size)*rate).astype(np.int32))
+
+  def display(self):
+    unit_cls = list({unit['cls'] for d in self.data['state'] for unit in d['unit_infos'] if unit['cls'] is not None})
+    print(f"num unit cls: {len(unit_cls)},", unit_cls)
+    label2color = build_label2colors(unit_cls)
+    label2color[None] = (255, 255, 255)
+    print(label2color)
+    for d in self.data['state']:
+      print(f"Time: {d['time']}, cards: {d['cards']}, elixir: {d['elixir']}, unit_num: {len(d['unit_infos'])}")
+      arena = GridDrawer()
+      for unit in d['unit_infos']:
+        for k, v in unit.items():
+          if v is not None:
+            if isinstance(v, np.ndarray) and v.dtype == np.uint8:
+              self.check_new_window(k, v.shape[:2][::-1], rate=3)
+              cv2.imshow(k, v[...,::-1])
+            else:
+              print(k, v, end=' ')
+              if k == 'xy':
+                pos = arena.find_near_pos(v*DISPLAY_SCALE)
+                print('->', pos, end=' ')
+                arena.paint(pos, label2color[unit['cls']], unit['bel'])
+        self.check_new_window('arena', arena.image.size, rate=1.5)
+        print()
+      cv2.imshow('arena', np.array(arena.image)[...,::-1])
+      cv2.waitKey(0)
+
+if __name__ == '__main__':
+  path_data = "/home/yy/Coding/GitHub/KataCR/logs/offline/2024.04.22 11:26:20/test_lan77_20240406_ep_2.npy.xz"
+  displayer = DataDisplayer(path_data=path_data)
+  displayer.display()
+  # drawer = GridDrawer()
+  # print(drawer.find_near_pos((8.93777498,28.14355225)))
+  # print(drawer.find_near_pos((1, 1.5)))
+  # drawer.paint((5, 0), (255, 0, 0), 0)
+  # drawer.paint((0, 0), (255, 0, 0), 1)
+  # # drawer.paint((0, 5), (255, 0, 0))
+  # drawer.paint((10, 3), (0, 0, 255), 0)
+  # drawer.image.show()

@@ -370,6 +370,7 @@ background_item_list = [
   'crown-icon',
   'ribbon',
   'ruin',
+  'king-tower-level',
   'king-tower-ruin',
   'skull',
   'scoreboard',

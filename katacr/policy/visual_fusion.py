@@ -8,8 +8,8 @@ import numpy as np
 
 path_root = Path(__file__).parents[2]
 path_detectors = [
-  path_root / './runs/detector1_v0.7.11.pt',
-  path_root / './runs/detector2_v0.7.11.pt',
+  path_root / './runs/detector1_v0.7.12.pt',
+  path_root / './runs/detector2_v0.7.12.pt',
 ]
 classifier_path = path_root / 'logs/CardClassification-checkpoints'
 

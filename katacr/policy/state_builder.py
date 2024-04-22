@@ -65,24 +65,21 @@ class StateBuilder:
   def _add_bar_item(self, bar_level=None, bar1=None, bar2=None, body=None):
     self.bar_items.append(BarItem(self, bar_level=bar_level, bar1=bar1, bar2=bar2, body=body))
   
-  def render(self, verbose=False):
+  def render(self):
     from PIL import ImageDraw, Image
+    from katacr.policy.data_display import GridDrawer, DISPLAY_SCALE, build_label2colors
     rimg = Image.fromarray(self.arena.show_box()[...,::-1])
-    if verbose:
-      print("Time", self.time)
-    for bar_item in self.bar_items:
-      if verbose:
-        info = bar_item.debug()
-      else:
-        info = bar_item.get_unit_info()
-      if info is None: continue
-      if info['xy'] is None:
-        print(bar_item.bars, bar_item.body)
-        raise ValueError
+    state = self.get_state()
+    arena = GridDrawer()
+    draw = ImageDraw.Draw(rimg)
+    label2color = build_label2colors([bar['cls'] for bar in state['unit_infos'] if bar['cls'] is not None])
+    label2color[None] = (255, 255, 255)
+    for info in state['unit_infos']:
+      arena.paint(arena.find_near_pos(info['xy']*DISPLAY_SCALE), label2color[info['cls']], info['bel'])
       x, y = cell2pixel(info['xy'])
-      draw = ImageDraw.Draw(rimg)
       draw.rounded_rectangle([x-2,y-2,x+2,y+2], radius=3, fill=(255,0,0))
-    return np.array(rimg)[...,::-1]
+    ret = np.concatenate([np.array(rimg), arena.image], 1)
+    return ret[...,::-1]
   
   def _update_bel_memory(self):
     for b in self.box:
@@ -197,23 +194,25 @@ class StateBuilder:
         xy_bars_avail = xy_bars[mask_bars]  # body image consider unused bar_item
         idx_map = np.argwhere(mask_bars).reshape(-1)
         cls_name = idx2unit[int(box[-2])]
-        if len(xy_bars_avail) == 0: continue
-        dis = scipy.spatial.distance.cdist(datum, xy_bars_avail)[0]
-        print(f"cls={cls_name},id={box[-4]},box dis=", dis)  # DEBUG: distance
-        idx = np.argmin(dis)
-        # print(idx_map, idx, mask_bars, dis[idx])
-        if dis[idx] < DIS_BAR_AND_BODY_THRE:
-          i = idx_map[idx]
-          bar_item = no_body_items[i]
-          assert bar_item.body is None
-          # if bar_item.body is not None:  # Near with tower-bar, skip
-          #   print(f"Warning: (time={self.time}) {idx2unit[int(box[-2])]}(id={box[-4]}) near with tower-bar, which has body(id={bar_item.body[-4]}), skip this (maybe wrong detection)")
-          #   continue
-          #   # print(i, idx, mask_bars, idx_map)
-          # assert bar_item.body is None
-          bar_item.body = box
-          mask_bars[i] = False
-        else:
+        find_bar = False
+        if len(xy_bars_avail):
+          dis = scipy.spatial.distance.cdist(datum, xy_bars_avail)[0]
+          print(f"cls={cls_name},id={box[-4]},box dis=", dis)  # DEBUG: distance
+          idx = np.argmin(dis)
+          # print(idx_map, idx, mask_bars, dis[idx])
+          if dis[idx] < DIS_BAR_AND_BODY_THRE:
+            i = idx_map[idx]
+            bar_item = no_body_items[i]
+            assert bar_item.body is None
+            # if bar_item.body is not None:  # Near with tower-bar, skip
+            #   print(f"Warning: (time={self.time}) {idx2unit[int(box[-2])]}(id={box[-4]}) near with tower-bar, which has body(id={bar_item.body[-4]}), skip this (maybe wrong detection)")
+            #   continue
+            #   # print(i, idx, mask_bars, idx_map)
+            # assert bar_item.body is None
+            bar_item.body = box
+            mask_bars[i] = False
+            find_bar = True
+        if not find_bar:
           no_bar_box.append(box)
     for box in no_bar_box:
       self._add_bar_item(body=box)
@@ -274,13 +273,13 @@ class StateBuilder:
     ### Step 4: Update class memory ###
     self._update_cls_memory()
   
-  def get_state(self):
+  def get_state(self, verbose=False):
     state = {}
-    state['arena'] = self.img
+    # state['arena'] = self.img  # NOT NEED IT
     state['time'] = self.time
     state['unit_infos'] = []
     for i in self.bar_items:
-      info = i.get_unit_info()
+      info = i.get_unit_info(verbose=verbose)
       if info is not None:
         state['unit_infos'].append(info)
     state['cards'] = [self.card2idx[self.cards[i]] for i in range(5)]  # next, card1~4
@@ -334,8 +333,7 @@ class BarItem:
       print(f"Warning(state): Only build BarItem by bar2 (id={int(self.bar2[-4])})")
     # assert self.bel is not None, "The belong of BarItem is None"
   
-  def debug(self):
-    info = self.get_unit_info()
+  def debug(self, info):
     cls_name = idx2unit[info['cls']] if (info is not None and info['cls'] is not None) else None
     print(f"Bar Items (cls={cls_name}) (id): ", end='')
     for name in ('bar_level', 'bar1', 'bar2', 'body'):
@@ -361,7 +359,7 @@ class BarItem:
       self.bar2xywht[id] = np.concatenate([xy_body - xy_bar, wh_body, [self.time]]).astype(np.float32)  # Time maybe np.inf
       self.bar_history.put((id, self.time))
   
-  def get_unit_info(self):
+  def get_unit_info(self, verbose=False):
     """
     Parse unit_info from bars and body image.
 
@@ -386,7 +384,9 @@ class BarItem:
           last_time = xywht[-1]
           xyxy_box = bar[:4]
           xy = xywht[:2] + xyxy_box[:2]
-          info['xy'] = pixel2cell([xy[0]+xywht[2]/2, xy[1]+xywht[3]/2])
+          info['xy'] = pixel2cell(xy+xywht[2:4]/2)  # [xy[0]+xywht[2]/2, xy[1]+xywht[3]/2]
+          xyxy = np.concatenate([xy, xy+xywht[2:4]], 0)
+          # info['body'] = extract_img(self.img, xyxy)  # last body size
         else:
           xy = self.center
           xy[1] += BAR_CENTER2BODY_DELTA_Y
@@ -399,7 +399,7 @@ class BarItem:
       # if info['cls'] != int(self.body[-2]):
       #   warnings.warn(colorstr("Warning")+f"(time={self.time}) bars and body (id={self.body[-4]}) don't have same class")
       # info['body'] = extract_img(self.img, xyxy)
-      info['body'] = xyxy
+      # info['body'] = xyxy
       bel = int(self.body[-1])
       if bel != self.bel:
         print(f"Warning(state): (time={self.time}) bars and body (id={self.body[-4]}) don't have same belong")
@@ -414,14 +414,16 @@ class BarItem:
       cls_name = idx2unit[int(bar[-2])]
       if cls_name == 'king-tower-bar': xyxy = xyxy2sub(xyxy, SUB_XYXY_KING_TOWER_BAR)
       if cls_name == 'tower-bar': xyxy = xyxy2sub(xyxy, SUB_XYXY_TOWER_BAR[int(bar[-1])])
-      # info[name] = extract_img(self.img, xyxy)
-      info[name] = xyxy
+      info[name] = extract_img(self.img, xyxy)
+      # info[name] = xyxy
       # if cls_name in ['king-tower-bar', 'tower-bar']:  # DEBUG
       #   import cv2
       #   cv2.imshow('img', info[name][...,::-1])
       #   cv2.waitKey(0)
     info['bel'] = self.bel
     if self.bel is None: return None  # Only bar2 if useless
+    if verbose:
+      self.debug(info)
     return info
   
   @property
