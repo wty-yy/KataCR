@@ -21,6 +21,7 @@ from katacr.ocr_text.paddle_ocr import OCR
 
 OCR_TEXT_SIZE = (200, 120)  # bottom center = elixir top center
 LOW_ALPHA = [chr(ord('a')+i) for i in range(26)]
+WRONG_CARD_FRAME_DELTA = 10  # 10 * 0.2 = 2 sec
 
 class ActionBuilder:
   def __init__(self, persist: int=2):
@@ -43,6 +44,8 @@ class ActionBuilder:
     self.cards_memory = [None] * 5
     self.actions = Queue()
     self.time = 0
+    self.last_wrong_card_frame = [None] * 5
+    self.frame_count = 0
   
   def _update_elixir(self):
     while not self.elixir_history.empty() and self.time - self.elixir_history.queue[0][1] > self.persist:
@@ -54,11 +57,26 @@ class ActionBuilder:
     self.deploy_cards = set()
     self.cards_memory[0] = self.cards[0]  # next card should correct
     for i, (nc, mc) in enumerate(zip(self.cards, self.cards_memory)):
-      if nc != 'empty' and mc in ['empty', None]:
-        self.cards_memory[i] = nc
+      wrong_name = False
+      if nc != 'empty':
+        if mc in ['empty', None]:
+          self.cards_memory[i] = nc
+        else:  # mc has class name
+          if nc != mc:
+            wrong_name = True
+            if self.last_wrong_card_frame[i] is not None:
+              if self.frame_count - self.last_wrong_card_frame[i] >= WRONG_CARD_FRAME_DELTA:
+                assert nc == mc, f"There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}"
+            else:
+              self.last_wrong_card_frame[i] = self.frame_count
+          else:
+            if nc in self.deploy_cards:  # drag out and drag back
+              self.deploy_cards.remove(nc)
       if nc == 'empty' and mc != 'empty':
         self.deploy_cards.add(mc)
-    # print(f"{self.cards=}, {self.cards_memory=}, {self.deploy_cards=}")  # DEBUG
+      if not wrong_name:
+        self.last_wrong_card_frame[i] = None
+    print(f"Action(Time={self.time}): {self.cards=}, {self.cards_memory=}, {self.deploy_cards=}")  # DEBUG
   
   def _add_action(self, elixir_box, card_name):
     b = elixir_box
@@ -85,7 +103,10 @@ class ActionBuilder:
     # cv2.waitKey(0)
     results = self.ocr(text_img)
     recs = []
+    has_text = False
     for result in results:
+      if result is None: continue
+      has_text = True
       for info in result:
         det, rec = info
         rec = ''.join([c for c in rec[0].lower() if c in LOW_ALPHA])
@@ -94,6 +115,7 @@ class ActionBuilder:
           if rec in name.lower().replace('-', ''):
             return name
     print(f"Warning(action): (time={self.time}) Don't find any {recs} in display_cards: {self.deploy_cards} by elixir (id={elixir_box[-4]})")
+    return has_text  # Maybe ocr detection is wrong or other text cover on it, return has_text for further judgment
     
   def _find_action(self):
     elixir = self.box[self.box[:,-2] == unit2idx['elixir']]
@@ -111,7 +133,9 @@ class ActionBuilder:
       #   self._add_action(b, self.deploy_cards.pop())
       # else:
       class_name = self._ocr_text(b)
-      if class_name is None: continue
+      if class_name == False: continue
+      if class_name == True and len(self.deploy_cards) == 1:
+        class_name = next(iter(self.deploy_cards))
       self._add_action(b, class_name)
       self.deploy_cards.remove(class_name)
   
@@ -145,3 +169,4 @@ class ActionBuilder:
     self._find_action()
     # print(f"{info['cards']=}, {self.cards_memory=}")
     info['cards'] = self.cards_memory
+    self.frame_count += 1

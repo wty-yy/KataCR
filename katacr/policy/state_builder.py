@@ -397,6 +397,7 @@ class BarItem:
           xy = self.center
           xy[1] += BAR_CENTER2BODY_DELTA_Y
           info['xy'] = pixel2cell(xy)
+          if info['xy'][1] >= 32: return None  # WRONG detection of bar
     else:
       xyxy = self.body[:4]
       info['xy'] = pixel2cell(xyxy.reshape(2,2).mean(0))

@@ -27,7 +27,7 @@ class ImageAndVideoLoader:
     self.video_interval = video_interval
     self.cvt_part2 = cvt_part2
     if isinstance(path, str) and Path(path).suffix == '.txt':
-      path = Path(path).read_text().split()
+      path = [p for p in Path(path).read_text().splitlines() if p[0] != '#']
     files = []
     for p in sorted(path) if isinstance(path, (list, tuple)) else [path]:
       p = str(Path(p).resolve())

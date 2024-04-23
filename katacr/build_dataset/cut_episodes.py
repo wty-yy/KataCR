@@ -80,7 +80,7 @@ def get_time(ocr: OCR, img, time_split=True, show=False):
   else: time_img = img
   results = ocr(time_img, gray=True)[0]
   if show:
-    print("OCR results:", results)
+    # print("OCR results:", results)
     cv2.imshow('time', time_img)
     cv2.waitKey(1)
   if results is None: return math.inf
@@ -203,7 +203,7 @@ class Cutter:
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   # parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/CR/videos/WTY_20240213.mp4")
-  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240413/SVID_20240412_212312_1_30fps_an.mp4")
+  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Videos/CR_Videos/expert_videos/WTY_20240419_112947_1_golem_enermy_ai.mp4")
   args = parser.parse_args()
   cutter = Cutter()
   cutter.split_episodes(args.path_video, show=True)

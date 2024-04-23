@@ -8,8 +8,6 @@ import cv2, time
 import numpy as np
 import subprocess
 
-BASE_DATA_INFO = dict(state=[], action=[], reward=[])
-
 path_root = Path(__file__).parents[2]
 
 class OfflineDatasetBuilder:
@@ -24,15 +22,15 @@ class OfflineDatasetBuilder:
     self.reset()
   
   def reset(self, save_path=None):
-    self.data = BASE_DATA_INFO.copy()
+    if save_path is not None:
+      self.save_data(save_path)
+    self.data = dict(state=[], action=[], reward=[])
     if self.visual_fusion.yolo.tracker is not None:
       self.visual_fusion.yolo.tracker.reset()
     self.count = 0
     self.state_builder.reset()
     self.action_builder.reset()
     self.reward_builder.reset()
-    if save_path is not None:
-      self.save_data(save_path)
   
   def process(
       self, path, show=False, save=True, video_interval=3, save_freq=2,
@@ -71,11 +69,11 @@ class OfflineDatasetBuilder:
           cv2.imshow('Detection', img)
           cv2.waitKey(0)
         if save:
-          cv2.imwrite(save_path, img)
+          cv2.imwrite(str(Path(save_path).with_suffix('.jpg')), img)
       else:  # video
         if vid_path != save_path:  # new video
-          if vid_path is not None and self.visual_fusion.yolo.tracker is not None:
-            self.reset(save_path)
+          if vid_path is not None:
+            self.reset(vid_path)
           vid_path = save_path
           if isinstance(vid_writer, cv2.VideoWriter):
             vid_writer.release()
@@ -123,8 +121,12 @@ if __name__ == '__main__':
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2.mp4", debug=True)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/2.mp4", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2_sub.mp4", debug=True)
-  odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2.mp4", verbose=True, show=False)
-  # odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2_sub_action.mp4", verbose=True, show=True)
+  # odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/expert_videos/WTY_20240419_112947_1_golem_enermy_ai_episodes/5.mp4", verbose=True, show=False)
+  odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/expert_videos/list.txt", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/5_sub_pos.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/5_sub_ocr.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240410_132216_1_episodes/7.mp4", debug=True)
   # odb.process("/home/yy/Pictures/ClashRoyale/build_policy/multi_bar3.png", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2_sub_sub.mp4", debug=True)

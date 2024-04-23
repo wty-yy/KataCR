@@ -90,6 +90,7 @@ class DataDisplayer:
             if isinstance(v, np.ndarray) and v.dtype == np.uint8:
               self.check_new_window(k, v.shape[:2][::-1], rate=3)
               cv2.imshow(k, v[...,::-1])
+              cv2.waitKey(0)
             else:
               print(k, v, end=' ')
               if k == 'xy':
@@ -102,7 +103,7 @@ class DataDisplayer:
       cv2.waitKey(0)
 
 if __name__ == '__main__':
-  path_data = "/home/yy/Coding/GitHub/KataCR/logs/offline/2024.04.22 11:26:20/test_lan77_20240406_ep_2.npy.xz"
+  path_data = "/home/yy/Coding/GitHub/KataCR/logs/offline/2024.04.23 19:17:31/golem_ai_5_sub_pos.npy.xz"
   displayer = DataDisplayer(path_data=path_data)
   displayer.display()
   # drawer = GridDrawer()

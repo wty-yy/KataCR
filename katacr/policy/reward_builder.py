@@ -13,7 +13,9 @@ XYXY_TOWER_BAR_NUM = [(0.26, 0.1, 1.0, 0.9), (0.26, 0.0, 1.0, 0.8)]
 XYXY_KING_TOWER = [(185, 700, 385, 885), (195, 0, 385, 200)]
 XYXY_TOWER = [[(50, 625, 175, 770), (400, 625, 525, 770)], [(50, 135, 175, 285), (405, 135, 525, 285)]]
 OCR_NUM_CONF_THRE = 0.9
-DESTROY_FRAME_DELTA_THRE = 4
+DESTROY_FRAME_DELTA_THRE = 10
+MAX_DELTA_HP = 1600
+ELIXIR_OVER_FRAME = 5  # 0.2 * 5 = 1 sec
 
 class RewardBuilder:
   def __init__(self, ocr_onnx=False, ocr_gpu=True):
@@ -24,7 +26,7 @@ class RewardBuilder:
     self.full_hp = {'tower': [1, 1], 'king-tower': [1, 1]}
     self.hp_tower = np.full((2, 2), -1, np.int32)
     self.hp_king_tower = np.full((2,), -1, np.int32)
-    self.last_elixir = -1
+    self.last_elixir_over_frame = None
     self.last_tower_destroy_frame = np.full((2, 2), -1, np.int32)
     self.last_king_tower_destroy_frame = np.full((2,), -1, np.int32)
     self.frame_count = 0
@@ -44,13 +46,13 @@ class RewardBuilder:
       # print("DEBUG: conf=", conf)  # DEBUG
       rec = rec.lower()
       num = ''.join([c for c in rec.strip() if (c in [str(i) for i in range(10)])])
-      # print(results)  # DEBUG
-      # cv2.imshow('img', img[...,::-1])
-      # cv2.waitKey(0)
       if conf < OCR_NUM_CONF_THRE or len(num) == 0:
         print(f"Wrong: (time={self.time}) Don't find bar number (rec={rec}) or conf={conf:.4f} is low")
         num = -1
       else: num = int(num)
+      # print(results)  # DEBUG
+      # cv2.imshow('img', img[...,::-1])
+      # cv2.waitKey(0)
       nums.append(num)
     if np.mean(nums) == nums[0]: return nums[0]
     return -1
@@ -90,9 +92,13 @@ class RewardBuilder:
         if self._has_other_item_cover(b[:4]): continue
         xyxy = xyxy2sub(b[:4], XYXY_KING_TOWER_BAR_NUM[bel])
         hp = self._ocr_hp(xyxy, TARGET_SIZE_KING_TOWER_BAR)
-        if self.hp_king_tower[bel] != -1 and hp > self.hp_king_tower[bel]:
-          print(f"Warning(reward): (time={self.time}) king-tower id={b[-4]}, ocr hp={hp} > old hp={self.hp_king_tower[bel]}, ignore it")
-          hp = -1
+        if self.hp_king_tower[bel] != -1:
+          if hp > self.hp_king_tower[bel]:
+            print(f"Warning(reward): (time={self.time}) king-tower id={b[-4]}, ocr_hp={hp} > old hp={self.hp_king_tower[bel]}, there maybe wrong detection before")
+          delta = self.hp_king_tower[bel] - hp
+          if abs(delta) > MAX_DELTA_HP:
+            print(f"Warning(reward): (time={self.time}) king-tower id={b[-4]}, old_hp-ocr_hp={delta}'s abs {MAX_DELTA_HP=}, ignore it")
+            hp = -1
         now_hp_king_tower[bel] = hp
     # check king-tower is destroied
     king_tower_box = get_unit_box('king-tower')
@@ -114,9 +120,13 @@ class RewardBuilder:
       if self._has_other_item_cover(b[:4]): continue
       xyxy = xyxy2sub(b[:4], XYXY_TOWER_BAR_NUM[int(b[-1])])
       hp = self._ocr_hp(xyxy, TARGET_SIZE_TOWER_BAR)
-      if self.hp_tower[i,j] != -1 and hp > self.hp_tower[i,j]:
-        print(f"Warning(reward): (time={self.time}) tower id={b[-4]}, ocr hp={hp} > old hp={self.hp_tower[i,j]}, ignore it")
-        hp = -1
+      if self.hp_tower[i,j] != -1:
+        if hp > self.hp_tower[i,j]:
+          print(f"Warning(reward): (time={self.time}) tower id={b[-4]}, ocr_hp={hp} > old hp={self.hp_tower[i,j]}, there maybe wrong detection before")
+        delta = self.hp_tower[i,j] - hp
+        if abs(delta) > MAX_DELTA_HP:
+          print(f"Warning(reward): (time={self.time}) tower id={b[-4]}, old_hp-ocr_hp={delta}'s abs > {MAX_DELTA_HP=}, ignore it")
+          hp = -1
       now_hp_tower[i,j] = hp
     # check tower is destroied
     tower_box = np.concatenate([get_unit_box(name) for name in except_king_tower_unit_list], 0)
@@ -174,9 +184,15 @@ class RewardBuilder:
     if verbose:
       print("FULL HP:", self.full_hp)
     # Elixir
-    if self.last_elixir == 10 and self.elixir == 10:
-      reward['elixir'] -= 0.05
-    self.last_elixir = self.elixir
+    if self.elixir == 10:
+      if self.last_elixir_over_frame is not None:
+        if self.frame_count - self.last_elixir_over_frame >= ELIXIR_OVER_FRAME:
+          reward['elixir'] -= 0.05
+          self.last_elixir_over_frame = self.frame_count
+      else:
+        self.last_elixir_over_frame = self.frame_count
+    else:
+      self.last_elixir_over_frame = None
     total_reward = sum(reward.values())
     if verbose:
       print(f"Time={self.time}, {reward=}, {total_reward=}")
