@@ -76,10 +76,10 @@ class Classifier:
     from katacr.build_dataset.constant import part3_bbox_params
     if pil: x = x[...,::-1]
     params = part3_bbox_params
-    results = {}
-    for n, param in params.items():
+    results = []
+    for param in params:
       img = extract_bbox(x, *param)  # xywh for next image position
-      results[n] = self(img, cvt_label=cvt_label, verbose=verbose)
+      results.append(self(img, cvt_label=cvt_label, verbose=verbose))
     return results
 
 def test_cls():

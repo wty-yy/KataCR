@@ -30,14 +30,23 @@ class GridDrawer:
     self.used = np.zeros((r, c), np.bool_)
     self.center = np.swapaxes(np.array(np.meshgrid(np.arange(r), np.arange(c))), 0, -1) + 0.5  # (r, c, 2)
   
-  def paint(self, xy, color, bel=None, fontsize=14):
+  def paint(self, xy, color, text=None, fontsize=14, rect=True, circle=False, text_pos='left top'):
     cell, draw = self.cell, self.draw
     xy = np.array(xy) * cell
     xyxy = ((int(xy[0])+1, int(xy[1])+1), (int(xy[0]+cell[0])-1, int(xy[1]+cell[1])-1))
-    draw.rectangle(xyxy, color)
-    if bel is not None:
-      font = ImageFont.truetype(FONT_PATH, fontsize)
-      draw.text((xyxy[0][0]+4, xyxy[0][1]-2), str(bel), (255,255,255), font)
+    if rect:
+      draw.rectangle(xyxy, color)
+    font = ImageFont.truetype(FONT_PATH, fontsize)
+    if text is not None and text_pos == 'left top':
+      draw.text((xyxy[0][0]+4, xyxy[0][1]-2), str(text), (255,255,255), font)
+    if circle:
+      import PIL
+      pil_version = int(PIL.__version__.split('.')[0])
+      w_text, h_text = font.getbbox('0')[-2:] if pil_version >= 10 else font.getsize('0')
+      xyxy = ((xyxy[0][0]+w_text, xyxy[0][1]+h_text-3), xyxy[1])
+      draw.ellipse(xyxy, color)
+    if text is not None and text_pos == 'right down':
+      draw.text((xyxy[0][0]+4, xyxy[0][1]-2), str(text), (0,0,0), font)
   
   def find_near_pos(self, xy):
     yx = np.array(xy)[::-1]

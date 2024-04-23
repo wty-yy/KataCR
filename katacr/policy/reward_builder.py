@@ -2,7 +2,7 @@ import numpy as np
 from katacr.ocr_text.paddle_ocr import OCR
 from katacr.yolov8.custom_result import CRResults
 from katacr.constants.label_list import unit2idx
-from katacr.policy.utils import extract_img, xyxy2center, xyxy2sub
+from katacr.policy.utils import extract_img, xyxy2center, xyxy2sub, pil_draw_text
 from katacr.build_dataset.generation_config import except_king_tower_unit_list
 import cv2
 
@@ -28,6 +28,7 @@ class RewardBuilder:
     self.last_tower_destroy_frame = np.full((2, 2), -1, np.int32)
     self.last_king_tower_destroy_frame = np.full((2,), -1, np.int32)
     self.frame_count = 0
+    self.time = 0
   
   def _ocr_hp(self, xyxy, target_size):
     img = extract_img(self.img, xyxy, target_size=target_size)
@@ -70,19 +71,9 @@ class RewardBuilder:
     """
     Write reward at (0, 0) in (BGR) image.
     """
-    from PIL import ImageFont, ImageDraw, Image
-    from katacr.utils.detection import FONT_PATH
-    font_color = (255,255,255)  # white
-    font = ImageFont.truetype(FONT_PATH, 24)
-    import PIL
-    pil_version = int(PIL.__version__.split('.')[0])
     text = f"Reward: {reward:.4f}" if reward is not None else f"Reward: None"
-    w_text, h_text = font.getbbox(text)[-2:] if pil_version >= 10 else font.getsize(text)
-    x_text, y_text = 0, 0
-    img = Image.fromarray(img[...,::-1])
-    draw = ImageDraw.Draw(img)
-    draw.rounded_rectangle([x_text, y_text, x_text+w_text, y_text+h_text], radius=1.5, fill=(0,0,0))
-    draw.text((x_text, y_text), text, fill=font_color, font=font)
+    from PIL import Image
+    img = pil_draw_text(img, (0, 0), text)
     return np.array(img)[...,::-1]
   
   def get_reward(self, verbose=False):
@@ -149,8 +140,9 @@ class RewardBuilder:
     # print("Last tower destroy time:", self.last_tower_destroy_time)
     ### Calculate ###
     reward = {'tower': 0, 'king-tower': 0, 'r_': 0, 'elixir': 0}
-    print("OLD hp:", self.hp_tower, self.hp_king_tower)  # DEBUG
-    print("NOW hp:", now_hp_tower, now_hp_king_tower)  # DEBUG
+    if verbose:
+      print("OLD hp:", self.hp_tower, self.hp_king_tower)  # DEBUG
+      print("NOW hp:", now_hp_tower, now_hp_king_tower)  # DEBUG
     # Tower
     for i, (olds, nows) in enumerate(zip(self.hp_tower, now_hp_tower)):
       flag = (-1) ** (i+1)
@@ -179,7 +171,8 @@ class RewardBuilder:
         elif old != -1:  # alived: reward +/- (delta/full)
           reward['king-tower'] += flag * (old - now) / full_hp
         self.hp_king_tower[i] = now
-    print("FULL HP:", self.full_hp)
+    if verbose:
+      print("FULL HP:", self.full_hp)
     # Elixir
     if self.last_elixir == 10 and self.elixir == 10:
       reward['elixir'] -= 0.05
@@ -190,7 +183,7 @@ class RewardBuilder:
     return total_reward
   
   def update(self, info):
-    self.time: int = info['time']
+    self.time: int = info['time'] if not np.isinf(info['time']) else self.time
     self.arena: CRResults = info['arena']
     self.elixir: int = info['elixir']
     self.img = self.arena.get_rgb()

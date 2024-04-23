@@ -21,7 +21,7 @@ cell_size = np.array([(xyxy_grids[3] - xyxy_grids[1]) / grid_size[1], (xyxy_grid
 
 def pixel2cell(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
-  return (xy - xyxy_grids[:2]) / cell_size
+  return ((xy - xyxy_grids[:2]) / cell_size).astype(np.float32)
 
 def cell2pixel(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
@@ -39,3 +39,23 @@ def xyxy2sub(xyxy, sub):
     sub = np.array(sub)
   delta = sub * np.array([w, h, w, h])
   return np.concatenate([xyxy[:2], xyxy[:2]]) + delta
+
+import PIL
+from PIL import ImageFont, ImageDraw, Image
+from katacr.utils.detection import FONT_PATH
+def pil_draw_text(img, xy, text, background_color=(0,0,0), text_color=(255,255,255), font_size=24, text_pos='left top'):
+  assert text_pos in ['left top', 'left down', 'right top']
+  if isinstance(img, np.ndarray): img = Image.fromarray(img[...,::-1])
+  font = ImageFont.truetype(FONT_PATH, font_size)
+  pil_version = int(PIL.__version__.split('.')[0])
+  w_text, h_text = font.getbbox(text)[-2:] if pil_version >= 10 else font.getsize(text)
+  if text_pos == 'left top':
+    x_text, y_text = xy
+  elif text_pos == 'left down':
+    x_text, y_text = xy[0], xy[1]-h_text
+  elif text_pos == 'right top':
+    x_text, y_text = xy[0]-w_text, xy[1]
+  draw = ImageDraw.Draw(img)
+  draw.rounded_rectangle([x_text, y_text, x_text+w_text, y_text+h_text], radius=1.5, fill=background_color)
+  draw.text((x_text, y_text), text, fill=text_color, font=font)
+  return img

@@ -13,7 +13,6 @@ from paddleocr.tools.infer.predict_system import TextSystem
 import numpy as np
 import logging
 from pathlib import Path
-import math
 root_path = Path(__file__).parents[2]
 
 onnx_weight_paths = {
@@ -66,7 +65,7 @@ class OCR:
       print("OCR results:", results)
       cv2.imshow('time', img_time)
       cv2.waitKey(1)
-    if results is None: return math.inf
+    if results is None: return np.inf
     stage = m = s = None
     for info in results:
       det, rec = info
@@ -82,7 +81,7 @@ class OCR:
           s = int(s.strip())
         except ValueError:
           m = s = None
-    if stage is None or m is None or s is None: return math.inf
+    if stage is None or m is None or s is None: return np.inf
     t = m * 60 + s
     if stage == 0:
       return 180 - t

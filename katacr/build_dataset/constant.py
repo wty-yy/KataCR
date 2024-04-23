@@ -76,11 +76,11 @@ part_sizes = {
   'part2': (576, 896),  # (568, 896),
   'part3': (600, 200),
 }
-part3_bbox_params = {  # Configure for card positions in part3, card position is left to right
-  0: (0.047, 0.590, 0.100, 0.365),  # next card
-  1: (0.222, 0.000, 0.185, 0.745),  # card1
-  2: (0.410, 0.000, 0.185, 0.745),  # card2
-  3: (0.600, 0.000, 0.185, 0.745),  # card3
-  4: (0.785, 0.000, 0.185, 0.745),  # card4
-}
+part3_bbox_params = [  # Configure for card positions in part3, card position is left to right
+  (0.047, 0.590, 0.100, 0.365),  # next card
+  (0.222, 0.000, 0.185, 0.745),  # card1
+  (0.410, 0.000, 0.185, 0.745),  # card2
+  (0.600, 0.000, 0.185, 0.745),  # card3
+  (0.785, 0.000, 0.185, 0.745),  # card4
+]
 part3_elixir_params = (0.262, 0.700, 0.067, 0.160)

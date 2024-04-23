@@ -8,8 +8,8 @@ import numpy as np
 
 path_root = Path(__file__).parents[2]
 path_detectors = [
-  path_root / './runs/detector1_v0.7.12.pt',
-  path_root / './runs/detector2_v0.7.12.pt',
+  path_root / './runs/detector1_v0.7.12.2.pt',
+  path_root / './runs/detector2_v0.7.12.2.pt',
 ]
 classifier_path = path_root / 'logs/CardClassification-checkpoints'
 
@@ -61,7 +61,8 @@ class VisualFusion:
     elixir = self.ocr_num.process_part3_elixir(parts[2], pil=pil)
     self.info = dict(
       time=time, arena=arena, cards=cards, elixir=elixir,
-      card2idx=self.classifier.card2idx, idx2card=self.classifier.idx2card)
+      card2idx=self.classifier.card2idx, idx2card=self.classifier.idx2card,
+      parts_pos=self.parts_pos)
     return self.info
   
   def render(self, x, pil=False, verbose=False):

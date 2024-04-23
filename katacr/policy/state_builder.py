@@ -1,5 +1,5 @@
 """
-Build state, reward, action from VisualFusion result.
+Build state from VisualFusion result.
 Main functions:
 1. Build offline RL dataset based on 5fps, 0.2it/s, interval=2 (VisualFusion 10fps, 0.1it/s)
 2. Build state, reward for validating.
@@ -11,7 +11,7 @@ from katacr.yolov8.custom_result import CRResults
 from queue import Queue
 import numpy as np
 from katacr.constants.label_list import idx2unit, unit2idx, bar2_unit_list
-from katacr.policy.utils import extract_img, pixel2cell, cell2pixel, xyxy2center, background_size, xyxy2sub
+from katacr.policy.utils import extract_img, pixel2cell, cell2pixel, xyxy2center, background_size, xyxy2sub, pil_draw_text
 from katacr.build_dataset.generation_config import except_king_tower_unit_list, except_spell_and_object_unit_list, spell_unit_list
 from typing import List, Dict
 import scipy
@@ -40,7 +40,7 @@ class StateBuilder:
   def __init__(self, persist: int=3):
     """
     Args:
-      persist (int): The maximum time to memory in bar_history.
+      persist (int): The maximum time to memory in bar_history (second).
     Variables:
       bar2xywhct (dict): key (int)=bar track_id,
         val (ndarray)=(relative xy to body image left top, wh of last body image,
@@ -56,6 +56,7 @@ class StateBuilder:
     self.reset()
 
   def reset(self):
+    self.time = 0
     self.bar2xywht = {}
     self.bar_history = Queue()
     self.bar_items: List[BarItem] = []
@@ -65,7 +66,7 @@ class StateBuilder:
   def _add_bar_item(self, bar_level=None, bar1=None, bar2=None, body=None):
     self.bar_items.append(BarItem(self, bar_level=bar_level, bar1=bar1, bar2=bar2, body=body))
   
-  def render(self):
+  def render(self, action=None):
     from PIL import ImageDraw, Image
     from katacr.policy.data_display import GridDrawer, DISPLAY_SCALE, build_label2colors
     rimg = Image.fromarray(self.arena.show_box()[...,::-1])
@@ -78,6 +79,10 @@ class StateBuilder:
       arena.paint(arena.find_near_pos(info['xy']*DISPLAY_SCALE), label2color[info['cls']], info['bel'])
       x, y = cell2pixel(info['xy'])
       draw.rounded_rectangle([x-2,y-2,x+2,y+2], radius=3, fill=(255,0,0))
+    if action is not None and action['xy'] is not None:
+      arena.paint(action['xy'].astype(np.int32), (255,236,158), action['card_id'], rect=False, circle=True, text_pos='right down')
+    rimg = pil_draw_text(rimg, (0, rimg.size[1]), str(self.cards), font_size=14, text_pos='left down')
+    rimg = pil_draw_text(rimg, (self.parts_pos[0,0]-self.parts_pos[1,0], 0), f"Time: {self.time}", font_size=20, text_pos='right top')
     ret = np.concatenate([np.array(rimg), arena.image], 1)
     return ret[...,::-1]
   
@@ -197,7 +202,7 @@ class StateBuilder:
         find_bar = False
         if len(xy_bars_avail):
           dis = scipy.spatial.distance.cdist(datum, xy_bars_avail)[0]
-          print(f"cls={cls_name},id={box[-4]},box dis=", dis)  # DEBUG: distance
+          # print(f"cls={cls_name},id={box[-4]},box dis=", dis)  # DEBUG: distance
           idx = np.argmin(dis)
           # print(idx_map, idx, mask_bars, dis[idx])
           if dis[idx] < DIS_BAR_AND_BODY_THRE:
@@ -254,11 +259,12 @@ class StateBuilder:
       info (dict): The return in `VisualFusion.process()`,
         which has keys=[time, arena, cards, elixir]
     """
-    self.time: int = info['time']
+    self.time: int = info['time'] if not np.isinf(info['time']) else self.time
     self.arena: CRResults = info['arena']
-    self.cards: dict = info['cards']
+    self.cards: List[str] = info['cards']
     self.elixir: int = info['elixir']
     self.card2idx: dict = info['card2idx']
+    self.parts_pos: np.ndarray = info['parts_pos']  # shape=(3, 4), part1,2,3, (x,y,w,h)
     self.box = box = self.arena.get_data()  # xyxy, track_id, conf, cls, bel
     self.img = self.arena.get_rgb()
     assert box.shape[-1] == 8, f"The last dim should be 8, but get {box.shape[-1]}"
@@ -282,7 +288,7 @@ class StateBuilder:
       info = i.get_unit_info(verbose=verbose)
       if info is not None:
         state['unit_infos'].append(info)
-    state['cards'] = [self.card2idx[self.cards[i]] for i in range(5)]  # next, card1~4
+    state['cards'] = [self.card2idx[c] for c in self.cards]  # next, card1~4
     state['elixir'] = self.elixir
     return state
   
