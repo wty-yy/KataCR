@@ -2,7 +2,7 @@ import numpy as np
 from katacr.ocr_text.paddle_ocr import OCR
 from katacr.yolov8.custom_result import CRResults
 from katacr.constants.label_list import unit2idx
-from katacr.policy.utils import extract_img, xyxy2center, xyxy2sub, pil_draw_text
+from katacr.policy.perceptron.utils import extract_img, xyxy2center, xyxy2sub, pil_draw_text
 from katacr.build_dataset.generation_config import except_king_tower_unit_list
 import cv2
 
@@ -15,7 +15,7 @@ XYXY_TOWER = [[(50, 625, 175, 770), (400, 625, 525, 770)], [(50, 135, 175, 285),
 OCR_NUM_CONF_THRE = 0.9
 DESTROY_FRAME_DELTA_THRE = 10
 MAX_DELTA_HP = 1600
-ELIXIR_OVER_FRAME = 5  # 0.2 * 5 = 1 sec
+ELIXIR_OVER_FRAME = 10  # 0.1 * 5 = 1 sec
 
 class RewardBuilder:
   def __init__(self, ocr_onnx=False, ocr_gpu=True):
@@ -42,7 +42,6 @@ class RewardBuilder:
     # results = sorted(results, key=lambda x: x[0][0])  # sort by det's left top point
     nums = []
     for rec, conf in results:
-      rec, conf = results[0]
       # print("DEBUG: conf=", conf)  # DEBUG
       rec = rec.lower()
       num = ''.join([c for c in rec.strip() if (c in [str(i) for i in range(10)])])
@@ -74,7 +73,7 @@ class RewardBuilder:
     Write reward at (0, 0) in (BGR) image.
     """
     text = f"Reward: {reward:.4f}" if reward is not None else f"Reward: None"
-    from PIL import Image
+    text += f"\nFrame: {self.frame_count}"
     img = pil_draw_text(img, (0, 0), text)
     return np.array(img)[...,::-1]
   
@@ -195,7 +194,7 @@ class RewardBuilder:
       self.last_elixir_over_frame = None
     total_reward = sum(reward.values())
     if verbose:
-      print(f"Time={self.time}, {reward=}, {total_reward=}")
+      print(f"Time={self.time}, Frame={self.frame_count}, {reward=}, {total_reward=:.4f}")
     return total_reward
   
   def update(self, info):

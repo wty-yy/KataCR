@@ -80,7 +80,7 @@ def extract_part(
       elif mode == 'cards':
         image = process_part(origin_image, 3, playback=playback, resize=True)
         cards = process_part3(image)
-        for name, img in cards.items():
+        for name, img in enumerate(cards):
           Image.fromarray(img).save(str(path_save_file.with_stem(path_save_file.stem+f'_{name}')))
         # image = image.resize(part_sizes['part'+str(mode)])
       # else:
@@ -101,15 +101,9 @@ if __name__ == '__main__':
   paths = path_manager.search('videos', video_name="/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/segment_test/WTY_20240422/1.mp4", regex="^\d+.mp4$")
   for path in paths:
     parts = list(path.parts)
-    if path.parent.name != 'patch_detection':
-      # datasets/CR/videos/desk_name/video_name/episode_id.mp4 -> datasets/CR/images/part_id/video_name/episode_id/frame_id.jpg
-      parts[-4] = 'images'
-      parts = parts[:-3] + parts[-2:-1]
-      parts.append(path.stem)
-    else:  # patch_detection
-      # datasets/CR/videos/patch_detection/video_name.mp4 -> datasets/CR/images/patch_detection/video_name/frame_id.jpg
-      parts[-3] = 'images'
-      parts = parts[:-1]
-      parts.append(path.stem)
+    # datasets/CR/videos/desk_name/video_name/episode_id.mp4 -> datasets/CR/images/part_id/video_name/episode_id/frame_id.jpg
+    parts[-4] = 'images'
+    parts = parts[:-3] + parts[-2:-1]
+    parts.append(path.stem)
     extract_part(path, path_parts=parts, part_mode=[2], interval=15, playback=True, limit=(0, float('inf')))
     

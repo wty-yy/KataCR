@@ -1,12 +1,12 @@
 from katacr.yolov8.combo_detect import ComboDetector
 from katacr.ocr_text.paddle_ocr import OCR
-from katacr.classification.predict import Classifier
+from katacr.classification.predict import CardClassifier
 from pathlib import Path
 from katacr.build_dataset.utils.split_part import process_part
 import cv2
 import numpy as np
 
-path_root = Path(__file__).parents[2]
+path_root = Path(__file__).parents[3]
 path_detectors = [
   path_root / './runs/detector1_v0.7.12.2.pt',
   path_root / './runs/detector2_v0.7.12.2.pt',
@@ -31,7 +31,7 @@ class VisualFusion:
   def __init__(self, ocr_onnx=False, ocr_gpu=True):
     self.ocr_num = OCR(onnx=ocr_onnx, use_gpu=ocr_gpu, lang='en')
     self.yolo = ComboDetector(path_detectors)
-    self.classifier = Classifier(classifier_path)
+    self.classifier = CardClassifier(classifier_path)
     self.open_window = False
   
   def process(self, x, persist=False, pil=False):
@@ -70,7 +70,7 @@ class VisualFusion:
     time, arena, cards, elixir = self.info['time'], self.info['arena'], self.info['cards'], self.info['elixir']
     arena = arena.show_box(show_conf=True)
     parts = self.parts; parts_pos = self.parts_pos
-    c = list(cards.values())
+    c = cards
     texts = [f"{time}", f"{c[:2]}\n,{c[2:]},\nelixir: {elixir}"]
     if verbose:
       if not self.open_window:

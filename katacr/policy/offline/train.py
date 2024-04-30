@@ -1,0 +1,74 @@
+# import os
+# os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parents[1]))
+from katacr.policy.offline.starformer import StARConfig, TrainConfig, StARformer
+from katacr.policy.offline.parse_and_writer import parse_args_and_writer, logs
+from katacr.policy.offline.dataset import DatasetBuilder
+from katacr.utils.ckpt_manager import CheckpointManager
+from tqdm import tqdm
+import numpy as np
+from katacr.constants.label_list import unit_list
+
+def train():
+  ### Parse augment and TF Writer ###
+  args, writer = parse_args_and_writer()
+  ### Dataset ###
+  ds_builder = DatasetBuilder(args.replay_dataset, args.n_step)
+  train_ds = ds_builder.get_dataset(args.batch_size, args.num_workers)
+  args.n_unit = len(unit_list)
+  args.n_cards = ds_builder.n_cards
+  args.max_timestep = int(max(ds_builder.data['timestep']))
+  args.steps_per_epoch = len(train_ds)
+  ### Model ###
+  model_cfg = StARConfig(**vars(args))
+  model = StARformer(model_cfg)
+  model.create_fns()
+  train_cfg = TrainConfig(**vars(args))
+  state = model.get_state(train_cfg, verbose=False)
+  ### Checkpoint ###
+  ckpt_manager = CheckpointManager(str(args.path_logs / 'ckpt'))
+  write_tfboard_freq = min(100, len(train_ds))
+
+  ### Train and Evaluate ###
+  for ep in range(args.total_epochs):
+    print(f"Epoch: {ep+1}/{args.total_epochs}")
+    print("Training...")
+    logs.reset()
+    bar = tqdm(train_ds, ncols=80)
+    for s, y, rtg, timestep in bar:
+      for x in [s, y]:
+        for k, v in x.items():
+          x[k] = v.numpy()
+      rtg = rtg.numpy(); timestep = timestep.numpy()
+      # s, y, rtg, timestep = s.numpy(), y.numpy(), rtg.numpy(), timestep.numpy()
+      B = y['select'].shape[0]
+      a = {}
+      # Look out the target is diff with input action,
+      # we need select=0 and pos=(0,-1) as start action padding idx.
+      a['select'] = np.concatenate([np.full((B, 1), 0, np.int32), y['select'][:,:-1]], 1)  # (B, l)
+      pad = np.stack([np.full((B, 1), 0, np.int32), np.full((B, 1), -1, np.int32)], -1)
+      a['pos'] = np.concatenate([pad, y['pos'][:,:-1]], 1)  # (B, l, 2)
+      state, (loss, (loss_s, loss_p, acc_s, acc_p)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
+      logs.update(
+        ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos'],
+        [loss, loss_s, loss_p, acc_s, acc_p])
+      print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
+      bar.set_description(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
+      if state.step % write_tfboard_freq == 0:
+        logs.update(
+          ['SPS', 'epoch', 'learning_rate'],
+          [write_tfboard_freq / logs.get_time_length(), ep+1, train_cfg.lr_fn(state.step)]
+        )
+        logs.writer_tensorboard(writer, state.step)
+        logs.reset()
+    ckpt_manager.save(ep+1, state, vars(args))
+  ckpt_manager.close()
+  writer.close()
+  if args.wandb:
+    import wandb
+    wandb.finish()
+
+if __name__ == '__main__':
+  train()

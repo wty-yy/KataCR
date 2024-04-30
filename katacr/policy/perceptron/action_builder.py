@@ -16,12 +16,20 @@ from katacr.yolov8.custom_result import CRResults
 from queue import Queue
 import numpy as np
 from katacr.constants.label_list import unit2idx
-from katacr.policy.utils import pixel2cell
+from katacr.policy.perceptron.utils import pixel2cell
 from katacr.ocr_text.paddle_ocr import OCR
+from katacr.classification.elixir.predict import ElixirClassifier
+from katacr.constants.card_list import card2elixir
+import cv2
+from pathlib import Path
+# path_root = Path(__file__).parents[3]
+# path_wrong_classify_images = path_root / "logs/wrong_classify"
+# path_wrong_classify_images.mkdir(exist_ok=True)
 
 OCR_TEXT_SIZE = (200, 120)  # bottom center = elixir top center
 LOW_ALPHA = [chr(ord('a')+i) for i in range(26)]
-WRONG_CARD_FRAME_DELTA = 10  # 10 * 0.2 = 2 sec
+WRONG_CARD_FRAME_DELTA = 10  # 10 * 0.1 = 1 sec
+EMPTY_CARD_UPDATE_FRAME_DELTA = 5  # 5 * 0.1 = 0.5 sec, delay to use last classification result after card empty
 
 class ActionBuilder:
   def __init__(self, persist: int=2):
@@ -30,12 +38,14 @@ class ActionBuilder:
       persist (int): The maximum time to memory in elixir_history (second)
     Variables:
       elixir_history (Queue): val=(id, time), memory appeared elixir
-      elxiirs (set): used elixir ids
+      elixirs (set): used elixir ids
       card_memory (List): Avaiable cards name, [next_card, card1, card2, card3, card4]
       actions (Queue[Dict]): Action stack in intervel frames
     """
     self.persist = persist
     self.ocr = OCR(lang='en')
+    self.elixir_classifier = ElixirClassifier()
+    self.wrong_img_count = 0
     self.reset()
   
   def reset(self):
@@ -46,6 +56,8 @@ class ActionBuilder:
     self.time = 0
     self.last_wrong_card_frame = [None] * 5
     self.frame_count = 0
+    self.last_empty_frame = [0] * 5
+    # self.elixir_count = 0
   
   def _update_elixir(self):
     while not self.elixir_history.empty() and self.time - self.elixir_history.queue[0][1] > self.persist:
@@ -56,6 +68,14 @@ class ActionBuilder:
   def _update_cards(self):
     self.deploy_cards = set()
     self.cards_memory[0] = self.cards[0]  # next card should correct
+    from collections import Counter
+    counter = Counter(self.cards)
+    common = counter.most_common(1)[0]
+    if not (common[1] <= 1 or common[0] == 'empty'):
+      print(f"Warning(action): wrong detection, two same card {common[0]} in {self.cards}, skip it")
+      return
+      # cv2.imshow("wrong", self.img[...,::-1])
+      # cv2.waitKey(0)
     for i, (nc, mc) in enumerate(zip(self.cards, self.cards_memory)):
       wrong_name = False
       if nc != 'empty':
@@ -63,20 +83,33 @@ class ActionBuilder:
           self.cards_memory[i] = nc
         else:  # mc has class name
           if nc != mc:
-            wrong_name = True
-            if self.last_wrong_card_frame[i] is not None:
-              if self.frame_count - self.last_wrong_card_frame[i] >= WRONG_CARD_FRAME_DELTA:
-                assert nc == mc, f"There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}"
-            else:
-              self.last_wrong_card_frame[i] = self.frame_count
+            duplic = False  # If one card covers another card
+            for j in range(5):
+              if i != j and self.cards_memory[j] == nc:
+                duplic = True
+            if not duplic:
+              if self.frame_count - self.last_empty_frame[i] <= EMPTY_CARD_UPDATE_FRAME_DELTA:
+                self.cards_memory[i] = nc
+              else:
+                wrong_name = True
+                if self.last_wrong_card_frame[i] is not None:
+                  if self.frame_count - self.last_wrong_card_frame[i] >= WRONG_CARD_FRAME_DELTA:
+                    # print(f"Warning(action): There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}, change to detection card")
+                    # self.cards_memory[i] = nc
+                    assert nc == mc, f"There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}"
+                else:
+                  self.last_wrong_card_frame[i] = self.frame_count
           else:
             if nc in self.deploy_cards:  # drag out and drag back
               self.deploy_cards.remove(nc)
-      if nc == 'empty' and mc != 'empty':
-        self.deploy_cards.add(mc)
+      if nc == 'empty':
+        self.last_empty_frame[i] = self.frame_count
+        if mc not in ['empty', None]:
+          self.deploy_cards.add(mc)
+          self.cards[i] = mc  # update cards state
       if not wrong_name:
         self.last_wrong_card_frame[i] = None
-    print(f"Action(Time={self.time}): {self.cards=}, {self.cards_memory=}, {self.deploy_cards=}")  # DEBUG
+    print(f"Action(Time={self.time},frame={self.frame_count}): {self.cards=}, {self.cards_memory=}, {self.deploy_cards=}")  # DEBUG
   
   def _add_action(self, elixir_box, card_name):
     b = elixir_box
@@ -86,7 +119,6 @@ class ActionBuilder:
     cell_xy[1] -= 0.2  # down bias 0.2 cell
     card_id = self.cards_memory.index(card_name)
     self.actions.put({'xy': cell_xy, 'card_id': card_id})
-    self.cards_memory[card_id] = 'empty'
   
   def _ocr_text(self, elixir_box):
     xyxy = elixir_box[:4]
@@ -111,11 +143,25 @@ class ActionBuilder:
         det, rec = info
         rec = ''.join([c for c in rec[0].lower() if c in LOW_ALPHA])
         recs.append(rec)
+        print(self.deploy_cards)
         for name in self.deploy_cards:
           if rec in name.lower().replace('-', ''):
             return name
     print(f"Warning(action): (time={self.time}) Don't find any {recs} in display_cards: {self.deploy_cards} by elixir (id={elixir_box[-4]})")
     return has_text  # Maybe ocr detection is wrong or other text cover on it, return has_text for further judgment
+  
+  def _classify_elixir_number(self, elixir_box):
+    xyxy = elixir_box[:4].astype(np.int32)
+    img = self.img[xyxy[1]:xyxy[3], xyxy[0]:xyxy[2]]
+    pred = self.elixir_classifier(img)
+    print("elixir number:", pred)
+    # cv2.imshow("elixir image", img[...,::-1])
+    # cv2.waitKey(0)
+    # img = cv2.resize(img, (32, 32))
+    # Build elixir classifier dataset
+    # cv2.imwrite(f"/home/yy/Coding/GitHub/KataCR/logs/offline/elixir/{self.elixir_count}.jpg", img[...,::-1])
+    # self.elixir_count += 1
+    return pred
     
   def _find_action(self):
     elixir = self.box[self.box[:,-2] == unit2idx['elixir']]
@@ -124,6 +170,8 @@ class ActionBuilder:
     for b in elixir:
       id = int(b[-4])
       if id in self.elixirs: continue
+      elixir_num = self._classify_elixir_number(b)
+      if elixir_num >= 0: continue  # 0: noisy, 1: elixir-collector, 0.5, 1: elixir-golem
       if not len(self.deploy_cards):
         print(f"Warning(action): (time={self.time}) No deploy card for elixirs (id={elixir[:,-4]})")
         continue
@@ -134,8 +182,13 @@ class ActionBuilder:
       # else:
       class_name = self._ocr_text(b)
       if class_name == False: continue
-      if class_name == True and len(self.deploy_cards) == 1:
-        class_name = next(iter(self.deploy_cards))
+      if class_name == True:  # and len(self.deploy_cards) == 1:
+        avail_cards = [c for c in self.deploy_cards if card2elixir[c] == -elixir_num]
+        if len(avail_cards) == 0:
+          print(f"Warning(action): (time={self.time}) There is text but no correct elixir({id=},{elixir_num=}) cost in deploy_cards={self.deploy_cards}, skip it")
+          continue
+        class_name = avail_cards[0]
+        # class_name = next(iter(self.deploy_cards))
       self._add_action(b, class_name)
       self.deploy_cards.remove(class_name)
   
@@ -143,6 +196,7 @@ class ActionBuilder:
     action = {'xy': None, 'card_id': 0}
     if not self.actions.empty():
       action = self.actions.get()
+      self.cards_memory[action['card_id']] = 'empty'
     if verbose and action['card_id']:
       print(f"Time: {self.time}, action={action}")
     return action
@@ -160,6 +214,7 @@ class ActionBuilder:
     self.card2idx: dict = info['card2idx']
     self.box = self.arena.get_data()  # xyxy, track_id, conf, cls, bel
     self.img = self.arena.get_rgb()
+    self.frame_count += 1
     ### Step 1: Udpate elixir history ###
     self._update_elixir()
     # print("Elixirs:", self.elixirs)
@@ -168,5 +223,3 @@ class ActionBuilder:
     ### Step 3: Find new action ###
     self._find_action()
     # print(f"{info['cards']=}, {self.cards_memory=}")
-    info['cards'] = self.cards_memory
-    self.frame_count += 1

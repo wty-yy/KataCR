@@ -1,8 +1,7 @@
 # Reference: https://github.com/wty-yy/KataCV/blob/master/katacv/resnet/resnet.py
 import sys
-import re
 from pathlib import Path
-sys.path.append(str(Path(__file__).parents[2]))
+sys.path.append(str(Path(__file__).parents[3]))
 
 import jax, jax.numpy as jnp
 import flax.linen as nn
@@ -14,7 +13,7 @@ from katacr.utils import Config
 import numpy as np
 
 class ModelConfig(Config):  # Mini ResNet   # ResNet50
-  stage_sizes = [1, 1, 2, 1]                # (3, 4, 6, 3)
+  stage_sizes = [1, 1, 1, 1]                # (3, 4, 6, 3)
   filters = 4                               # 64
   num_class: int
   def __init__(self, num_class, **kwargs):
@@ -24,7 +23,7 @@ class ModelConfig(Config):  # Mini ResNet   # ResNet50
 class TrainConfig(Config):
   lr_fn: Callable
   steps_per_epoch: int
-  image_size = (64, 80)
+  image_size = (32, 32)
   seed = 42
   weight_decay = 1e-4
   lr = 0.01
@@ -146,59 +145,33 @@ class ResNet(nn.Module):
 
 import torch
 from torch.utils.data import DataLoader, Dataset
-from katacr.utils.detection.data import transform_affine, transform_resize_and_pad
+from katacr.utils.detection.data import transform_affine, transform_hsv, transform_resize_and_pad
 import cv2, random
-class CardDataset(Dataset):
-  def __init__(self, images, labels, mode='train', repeat=50, cfg: TrainConfig = None, aug_images = None, aug_prob: float = 0.1):
+class ElixirDataset(Dataset):
+  def __init__(self, images, labels, mode='train', repeat=50, cfg: TrainConfig = None):
     self.images, self.labels, self.mode, self.repeat, self.cfg = images, labels, mode, repeat, cfg
-    self.aug_images, self.aug_prob = aug_images, aug_prob
   
   def __len__(self):  # dataset for val is origin and gray image
     return len(self.images) * (1 if self.mode == 'val' else self.repeat)
-  
-  def _augment(self, img):
-    # if random.random() < self.aug_prob and self.aug_images is not None:
-    if True:
-      size = np.array(img.shape[:2][::-1], np.int32)
-      for aug in self.aug_images:
-        # left top xy
-        aug_size = np.array(aug.shape[:2][::-1], np.int32)
-        xy = (np.random.rand(2) * size).astype(np.int32)
-        xy[1] -= aug.shape[0] // 2
-        if random.random() < 0.5:
-          xy[0] -= aug.shape[1]
-        xyxy = np.concatenate([xy, xy + aug_size]).reshape(2, 2)
-        for i in range(2):
-          xyxy[:,i] = xyxy[:,i].clip(0, size[i])
-        xyxy = xyxy.reshape(-1)
-        xyxy_aug = xyxy - np.tile(xy, 2)
-        extract = lambda img, xyxy: img[xyxy[1]:xyxy[3], xyxy[0]:xyxy[2]]
-        aug = extract(aug, xyxy_aug)
-        mask = aug[...,3] > 0
-        img[xyxy[1]:xyxy[3], xyxy[0]:xyxy[2]][mask] = aug[...,:3][mask]
-    return img
   
   def __getitem__(self, idx):
     idx = idx % len(self.images)
     img = self.images[idx].copy()
     cfg = self.cfg
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     if self.mode == 'train':
-      img = self._augment(img)
-      img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
       img = transform_affine(img, rot=cfg.rotate, scale=cfg.scale, translate=cfg.translate, pad_value=114)
       img, _ = transform_resize_and_pad(img, cfg.image_size[::-1], pad_value=114)
       img = img.astype(np.int32)
       img = np.clip(img + random.randint(-50, 50), 0, 255).astype(np.uint8)
     if self.mode == 'val':
-      img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
       img, _ = transform_resize_and_pad(img, cfg.image_size[::-1], pad_value=114)
     img = np.ascontiguousarray(img[..., None])
     return img, self.labels[idx]
 
 class DatasetBuilder:
-  def __init__(self, path_dataset, seed=42, augment_prob=0.1):
+  def __init__(self, path_dataset, seed=42):
     self.path_dataset = path_dataset
-    self.aug_prob = augment_prob
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -206,24 +179,19 @@ class DatasetBuilder:
   
   def preprocss(self):
     path_dirs = sorted(list(x for x in Path(self.path_dataset).glob('*')))
-    path_dirs = [p for p in path_dirs if re.search(r'^[a-zA-Z]', p.name)]
-    self.card_list = [x.name for x in path_dirs]
-    self.augments = sorted(list(x for x in (Path(self.path_dataset)/"_augmentation").glob('*.png')))
-    self.idx2card = dict(enumerate(self.card_list))
-    self.card2idx = {c: i for i, c in enumerate(self.card_list)}
+    self.elixir_list = [x.name for x in path_dirs]
+    self.idx2elixir = dict(enumerate(self.elixir_list))
+    self.elixir2idx = {c: i for i, c in enumerate(self.elixir_list)}
     self.images, self.labels = [], []
     for d in path_dirs:
       cls = d.name
       for p in d.glob('*.jpg'):
         self.images.append(cv2.imread(str(p)))
-        self.labels.append(self.card2idx[cls])
-    self.aug_images = []
-    for p in self.augments:
-      self.aug_images.append(cv2.imread(str(p), cv2.IMREAD_UNCHANGED))
+        self.labels.append(self.elixir2idx[cls])
   
   def get_dataloader(self, train_cfg: TrainConfig, mode='train'):
     return DataLoader(
-      CardDataset(self.images, self.labels, mode=mode, cfg=train_cfg, aug_images=self.aug_images, aug_prob=self.aug_prob),
+      ElixirDataset(self.images, self.labels, mode=mode, cfg=train_cfg),
       batch_size=train_cfg.batch_size,
       shuffle=mode=='train',
       num_workers=train_cfg.num_workers,
@@ -250,8 +218,8 @@ logs = Logs(
 
 def get_args_and_writer():
     from katacr.utils.parser import Parser, datetime
-    parser = Parser(model_name="CardClassification", wandb_project_name="ClashRoyale Card")
-    parser.add_argument("--image-size", type=tuple, default=(64, 80))
+    parser = Parser(model_name="ElixirClassification", wandb_project_name="ClashRoyale Elixir")
+    parser.add_argument("--image-size", type=tuple, default=(32, 32))
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--learning-rate", type=float, default=0.01)
     args = parser.get_args()
@@ -266,15 +234,15 @@ def train():
   ### Parse Augmentations and Get WandB Writer ###
   args, writer = get_args_and_writer()
   ### Dataset ###
-  ds_builder = DatasetBuilder(str(path_dataset_root / "images/card_classification"), args.seed)
-  args.num_class = len(ds_builder.card_list)
+  ds_builder = DatasetBuilder(str(path_dataset_root / "images/elixir_classification"), args.seed)
+  args.num_class = len(ds_builder.elixir_list)
   train_cfg = TrainConfig(**vars(args))
   model_cfg = ModelConfig(**vars(args))
   train_ds = ds_builder.get_dataloader(train_cfg, mode='train')
   val_ds = ds_builder.get_dataloader(train_cfg, mode='val')
   args.steps_per_epoch = train_cfg.steps_per_epoch = len(train_ds)
-  args.card2idx = ds_builder.card2idx
-  args.idx2card = ds_builder.idx2card
+  args.elixir2idx = ds_builder.elixir2idx
+  args.idx2elixir = ds_builder.idx2elixir
   ### Build Model ###
   model = ResNet(model_cfg)
   model.create_fns()

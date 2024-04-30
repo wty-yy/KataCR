@@ -3,6 +3,18 @@ Build state from VisualFusion result.
 Main functions:
 1. Build offline RL dataset based on 5fps, 0.2it/s, interval=2 (VisualFusion 10fps, 0.1it/s)
 2. Build state, reward for validating.
+State data info (Dict):
+- 'time' (int): Passed time (second)
+- 'unit_infos' (List): [UnitInfo]
+  UnitInfo:
+    - xy (ndarray): center of body image, relative to cell
+    - cls (int): class of the unit
+    - bel (int): belong of the unit
+    - body (ndarray): unit body image (Don't use now)
+    - bar1 (ndarray): unit first bar
+    - bar2 (ndarray): unit second bar
+- 'cards' (List): Card index based on classifier.card2idx (length 5: next card, card1~4)
+- 'elixir' (int): Current elixir
 """
 
 import scipy.sparse
@@ -11,21 +23,12 @@ from katacr.yolov8.custom_result import CRResults
 from queue import Queue
 import numpy as np
 from katacr.constants.label_list import idx2unit, unit2idx, bar2_unit_list
-from katacr.policy.utils import extract_img, pixel2cell, cell2pixel, xyxy2center, background_size, xyxy2sub, pil_draw_text
+from katacr.policy.perceptron.utils import extract_img, pixel2cell, cell2pixel, xyxy2center, background_size, xyxy2sub, pil_draw_text
 from katacr.build_dataset.generation_config import except_king_tower_unit_list, except_spell_and_object_unit_list, spell_unit_list
 from typing import List, Dict
 import scipy
 from collections import Counter, defaultdict
 
-"""
-Statet data UnitInfo:
-xy (ndarray): center of body image, relative to cell
-cls (int): class of the unit
-bel (int): belong of the unit
-body (ndarray): unit body image
-bar1 (ndarray): unit first bar
-bar2 (ndarray): unit second bar
-"""
 BASE_UNIT_INFO = dict(xy=None, cls=None, bel=None, body=None, bar1=None, bar2=None)
 BAR_CENTER2BODY_DELTA_Y = 40
 DIS_BAR_AND_BAR_LEVEL_THRE = 15  # the threshold of distance between bar and bar-level
@@ -68,7 +71,7 @@ class StateBuilder:
   
   def render(self, action=None):
     from PIL import ImageDraw, Image
-    from katacr.policy.data_display import GridDrawer, DISPLAY_SCALE, build_label2colors
+    from katacr.policy.replay_data.data_display import GridDrawer, DISPLAY_SCALE, build_label2colors
     rimg = Image.fromarray(self.arena.show_box()[...,::-1])
     state = self.get_state()
     arena = GridDrawer()
@@ -192,7 +195,10 @@ class StateBuilder:
         moveable_box.append(box)
     moveable_box = np.array(moveable_box, np.float32)
     if len(moveable_box):
-      moveable_box = moveable_box[np.argsort(moveable_box[:,1])[::-1]]  # decrease box by top-y
+      # moveable_box = moveable_box[np.argsort(moveable_box[:,1])[::-1]]  # decrease box by top-y
+      # decrease box by (bel, top-y), combo bel first then combo top-y decreasingly
+      sorted_idx = sorted(range(len(moveable_box)), key=lambda i: (moveable_box[i,-1], moveable_box[i,1]), reverse=True)
+      moveable_box = moveable_box[sorted_idx]
       for box in moveable_box:
         xyxy = box[:4]
         datum = np.array([(xyxy[0]+xyxy[2])/2, xyxy[1]], np.float32).reshape(1, 2)  # top center

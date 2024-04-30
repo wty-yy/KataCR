@@ -1,14 +1,17 @@
-from katacr.policy.visual_fusion import VisualFusion
-from katacr.policy.state_builder import StateBuilder
-from katacr.policy.action_builder import ActionBuilder
-from katacr.policy.reward_builder import RewardBuilder
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parents[2]))
+from katacr.policy.visualization.visual_fusion import VisualFusion
+from katacr.policy.perceptron.state_builder import StateBuilder
+from katacr.policy.perceptron.action_builder import ActionBuilder
+from katacr.policy.perceptron.reward_builder import RewardBuilder
 from katacr.yolov8.predict import ImageAndVideoLoader, Stopwatch, second2str
 from pathlib import Path
 import cv2, time
 import numpy as np
 import subprocess
 
-path_root = Path(__file__).parents[2]
+path_root = Path(__file__).parents[3]
 
 class OfflineDatasetBuilder:
   def __init__(self, compress_threads=8):
@@ -46,16 +49,16 @@ class OfflineDatasetBuilder:
         cv2.imwrite(str(self.path_save_result / f"debug_org.jpg"), x)
         cv2.imwrite(str(self.path_save_result / f"debug_det.jpg"), visual_info['arena'].show_box())
       with sw[1]:
-        self.state_builder.update(visual_info)
-      with sw[2]:
         self.action_builder.update(visual_info)
+      with sw[2]:
+        self.state_builder.update(visual_info)
       with sw[3]:
         self.reward_builder.update(visual_info)
       self.count += 1
       if self.count % save_freq == 0:
         with sw[4]:
           self.data['state'].append(self.state_builder.get_state(verbose=verbose))
-          self.data['action'].append(self.action_builder.get_action(verbose=verbose))
+          self.data['action'].append(self.action_builder.get_action(verbose=verbose))  # update cards
           self.data['reward'].append(self.reward_builder.get_reward(verbose=verbose))
       else: sw[4].dt = 0
       # img = self.state_builder.render()
@@ -123,10 +126,11 @@ if __name__ == '__main__':
   # odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2_sub.mp4", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/lan77_20240406_ep_2.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/expert_videos/WTY_20240419_112947_1_golem_enermy_ai_episodes/5.mp4", verbose=True, show=False)
-  odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_sub.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/test1.jpg", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/expert_videos/list.txt", verbose=True, show=False)
-  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/5_sub_pos.mp4", verbose=True, show=False)
-  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/5_sub_ocr.mp4", verbose=True, show=False)
+  odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240410_132216_1_episodes/7.mp4", debug=True)
   # odb.process("/home/yy/Pictures/ClashRoyale/build_policy/multi_bar3.png", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2_sub_sub.mp4", debug=True)

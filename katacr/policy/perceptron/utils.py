@@ -48,14 +48,17 @@ def pil_draw_text(img, xy, text, background_color=(0,0,0), text_color=(255,255,2
   if isinstance(img, np.ndarray): img = Image.fromarray(img[...,::-1])
   font = ImageFont.truetype(FONT_PATH, font_size)
   pil_version = int(PIL.__version__.split('.')[0])
-  w_text, h_text = font.getbbox(text)[-2:] if pil_version >= 10 else font.getsize(text)
-  if text_pos == 'left top':
-    x_text, y_text = xy
-  elif text_pos == 'left down':
-    x_text, y_text = xy[0], xy[1]-h_text
-  elif text_pos == 'right top':
-    x_text, y_text = xy[0]-w_text, xy[1]
-  draw = ImageDraw.Draw(img)
-  draw.rounded_rectangle([x_text, y_text, x_text+w_text, y_text+h_text], radius=1.5, fill=background_color)
-  draw.text((x_text, y_text), text, fill=text_color, font=font)
+  xy = np.array(xy)
+  for t in text.split('\n'):
+    w_text, h_text = font.getbbox(t)[-2:] if pil_version >= 10 else font.getsize(t)
+    if text_pos == 'left top':
+      x_text, y_text = xy
+    elif text_pos == 'left down':
+      x_text, y_text = xy[0], xy[1]-h_text
+    elif text_pos == 'right top':
+      x_text, y_text = xy[0]-w_text, xy[1]
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([x_text, y_text, x_text+w_text, y_text+h_text], radius=1.5, fill=background_color)
+    draw.text((x_text, y_text), t, fill=text_color, font=font)
+    xy[1] += h_text
   return img

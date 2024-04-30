@@ -4,7 +4,7 @@ sudo modprobe v4l2loopback
 scrcpy --v4l2-sink=/dev/video2 --no-video-playback
 """
 import cv2
-from katacr.policy.visual_fusion import VisualFusion
+from katacr.policy.visualization.visual_fusion import VisualFusion
 from katacr.utils import Stopwatch, second2str
 from pathlib import Path
 import numpy as np
@@ -12,7 +12,7 @@ import time
 
 cap = cv2.VideoCapture(2)  # open stream
 cv2.namedWindow("Detection", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-path_root = Path(__file__).parents[2]
+path_root = Path(__file__).parents[3]
 
 class Displayer:
   def __init__(self, interval: int=1, save: bool=False):

@@ -8,7 +8,7 @@ import scipy.spatial
 from katacr.utils import Stopwatch
 from katacr.utils.detection import build_label2colors
 from PIL import Image, ImageDraw, ImageFont
-from katacr.policy.utils import background_size
+from katacr.policy.perceptron.utils import background_size
 from katacr.utils.detection import FONT_PATH
 from katacr.constants.label_list import idx2unit
 import scipy
@@ -90,6 +90,8 @@ class DataDisplayer:
             if isinstance(v, np.ndarray) and v.dtype == np.uint8:
               self.check_new_window(k, v.shape[:2][::-1], rate=3)
               cv2.imshow(k, v[...,::-1])
+              if 'bar' in k:
+                cv2.imshow(k+'_resize', cv2.resize(v[...,::-1], (24, 8)))
               cv2.waitKey(0)
             else:
               print(k, v, end=' ')
@@ -103,7 +105,7 @@ class DataDisplayer:
       cv2.waitKey(0)
 
 if __name__ == '__main__':
-  path_data = "/home/yy/Coding/GitHub/KataCR/logs/offline/2024.04.23 19:17:31/golem_ai_5_sub_pos.npy.xz"
+  path_data = "/home/yy/Coding/GitHub/KataCR/logs/offline/2024.04.29 20:07:43/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"
   displayer = DataDisplayer(path_data=path_data)
   displayer.display()
   # drawer = GridDrawer()

@@ -63,10 +63,10 @@ def process_part(img, part: int | str, playback: bool = False, resize=True, verb
 def process_part3(img):
   from katacr.build_dataset.constant import part3_bbox_params
   params = part3_bbox_params
-  ret = {}
-  for n, param in params.items():
+  ret = []
+  for param in params:
     x = extract_bbox(img, *param)  # xywh for next image position
-    ret[n] = x
+    ret.append(x)
   return ret
 
 def preprocess_background():
@@ -103,6 +103,7 @@ def split_part(x, part: str | int):  # based ratio
 
 def test():
   path_logs = const.path_logs
+  path_image = "/home/yy/Pictures/ClashRoyale/card_classification/test1.jpg"
   # path_extract = path_logs.joinpath("extract_frames")
   # path_frame = path_extract.joinpath("OYASSU_20230201")
   # path_frame = path_extract.joinpath("OYASSU_20230211")
@@ -119,7 +120,7 @@ def test():
   # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/592x1280/test1.png")
   # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/576x1280/test2.png")
   # image = Image.open("/home/yy/Pictures/ClashRoyale/demos/600x1280/test1.png")
-  image = Image.open("/home/yy/Pictures/vlcsnap-2024-04-21-15h52m55s852.png")
+  image = Image.open(path_image)
   # import matplotlib.pyplot as plt
   # plt.imshow(image)
   # plt.show()
@@ -142,10 +143,12 @@ def test():
 
   # part2_playback = process_part(image, '2_playback')
   # Image.fromarray(part2_watch).save(str(path_image_save / "part2_watch.jpg"))
-  for i in range(3):
+  for i in range(2,3):
     part = Image.fromarray(process_part(image, i+1, resize=True))
     part.save(str(path_image_save / f"part{i+1}.jpg"))
     part.show()
+  for i, card in enumerate(process_part3(process_part(image, 3))):
+    Image.fromarray(card).save(str(Path(path_image).with_stem(Path(path_image).stem+f'_{i}')))
   # part3_2400p = process_part(image, '3_2400p')
   # Image.fromarray(part3_2400p).save(str(path_image_save / "part3_2400p.jpg"))
   # part4_2400p = process_part(image, '4_2400p')
