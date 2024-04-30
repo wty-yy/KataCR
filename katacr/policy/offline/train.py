@@ -54,7 +54,7 @@ def train():
       logs.update(
         ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos'],
         [loss, loss_s, loss_p, acc_s, acc_p])
-      print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
+      # print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
       bar.set_description(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
       if state.step % write_tfboard_freq == 0:
         logs.update(
