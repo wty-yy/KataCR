@@ -2,7 +2,7 @@
 # os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parents[1]))
+sys.path.append(str(Path(__file__).parents[3]))
 from katacr.policy.offline.starformer import StARConfig, TrainConfig, StARformer
 from katacr.policy.offline.parse_and_writer import parse_args_and_writer, logs
 from katacr.policy.offline.dataset import DatasetBuilder
