@@ -19,6 +19,10 @@ xyxy_grids = (4, 82, 574, 884)  # xyxy pixel size of the whold grid
 grid_size = (18, 32)  # (x, y)
 cell_size = np.array([(xyxy_grids[3] - xyxy_grids[1]) / grid_size[1], (xyxy_grids[2] - xyxy_grids[0]) / grid_size[0]])[::-1]  # cell pixel: (w, h)
 
+def cell2pixel(xy):
+  if type(xy) != np.ndarray: xy = np.array(xy)
+  return (xy * cell_size + xyxy_grids[:2]).astype(np.int32)
+
 def pixel2cell(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
   return ((xy - xyxy_grids[:2]) / cell_size).astype(np.float32)

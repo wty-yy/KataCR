@@ -63,8 +63,8 @@ def get_center_texts(ocr: OCR, img: Sequence[np.ndarray], show=False):
   h, w = img.shape
   center_h = int(h * 0.43)
   center_w = int(w / 2)
-  target = 300
-  x0,y0,x1,y1 = [0, center_h-target//2, w, center_h+target//2]
+  target_h = int(h * 0.23)
+  x0,y0,x1,y1 = [0, center_h-target_h//2, w, center_h+target_h//2]
   center_img = img[y0:y1, x0:x1]
   if show:
     cv2.imshow('center', center_img)

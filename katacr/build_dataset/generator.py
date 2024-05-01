@@ -29,7 +29,7 @@ def cell2pixel(xy):
 
 def pixel2cell(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
-  return ((xy - xyxy_grids[:2]) / cell_size)
+  return ((xy - xyxy_grids[:2]) / cell_size).astype(np.float32)
 
 def show_point(img: Image, xy_cell: tuple):
   xy = cell2pixel(xy_cell)

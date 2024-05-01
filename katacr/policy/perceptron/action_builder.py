@@ -109,7 +109,7 @@ class ActionBuilder:
           self.cards[i] = mc  # update cards state
       if not wrong_name:
         self.last_wrong_card_frame[i] = None
-    print(f"Action(Time={self.time},frame={self.frame_count}): {self.cards=}, {self.cards_memory=}, {self.deploy_cards=}")  # DEBUG
+    # print(f"Action(Time={self.time},frame={self.frame_count}): {self.cards=}, {self.cards_memory=}, {self.deploy_cards=}")  # DEBUG
   
   def _add_action(self, elixir_box, card_name):
     b = elixir_box

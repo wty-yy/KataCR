@@ -7,12 +7,12 @@
 @Blog    : https://wty-yy.xyz/
 @Desc    : Based on Paddle OCR
 '''
-
+import cv2
 from paddleocr import PaddleOCR
 from paddleocr.tools.infer.predict_system import TextSystem
 import numpy as np
-import logging
 from pathlib import Path
+from katacr.build_dataset.constant import text_features_episode_end
 root_path = Path(__file__).parents[2]
 
 onnx_weight_paths = {
@@ -22,6 +22,9 @@ onnx_weight_paths = {
 }
 
 class OCR:
+  START_EPISODE_FLAG = 0
+  END_EPISODE_FLAG = 1
+
   def __init__(self, use_angle_cls=False, onnx=False, tensorrt=False, use_gpu=True, lang='ch'):
     self.use_angle_cls = use_angle_cls
     kwargs = dict(use_onnx=onnx, use_tensorrt=tensorrt, use_gpu=use_gpu)
@@ -102,6 +105,26 @@ class OCR:
       except ValueError:
         m = None
     return m
+  
+  def process_center_texts(self, img, pil=False):
+    h, w = img.shape[:2]
+    center_h = int(h * 0.43)
+    target_h = int(h * 0.23)
+    x0, y0, x1, y1 = [0, center_h-target_h//2, w, center_h+target_h//2]
+    center_img = img[y0:y1, x0:x1]
+    ratio = 300 / target_h
+    center_img = cv2.resize(center_img, (int(w*ratio), int(target_h*ratio)))
+    results = self(center_img, pil=pil)[0]
+    # print("center image results:", results)
+    # cv2.imshow("Center image", center_img)
+    # cv2.waitKey(1)
+    if results is None: return None
+    recs = [info[1][0] for info in results]
+    for i in recs:
+      for flag, texts in zip((self.START_EPISODE_FLAG, self.END_EPISODE_FLAG), (['fight'], text_features_episode_end)):
+        for j in texts:
+          if j.lower() in i.lower():
+            return flag
 
 def ocr_test(img, det=True, show_time=True, show_result=False, info=""):
   name = ""

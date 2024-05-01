@@ -202,8 +202,7 @@ class StARformer(nn.Module):
       )
     drop_rng, verbose_rng, rng = jax.random.split(jax.random.PRNGKey(train_cfg.seed), 3)
     if not train:  # return state with apply function
-      tmp = {'a': 1}
-      return TrainState.create(apply_fn=self.apply, params=tmp, batch_stats=tmp, tx=optax.sgd(1), dropout_rng=rng)
+      return TrainState.create(apply_fn=self.apply, params={'a': 1}, tx=optax.sgd(1), dropout_rng=rng)
     # s, a, r, timestep
     B, l = train_cfg.batch_size, self.cfg.n_step
     s = {

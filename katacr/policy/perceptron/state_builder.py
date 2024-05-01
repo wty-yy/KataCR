@@ -85,7 +85,8 @@ class StateBuilder:
     if action is not None and action['xy'] is not None:
       arena.paint(action['xy'].astype(np.int32), (255,236,158), action['card_id'], rect=False, circle=True, text_pos='right down')
     rimg = pil_draw_text(rimg, (0, rimg.size[1]), str(self.cards), font_size=14, text_pos='left down')
-    rimg = pil_draw_text(rimg, (self.parts_pos[0,0]-self.parts_pos[1,0], 0), f"Time: {self.time}", font_size=20, text_pos='right top')
+    # rimg = pil_draw_text(rimg, (self.parts_pos[0,0]-self.parts_pos[1,0], 0), f"Time: {self.time}", font_size=20, text_pos='right top')
+    rimg = pil_draw_text(rimg, (500, 0), f"Time: {self.time}", font_size=20, text_pos='right top')
     ret = np.concatenate([np.array(rimg), arena.image], 1)
     return ret[...,::-1]
   
