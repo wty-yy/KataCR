@@ -34,7 +34,7 @@ class VisualFusion:
     self.classifier = CardClassifier(classifier_path)
     self.open_window = False
   
-  def process(self, x, persist=False, pil=False):
+  def process(self, x, pil=False):
     """
     Args:
       x (np.ndarray): Input image
@@ -44,7 +44,7 @@ class VisualFusion:
       info (dict): with keys:
         time (int): Time passed. (Part1)
         arena (CRResults inherited from Results): The result is given by YOLOv8. (Part2)
-        cards (dict): {0: card_name0, 1: card_name1, 2: card_name2, 3: card_name3, 4: card_name4}. (Part3)
+        cards (List[str]): {card_name0, card_name1, card_name2, card_name3, card_name4}. (Part3)
         elixir (int): The elixir we have. (Part3)
     """
     self.parts = parts = []

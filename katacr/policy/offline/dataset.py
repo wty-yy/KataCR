@@ -51,18 +51,17 @@ class DatasetBuilder:
     ### Build return-to-go ###
     st, n = -1, len(replay['obs'])
     rtg = data['rtg'] = np.zeros(n, np.float32)
-    timestep = data['timestep'] = np.zeros(n, np.int32)
+    data['timestep'] = np.array([s['time'] for s in data['obs']], np.int32)
     start_idx = data['start_idx'] = []
     for i in data['done_idx']:
       for j in range(i, st, -1):
         rtg[j] = replay['reward'][j] + (0 if j == i else rtg[j+1])
-        timestep[j] = j - st
         if i - j + 1 >= self.n_step:
           start_idx.append(j)
       st = i
     data['start_idx'] = np.array(data['start_idx'], np.int32)
     data['info'] = f"Max rtg: {max(data['rtg']):.2f}, Mean rtg: {np.mean(data['rtg']):.2f}, \
-Total steps: {sum(data['timestep']!=0)}, Obs len: {len(data['obs'])}, Datasize: {len(data['start_idx'])}"
+Max timestep: {max(data['timestep'])}, Obs len: {len(data['obs'])}, Datasize: {len(data['start_idx'])}"
     print(colorstr("INFO"), "Dataset:", data['info'])
   
   def debug(self):
@@ -191,7 +190,7 @@ class StateActionRewardDataset(Dataset):
 if __name__ == '__main__':
   path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data"
   ds_builder = DatasetBuilder(path_dataset, 30)
-  print(ds_builder.n_cards)
+  print("n_cards:", ds_builder.n_cards)
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image

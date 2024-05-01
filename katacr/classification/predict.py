@@ -71,6 +71,8 @@ class CardClassifier:
       pil (bool): If taggled, the image `x` is RGB format.
       cvt_label (bool): If taggled, the classification index will be converted to label name.
       verbose (bool): If taggled, each card image will be showed.
+    Returns:
+      result (List[str]): Detection name for each cards: next card, card1, card2, card3, card4
     """
     from katacr.build_dataset.utils.split_part import extract_bbox
     from katacr.build_dataset.constant import part3_bbox_params

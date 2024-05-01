@@ -36,7 +36,7 @@ def train():
     print(f"Epoch: {ep+1}/{args.total_epochs}")
     print("Training...")
     logs.reset()
-    bar = tqdm(train_ds, ncols=80)
+    bar = tqdm(train_ds, ncols=140)
     for s, y, rtg, timestep in bar:
       for x in [s, y]:
         for k, v in x.items():

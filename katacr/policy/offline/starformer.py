@@ -285,7 +285,7 @@ if __name__ == '__main__':
   n_unit = len(unit_list)
   n_cards = 20
   n_step = 30
-  max_timestep = 2000
+  max_timestep = 300
   gpt_cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep)
   print(dict(gpt_cfg))
   gpt = StARformer(gpt_cfg)
