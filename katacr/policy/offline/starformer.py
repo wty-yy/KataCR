@@ -2,7 +2,7 @@ import jax, jax.numpy as jnp
 import flax.linen as nn
 import flax, optax
 import numpy as np
-from flax.training import train_state
+from katacr.policy.offline.train_state import TrainState, accumulate_grads
 from typing import Callable, Sequence
 from katacr.utils import Config
 from functools import partial
@@ -12,9 +12,6 @@ from katacr.policy.offline.resnet import ResNet, ResNetConfig
 
 Dense = partial(nn.Dense, kernel_init=nn.initializers.normal(stddev=0.02))
 Embed = partial(nn.Embed, embedding_init=nn.initializers.normal(stddev=0.02))
-
-class TrainState(train_state.TrainState):
-  dropout_rng: jax.Array
 
 class StARConfig(Config):
   n_embd_global = 192
@@ -52,9 +49,10 @@ class TrainConfig(Config):
   clip_global_norm = 1.0
   lr_fn: Callable
 
-  def __init__(self, steps_per_epoch, n_step, **kwargs):
+  def __init__(self, steps_per_epoch, n_step, accumulate, **kwargs):
     self.steps_per_epoch = steps_per_epoch
     self.n_step = n_step
+    self.accumulate = accumulate
     for k, v in kwargs.items():
       setattr(self, k, v)
 
@@ -202,7 +200,10 @@ class StARformer(nn.Module):
       )
     drop_rng, verbose_rng, rng = jax.random.split(jax.random.PRNGKey(train_cfg.seed), 3)
     if not train:  # return state with apply function
-      return TrainState.create(apply_fn=self.apply, params={'a': 1}, tx=optax.sgd(1), dropout_rng=rng)
+      return TrainState.create(
+        apply_fn=self.apply, params={'a': 1}, tx=optax.sgd(1),
+        dropout_rng=rng, grads={}, accumulate=0, acc_count=0
+      )
     # s, a, r, timestep
     B, l = train_cfg.batch_size, self.cfg.n_step
     s = {
@@ -231,6 +232,9 @@ class StARformer(nn.Module):
         optax.adamw(train_cfg.lr_fn, train_cfg.betas[0], train_cfg.betas[1], weight_decay=train_cfg.weight_decay, mask=decay_mask),
       ),
       dropout_rng=drop_rng,
+      grads=variables['params'],
+      accumulate=train_cfg.accumulate,
+      acc_count=0,
     )
     return state
   
@@ -252,7 +256,7 @@ class StARformer(nn.Module):
         loss = loss_select + loss_pos
         return loss, (loss_select, loss_pos, acc_select, acc_pos)
       (loss, metrics), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
-      state = state.apply_gradients(grads=grads)
+      state = accumulate_grads(state, grads)
       state = state.replace(dropout_rng=base_rng)
       return state, (loss, metrics)
     self.model_step = jax.jit(model_step, static_argnames='train')

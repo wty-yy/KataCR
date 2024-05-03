@@ -145,7 +145,12 @@ def build_feature(state, action, lr_flip: bool=False):
   s['elixir'] = np.array(elixir, np.int32)
   ### Build Action ###
   a['select'] = np.array(action['card_id'], np.int32)
-  xy = action['xy'] if action['xy'] is not None else (-1, 0)
+  if action['xy'] is not None:
+    xy = np.array(action['xy'], np.int32)
+    if lr_flip:
+      xy[0] = 18 - xy[0] - 1
+  else:
+    xy = (-1, 0)
   a['pos'] = np.array(xy[::-1], np.int32)
   return s, a
 

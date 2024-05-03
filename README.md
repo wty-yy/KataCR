@@ -247,3 +247,12 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 - `Offline Dataset` 完成 `StateBuilder, RewardBuilder`。
 **FIX BUG**
 - 修复`king-tower-bar`生成概率为100%的问题，当前和`king-tower-level`对半出现。
+
+### v0.7.13 (2024.4.22~2024.5.1)
+1. 完成全部特征融合、特征提取的全部调试，将使用`sar_builder.py`中的`SARBuilder`可以对所有特征进行提取，完成模型所需特征转换，并进行决策模型StARformer的训练，并将模型在真机上进行测试，但效果非常差。
+
+### v0.7.14 (2024.5.3)
+1. 对决策模型加入梯度累计，`nominal batch size = 32`
+**FIX BUG**
+- 修复数据增强中忘记对`action`进行左右反转（只对arena进行了左右反转）
+

@@ -33,6 +33,9 @@ def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.N
   assert Path(args.replay_dataset).exists(), "The path of replay buffer must exist"
   args.lr = args.learning_rate
   args.patch_size = [int(x) for x in args.patch_size]
+  nbc = 32  # nominal batch size
+  args.accumulate = max(round(nbc / args.batch_size), 1)
+  args.weight_decay *= args.accumulate * args.batch_size / nbc
 
   ### Create Path ###
   path_root = Path(__file__).parents[3]
