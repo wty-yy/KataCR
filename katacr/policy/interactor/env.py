@@ -20,8 +20,10 @@ def ratio2name(img_size):
 class InteractEnv:
   def __init__(self, show=True, save=False):
     """ Connect mobile phone """
-    self.q_reset, self.q_sar = multiprocessing.Queue(), multiprocessing.Queue()
-    multiprocessing.Process(target=SARDaemon, args=(self.q_reset, self.q_sar, show, save), daemon=True).start()
+    self.q_reset, self.q_sar, self.q_info = [multiprocessing.Queue() for _ in range(3)]
+    multiprocessing.Process(target=SARDaemon, args=(self.q_reset, self.q_sar, self.q_info, show, save), daemon=True).start()
+    info = self.q_info.get()
+    self.idx2card = info['idx2card']
     self.dt = {'sar_update': None, 'sar_get': None, 'sar_total': None}
     self.done = True
   

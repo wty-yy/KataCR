@@ -164,7 +164,8 @@ class Cutter:
       start_flag = check_has_texts(['fight']) or time < 10
       if start_frame != -1 and (
         check_has_texts(const.text_features_episode_end)
-        or ((frame - start_frame) * interval / fps > 15 and start_flag)):  # WE think each episode length will longer than 30s
+        or ((frame - start_frame) * interval / fps > 15 and start_flag)  # WE think each episode length will longer than 30s
+        or (frame == int(frames//interval)-1)):
         dt_end = 0
         if start_flag:
           dt_end = -1.4
@@ -203,10 +204,10 @@ class Cutter:
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   # parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/CR/videos/WTY_20240213.mp4")
-  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Videos/CR_Videos/expert_videos/WTY_20240419_112947_1_golem_enermy_ai.mp4")
-  args = parser.parse_args()
+  # parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Videos/CR_Videos/expert_videos/WTY_20240419_112947_1_golem_enermy_ai.mp4")
+  # args = parser.parse_args()
   cutter = Cutter()
-  cutter.split_episodes(args.path_video, show=True)
-  # for p in Path("/home/yy/Videos/CR_Videos/30fps_an").glob('*.mp4'):
-  #   split_episodes(str(p), show=True)
+  # cutter.split_episodes(args.path_video, show=True)
+  for p in Path("/home/yy/Videos/CR_Videos/expert_videos").glob('*.mp4'):
+    cutter.split_episodes(str(p), show=True)
   

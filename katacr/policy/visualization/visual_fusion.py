@@ -11,7 +11,7 @@ path_detectors = [
   path_root / './runs/detector1_v0.7.12.2.pt',
   path_root / './runs/detector2_v0.7.12.2.pt',
 ]
-classifier_path = path_root / 'logs/CardClassification-checkpoints'
+path_classifier = path_root / 'logs/CardClassification-checkpoints'
 
 def draw_text(
   img, text, pos=(0, 0), text_color=(0, 255, 0), text_color_bg=(0, 0, 0),
@@ -31,7 +31,7 @@ class VisualFusion:
   def __init__(self, ocr_onnx=False, ocr_gpu=True):
     self.ocr_num = OCR(onnx=ocr_onnx, use_gpu=ocr_gpu, lang='en')
     self.yolo = ComboDetector(path_detectors)
-    self.classifier = CardClassifier(classifier_path)
+    self.classifier = CardClassifier(path_classifier)
     self.open_window = False
   
   def process(self, x, pil=False):

@@ -7,15 +7,19 @@ path_save_dir = path_root / "logs/intercation" / time.strftime("%Y%m%d_%H:%M:%S"
 
 class SARDaemon:
   def __init__(
-      self, q_reset: multiprocessing.Queue, q_sar: multiprocessing.Queue,
+      self,
+      q_reset: multiprocessing.Queue,
+      q_sar: multiprocessing.Queue,
+      q_info: multiprocessing.Queue,
       show: bool = True, save: bool = False, interval: int = 2
     ):
     from katacr.policy.perceptron.sar_builder import SARBuilder
-    self.q_reset, self.q_sar = q_reset, q_sar
+    self.q_reset, self.q_sar, self.q_info = q_reset, q_sar, q_info
     self.show, self.save = show, save
     self.interval = interval
     print("Building SAR builder...")
     self.sar_builder = SARBuilder()
+    self.q_info.put({'idx2card': self.sar_builder.visual_fusion.classifier.idx2card})
     self.ocr = self.sar_builder.action_builder.ocr  # Share OCR with action text OCR
     print("SAR builder complete!")
     self.cap = cv2.VideoCapture(2)

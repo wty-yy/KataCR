@@ -8,9 +8,10 @@ from katacr.policy.interactor.env import InteractEnv
 from pathlib import Path
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
+from katacr.constants.card_list import card2elixir
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer__0__20240501_125642/ckpt"
+path_weights = path_root / "logs/Policy/StARformer__0__20240503_135639/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -44,6 +45,7 @@ class Evaulator:
     self.n_bar_size = self.model.cfg.n_bar_size
     self._warmup()
     self.sw = [Stopwatch() for _ in range(2)]
+    self.idx2card = self.env.idx2card
   
   def _init_sart(self):
     self.s = {k: [] for k in self.s_key}
@@ -103,20 +105,31 @@ class Evaulator:
     while True:
       self._init_sart()
       s, a, _ = self.env.reset()
+      last_elixir = 0
       now_rtg, done = self.base_rtg, False
       self._add_sart(s, a, self.base_rtg, s['time'])
       while not done:
+        if s['elixir'] is not None: last_elixir = s['elixir']
         with self.sw[0]:
           a = self.get_action()
+        a = np.array(a)
+        card = self.idx2card[str(s['cards'][a[0]])]
+        if a[0] and card == 'empty':
+          print(f"Skip action, since card index {a[0]} is 'empty'")
+          a[0] = 0  # Skip
+        if a[0] and card2elixir[card] > last_elixir:
+          print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
+          a[0] = 0  # Skip
         with self.sw[1]:
-          s, a, r, done = self.env.step(a)
+          s, _, r, done = self.env.step(a)
+        a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None}
         print(colorstr("Time used (Eval):"), *[f"{k}={self.sw[i].dt*1e3:.1f}ms" for k, i in zip(['policy', 'step'], range(2))])
-        now_rtg -= r
+        now_rtg = max(now_rtg-r, 1)
         self._add_sart(s, a, now_rtg, s['time'])
         score += r
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  evaluator = Evaulator(path_weights, show=True, save=True)
+  evaluator = Evaulator(path_weights, show=True, save=True, deterministic=True)
   evaluator.eval()
 

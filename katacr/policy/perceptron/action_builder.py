@@ -96,7 +96,9 @@ class ActionBuilder:
                   if self.frame_count - self.last_wrong_card_frame[i] >= WRONG_CARD_FRAME_DELTA:
                     # print(f"Warning(action): There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}, change to detection card")
                     # self.cards_memory[i] = nc
-                    assert nc == mc, f"There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}"
+                    print(f"Warning(action): There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}")
+                    self.cards_memory[i] = nc
+                    # assert nc == mc, f"There is a missing action before, since detect_cards={self.cards} and cards_memory={self.cards_memory}"
                 else:
                   self.last_wrong_card_frame[i] = self.frame_count
           else:

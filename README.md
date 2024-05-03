@@ -253,6 +253,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 ### v0.7.14 (2024.5.3)
 1. 对决策模型加入梯度累计，`nominal batch size = 32`
+2. 优化Evaluator中action的执行逻辑，只执行可行的action，action输入直接通过预测结果给出，不再通过yolo识别结果给出（因为识别帧数无法稳定）
 **FIX BUG**
 - 修复数据增强中忘记对`action`进行左右反转（只对arena进行了左右反转）
 
