@@ -1,5 +1,6 @@
 # import os
 # os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
+# os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.32'  # allocate GPU memory as needed
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parents[3]))
