@@ -7,7 +7,7 @@ import cv2, time, subprocess, multiprocessing
 import katacr.build_dataset.constant as const
 from katacr.policy.perceptron.utils import cell2pixel, background_size
 from pathlib import Path
-from katacr.policy.interactor.sar_daemon import SARDaemon
+from katacr.policy.env.sar_daemon import SARDaemon
 from katacr.utils import colorstr
 
 def ratio2name(img_size):

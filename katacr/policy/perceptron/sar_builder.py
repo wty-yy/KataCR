@@ -5,13 +5,17 @@ from katacr.policy.perceptron.action_builder import ActionBuilder
 from katacr.policy.perceptron.reward_builder import RewardBuilder
 
 class SARBuilder:
-  def __init__(self):
+  def __init__(self, verbose=True):
+    if verbose:
+      print("Building SAR builder...")
     self.visual_fusion = VisualFusion()
     self.state_builder = StateBuilder()
     self.action_builder = ActionBuilder()
     self.reward_builder = RewardBuilder()
     self.sw = [Stopwatch() for _ in range(5)]
     self.reset()
+    if verbose:
+      print("SAR builder complete!")
   
   def reset(self):
     self.s, self.a, self.r = [None] * 3
@@ -25,6 +29,10 @@ class SARBuilder:
     """ Update builders' visual info (img: BGR) """
     with self.sw[0]:
       info = self.visual_info = self.visual_fusion.process(img)
+    box = info['arena'].get_data()
+    if box.shape[-1] != 8:
+      print(f"Warning(state): The last dim should be 8, but get {box.shape[-1]}")
+      return None, None
     with self.sw[1]:
       self.action_builder.update(info)
     with self.sw[2]:

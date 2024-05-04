@@ -36,7 +36,7 @@ def train():
     print(f"Epoch: {ep+1}/{args.total_epochs}")
     print("Training...")
     logs.reset()
-    bar = tqdm(train_ds, ncols=140)
+    bar = tqdm(train_ds, ncols=200)
     for s, y, rtg, timestep in bar:
       for x in [s, y]:
         for k, v in x.items():
@@ -50,12 +50,13 @@ def train():
       a['select'] = np.concatenate([np.full((B, 1), 0, np.int32), y['select'][:,:-1]], 1)  # (B, l)
       pad = np.stack([np.full((B, 1), 0, np.int32), np.full((B, 1), -1, np.int32)], -1)
       a['pos'] = np.concatenate([pad, y['pos'][:,:-1]], 1)  # (B, l, 2)
-      state, (loss, (loss_s, loss_p, acc_s, acc_p)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
+      state, (loss, (loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
       logs.update(
-        ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos'],
-        [loss, loss_s, loss_p, acc_s, acc_p])
+        ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos',
+         'train_acc_select_use', 'train_acc_select_and_pos'],
+        [loss, loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp])
       # print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
-      bar.set_description(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
+      bar.set_description(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}, acc_select_use={acc_su:.4f}, acc_select_and_pos={acc_sp:.4f}")
       if state.step % write_tfboard_freq == 0:
         logs.update(
           ['SPS', 'epoch', 'learning_rate'],

@@ -22,7 +22,10 @@ class DatasetBuilder:
     ### Concatenate all replay buffers ###
     replay = {'obs': [], 'action': [], 'reward': [], 'terminal': []}
     print("Loading replay buffers...", end='')
-    path_files = list(Path(self.path_dataset).rglob('*.xz'))
+    if Path(self.path_dataset).is_dir():
+      path_files = list(Path(self.path_dataset).rglob('*.xz'))
+    else:
+      path_files = [self.path_dataset]
     for p in tqdm(path_files, ncols=80):
       bytes = lzma.open(str(p)).read()
       data = np.load(BytesIO(bytes), allow_pickle=True).item()

@@ -1,17 +1,23 @@
+"""
+Open phone screen video stream:
+sudo modprobe v4l2loopback
+scrcpy --v4l2-sink=/dev/video2 --no-video-playback
+"""
 import os
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 from katacr.policy.offline.starformer import StARformer, StARConfig, TrainConfig
 from katacr.utils.ckpt_manager import CheckpointManager
 from katacr.policy.offline.dataset import build_feature
 import cv2, jax
-from katacr.policy.interactor.env import InteractEnv
+from katacr.policy.env.interact_env import InteractEnv
+from katacr.policy.env.video_env import VideoEnv
 from pathlib import Path
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
 from katacr.constants.card_list import card2elixir
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer__0__20240503_135639/ckpt"
+path_weights = path_root / "logs/Policy/StARformer__3w_datasize__0__20240503_215816/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -26,13 +32,17 @@ class Evaulator:
   s_key = ['arena', 'arena_mask', 'cards', 'elixir']
   a_key = ['select', 'pos']
 
-  def __init__(self, path_weights, show=True, save=False, rtg=3, deterministic=True):
+  def __init__(self, path_weights=path_weights, vid_path=None, show=True, save=False, rtg=3, deterministic=True):
     self.base_rtg, self.deterministic = rtg, deterministic
-    self.env = InteractEnv(show=show, save=save)
+    if vid_path is not None:
+      self.env = VideoEnv(vid_path)
+    else:
+      self.env = InteractEnv(show=show, save=save)
     self.rng = jax.random.PRNGKey(42)
     self._load_model(path_weights)
   
   def _load_model(self, path_weights):
+    print("Loading policy model...", end='')
     ckpt_mngr = CheckpointManager(str(path_weights))
     load_step = int(sorted(Path(path_weights).glob('*'))[-1].name)
     load_info = ckpt_mngr.restore(load_step)
@@ -46,6 +56,7 @@ class Evaulator:
     self._warmup()
     self.sw = [Stopwatch() for _ in range(2)]
     self.idx2card = self.env.idx2card
+    print("Complete!")
   
   def _init_sart(self):
     self.s = {k: [] for k in self.s_key}
@@ -130,6 +141,8 @@ class Evaulator:
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  evaluator = Evaulator(path_weights, show=True, save=True, deterministic=True)
+  # evaluator = Evaulator(path_weights, show=True, save=True, deterministic=True)
+  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4"
+  evaluator = Evaulator(path_weights, vid_path, show=True, save=True, deterministic=True)
   evaluator.eval()
 

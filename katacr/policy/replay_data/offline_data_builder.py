@@ -33,7 +33,9 @@ class OfflineDatasetBuilder:
     open_window = False
     dt = [0] * 5
     for p, x, cap, info in ds:  # path, image ,capture, verbose string
-      visual_info, dt[:4] = self.sar_builder.update(x)
+      results = self.sar_builder.update(x)
+      if results is None: continue
+      visual_info, dt[:4] = results
       if verbose:
         cv2.imwrite(str(self.path_save_result / f"debug_org.jpg"), x)
         cv2.imwrite(str(self.path_save_result / f"debug_det.jpg"), visual_info['arena'].show_box())
@@ -54,16 +56,16 @@ class OfflineDatasetBuilder:
           cv2.imwrite(str(Path(save_path).with_suffix('.jpg')), img)
       else:  # video
         if vid_path != save_path:  # new video
-          if vid_path is not None:
-            self.reset(vid_path)
+          self.reset(vid_path)
           vid_path = save_path
-          if isinstance(vid_writer, cv2.VideoWriter):
-            vid_writer.release()
-          if cap:  # video
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            h, w = img.shape[:2]
-          save_path = str(Path(save_path).with_suffix('.mp4'))
-          vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps//video_interval, (w, h))
+          if save:
+            if isinstance(vid_writer, cv2.VideoWriter):
+              vid_writer.release()
+            if cap:  # video
+              fps = cap.get(cv2.CAP_PROP_FPS)
+              h, w = img.shape[:2]
+            save_path = str(Path(save_path).with_suffix('.mp4'))
+            vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps//video_interval, (w, h))
         if save:
           vid_writer.write(img)
       print(f"{info} {'+'.join([f'{t * 1e3:.1f}' for t in dt])}ms", end='')
@@ -108,10 +110,10 @@ if __name__ == '__main__':
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_sub.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/test1.jpg", verbose=True, show=False)
-  # odb.process("/home/yy/Videos/CR_Videos/expert_videos/list.txt", verbose=True, show=False)
+  odb.process("/home/yy/Videos/CR_Videos/expert_videos/list.txt", verbose=True, show=False, save=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4", verbose=True, show=False)
-  # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/*.mp4", verbose=True, show=False)
-  odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/4.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/*.mp4", verbose=True, show=False, save=False)
+  # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/4.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240410_132216_1_episodes/7.mp4", debug=True)
   # odb.process("/home/yy/Pictures/ClashRoyale/build_policy/multi_bar3.png", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2_sub_sub.mp4", debug=True)

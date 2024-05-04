@@ -26,7 +26,8 @@ def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.N
   parser.add_argument("--patch-size", default=(2, 2))
   parser.add_argument("--weight-decay", type=float, default=1e-1)
   ### Dataset ###
-  parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data"))
+  # parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data"))
+  parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"))
   parser.add_argument("--num-workers", type=int, default=4)
 
   args = parser.parse_args(input_args)
@@ -64,12 +65,16 @@ logs = Logs(
     'train_loss_pos': MeanMetric(),
     'train_acc_select': MeanMetric(),
     'train_acc_pos': MeanMetric(),
+    'train_acc_select_use': MeanMetric(),
+    'train_acc_select_and_pos': MeanMetric(),
     'SPS': MeanMetric(),
     'epoch': 0,
     'learning_rate': MeanMetric(),
   },
   folder2name={
     'Chart': ['learning_rate', 'SPS', 'epoch'],
-    'Metrics': ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos'],
+    'Metrics': ['train_loss', 'train_loss_select', 'train_loss_pos',
+                'train_acc_select', 'train_acc_pos',
+                'train_acc_select_use', 'train_acc_select_and_pos'],
   }
 )

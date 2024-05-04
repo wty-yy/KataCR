@@ -188,9 +188,9 @@ class StARformer(nn.Module):
           fg = False; break
       return fg
     def lr_fn():
-      warmup_steps = train_cfg.warmup_tokens // (train_cfg.n_step * train_cfg.batch_size)
+      warmup_steps = train_cfg.warmup_tokens // (train_cfg.n_step * train_cfg.batch_size * train_cfg.accumulate)
       warmup_fn = optax.linear_schedule(0.0, train_cfg.lr, warmup_steps)
-      second_steps = max(train_cfg.total_epochs * train_cfg.steps_per_epoch - warmup_steps, 1)
+      second_steps = max(train_cfg.total_epochs * train_cfg.steps_per_epoch // train_cfg.accumulate - warmup_steps, 1)
       second_fn = optax.cosine_decay_schedule(
         train_cfg.lr, second_steps, 0.1
       )
@@ -247,14 +247,20 @@ class StARformer(nn.Module):
         y_select, y_pos = y['select'].reshape(-1), y['pos']
         y_pos = (y_pos[...,0] * 18 + y_pos[...,1]).reshape(-1)
         mask = y_select != 0
+        n = mask.sum() + 1
         tmp = -jax.nn.log_softmax(select).reshape(-1, select.shape[-1])
         loss_select = tmp[jnp.arange(tmp.shape[0]), y_select].mean()
         tmp = -jax.nn.log_softmax(pos).reshape(-1, pos.shape[-1])
-        loss_pos = (tmp[jnp.arange(tmp.shape[0]), y_pos] * mask).sum() / (mask.sum() + 1)
-        acc_select = (jnp.argmax(select, -1).reshape(-1) == y_select).mean()
-        acc_pos = ((jnp.argmax(pos, -1).reshape(-1) == y_pos) * mask).sum() / (mask.sum() + 1)
+        loss_pos = (tmp[jnp.arange(tmp.shape[0]), y_pos] * mask).sum() / n
         loss = loss_select + loss_pos
-        return loss, (loss_select, loss_pos, acc_select, acc_pos)
+
+        flag_select = (jnp.argmax(select, -1).reshape(-1) == y_select)
+        acc_select = flag_select.mean()
+        acc_select_use = (flag_select * mask).sum() / n
+        flag_pos = (jnp.argmax(pos, -1).reshape(-1) == y_pos)
+        acc_pos = (flag_pos * mask).sum() /  n
+        acc_select_and_pos = (flag_select * flag_pos * mask).sum() / n
+        return loss, (loss_select, loss_pos, acc_select, acc_pos, acc_select_use, acc_select_and_pos)
       (loss, metrics), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
       state = accumulate_grads(state, grads)
       state = state.replace(dropout_rng=base_rng)

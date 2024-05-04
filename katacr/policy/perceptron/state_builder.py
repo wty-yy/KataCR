@@ -236,7 +236,8 @@ class StateBuilder:
         # check latest time
         if (id in self.bar2xywht) and (self.time - self.bar2xywht[id][-1] > self.persist):
           self.bar2xywht.pop(id)
-          self.bel_memory.pop(id)
+          if id in self.bel_memory:
+            self.bel_memory.pop(id)
           if id in self.cls_memory:
             self.cls_memory.pop(id)
     for bar in self.bar_items:
@@ -272,9 +273,9 @@ class StateBuilder:
     self.elixir: int = info['elixir']
     self.card2idx: dict = info['card2idx']
     self.parts_pos: np.ndarray = info['parts_pos']  # shape=(3, 4), part1,2,3, (x,y,w,h)
-    self.box = box = self.arena.get_data()  # xyxy, track_id, conf, cls, bel
+    self.box = self.arena.get_data()  # xyxy, track_id, conf, cls, bel
     self.img = self.arena.get_rgb()
-    assert box.shape[-1] == 8, f"The last dim should be 8, but get {box.shape[-1]}"
+    # assert box.shape[-1] == 8, 
     ### Step 0: Update belong memory ###
     self._update_bel_memory()
     ### Step 1: Build bar items ###

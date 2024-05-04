@@ -17,11 +17,9 @@ class SARDaemon:
     self.q_reset, self.q_sar, self.q_info = q_reset, q_sar, q_info
     self.show, self.save = show, save
     self.interval = interval
-    print("Building SAR builder...")
     self.sar_builder = SARBuilder()
     self.q_info.put({'idx2card': self.sar_builder.visual_fusion.classifier.idx2card})
     self.ocr = self.sar_builder.action_builder.ocr  # Share OCR with action text OCR
-    print("SAR builder complete!")
     self.cap = cv2.VideoCapture(2)
     assert self.cap.isOpened(), "The phone stream can't connect!"
     self.open_window = False
@@ -80,7 +78,9 @@ class SARDaemon:
         self.img = self._read_img()
       ### Get SAR and Terminal ###
       while self.q_sar.qsize() > 1: self.q_sar.get()
-      _, dt = self.sar_builder.update(self.img)
+      results = self.sar_builder.update(self.img)
+      if results is None: continue
+      dt = results[1]
       self.count += 1
       if self.count % self.interval == 0:
         info = {'dt': {}, 'timestamp': self.timestamp, 'img_size': self.img.shape[:2][::-1]}
