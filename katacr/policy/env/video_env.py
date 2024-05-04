@@ -49,7 +49,10 @@ class VideoEnv:
         s, a, r, dt = self.sar_builder.get_sar(verbose=False)
         self.dt['sar_get'] = dt
         self.dt['sar_total'] = self.dt['sar_get'] + self.dt['sar_update']
-        done = self.ds.frame == self.ds.total_frame
+        done = self.ds.frame == self.ds.total_frame // 2 * 2
+        if done and self.ds.total_frame % 2 == 1:
+          next(self.ds)  # skip last frame
+        # print(f"Frame: {self.ds.frame=} {self.ds.total_frame=}", info)
         if a['card_id']:
           print(colorstr('red', 'bold', f"Target Action (time={s['time']},frame={self.count}):"), a)
         return s, a, r, done

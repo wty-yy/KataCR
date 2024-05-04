@@ -145,7 +145,7 @@ class ActionBuilder:
         det, rec = info
         rec = ''.join([c for c in rec[0].lower() if c in LOW_ALPHA])
         recs.append(rec)
-        print(self.deploy_cards)
+        # print(self.deploy_cards)
         for name in self.deploy_cards:
           if rec in name.lower().replace('-', ''):
             return name
@@ -156,7 +156,7 @@ class ActionBuilder:
     xyxy = elixir_box[:4].astype(np.int32)
     img = self.img[xyxy[1]:xyxy[3], xyxy[0]:xyxy[2]]
     pred = self.elixir_classifier(img)
-    print("elixir number:", pred)
+    # print("elixir number:", pred)
     # cv2.imshow("elixir image", img[...,::-1])
     # cv2.waitKey(0)
     # img = cv2.resize(img, (32, 32))

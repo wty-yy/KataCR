@@ -18,6 +18,7 @@ from katacr.constants.card_list import card2elixir
 
 path_root = Path(__file__).parents[3]
 path_weights = path_root / "logs/Policy/StARformer__3w_datasize__0__20240503_215816/ckpt"
+# path_weights = path_root / "logs/Policy/StARformer-test-data1__0__20240504_170431/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -28,14 +29,15 @@ def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.n
   npad[axis] = (0, pad_size)
   return np.pad(array, pad_width=npad, mode='constant', constant_values=0)
 
-class Evaulator:
+class Evaluator:
   s_key = ['arena', 'arena_mask', 'cards', 'elixir']
   a_key = ['select', 'pos']
 
-  def __init__(self, path_weights=path_weights, vid_path=None, show=True, save=False, rtg=3, deterministic=True):
+  def __init__(self, path_weights=path_weights, vid_path=None, show=True, save=False, rtg=3, deterministic=True, verbose=False):
     self.base_rtg, self.deterministic = rtg, deterministic
+    self.verbose = verbose
     if vid_path is not None:
-      self.env = VideoEnv(vid_path)
+      self.env = VideoEnv(vid_path, verbose=verbose)
     else:
       self.env = InteractEnv(show=show, save=save)
     self.rng = jax.random.PRNGKey(42)
@@ -95,13 +97,19 @@ class Evaulator:
     def pad(x):
       x = np.expand_dims(np.stack(x[-n_step:]), 0)
       return pad_along_axis(x, n_step, 1)
-    step_len = min(len(self.s), n_step)
+    step_len = min(len(self.timestep), n_step)  # FIX BUG: Don't use len(self.s)
     rng, self.rng = jax.random.split(self.rng)
     # for k, v in self.s.items():
     #   print(f"{k}: {pad(v).shape}")
     # for k, v in self.a.items():
     #   print(f"{k}: {pad(v).shape}")
     # print(pad(self.rtg).shape, pad(self.timestep).shape, step_len, rng, self.deterministic)
+    data = {
+      's': {k: pad(v) for k, v in self.s.items()},
+      'a': {k: pad(v) for k, v in self.a.items()},
+      'rtg': pad(self.rtg),
+      'timestep': pad(self.timestep),
+    }
     action = jax.device_get(self.model.predict(
       self.state,
       {k: pad(v) for k, v in self.s.items()},
@@ -109,6 +117,9 @@ class Evaulator:
       pad(self.rtg),
       pad(self.timestep),
       step_len, rng, self.deterministic))[0]
+    # if step_len == 30:
+    #   np.save("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_eval_dataset_50.npy", data, allow_pickle=True)
+    #   exit()
     return action
   
   def eval(self):
@@ -124,25 +135,27 @@ class Evaulator:
         with self.sw[0]:
           a = self.get_action()
         a = np.array(a)
-        card = self.idx2card[str(s['cards'][a[0]])]
-        if a[0] and card == 'empty':
-          print(f"Skip action, since card index {a[0]} is 'empty'")
-          a[0] = 0  # Skip
-        if a[0] and card2elixir[card] > last_elixir:
-          print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
-          a[0] = 0  # Skip
+        # card = self.idx2card[str(s['cards'][a[0]])]
+        # if a[0] and card == 'empty':
+        #   print(f"Skip action, since card index {a[0]} is 'empty'")
+        #   a[0] = 0  # Skip
+        # if a[0] and card2elixir[card] > last_elixir:
+        #   print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
+        #   a[0] = 0  # Skip
         with self.sw[1]:
-          s, _, r, done = self.env.step(a)
-        a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None}
-        print(colorstr("Time used (Eval):"), *[f"{k}={self.sw[i].dt*1e3:.1f}ms" for k, i in zip(['policy', 'step'], range(2))])
+          # s, _, r, done = self.env.step(a)
+          s, a, r, done = self.env.step(a)
+        # a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None}
+        if self.verbose:
+          print(colorstr("Time used (Eval):"), *[f"{k}={self.sw[i].dt*1e3:.1f}ms" for k, i in zip(['policy', 'step'], range(2))])
         now_rtg = max(now_rtg-r, 1)
         self._add_sart(s, a, now_rtg, s['time'])
         score += r
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  # evaluator = Evaulator(path_weights, show=True, save=True, deterministic=True)
-  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4"
-  evaluator = Evaulator(path_weights, vid_path, show=True, save=True, deterministic=True)
+  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  # evaluator = Evaluator(path_weights, vid_path, show=True, save=True, deterministic=True, verbose=False)
   evaluator.eval()
 

@@ -4,7 +4,7 @@ from io import BytesIO
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from katacr.utils import colorstr
 
 BAR_SIZE = (24, 8)
@@ -56,15 +56,23 @@ class DatasetBuilder:
     rtg = data['rtg'] = np.zeros(n, np.float32)
     data['timestep'] = np.array([s['time'] for s in data['obs']], np.int32)
     start_idx = data['start_idx'] = []
+    sample_weights = []
     for i in data['done_idx']:
       for j in range(i, st, -1):
         rtg[j] = replay['reward'][j] + (0 if j == i else rtg[j+1])
+      for j in range(st+1, i+1):
         if i - j + 1 >= self.n_step:
           start_idx.append(j)
+        sample_weights.append(data['action'][j]['card_id'] != 0)
       st = i
+    self.sample_weights = np.array(sample_weights, np.float32)
+    sample_ratio = self.sample_weights.sum() / len(start_idx)
+    print(sample_ratio)
+    self.sample_weights = self.sample_weights * 1 / sample_ratio + (1 - self.sample_weights) * 1 / (1 - sample_ratio)
     data['start_idx'] = np.array(data['start_idx'], np.int32)
     data['info'] = f"Max rtg: {max(data['rtg']):.2f}, Mean rtg: {np.mean(data['rtg']):.2f}, \
-Max timestep: {max(data['timestep'])}, Obs len: {len(data['obs'])}, Datasize: {len(data['start_idx'])}"
+Max timestep: {max(data['timestep'])}, Obs len: {len(data['obs'])}, Datasize: {len(data['start_idx'])}, \
+Use action ratio: {sample_ratio*100:.2f}%, sample rate: {1/sample_ratio:.2f}:{1/(1-sample_ratio):.2f}"
     print(colorstr("INFO"), "Dataset:", data['info'])
   
   def debug(self):
@@ -77,10 +85,11 @@ Max timestep: {max(data['timestep'])}, Obs len: {len(data['obs'])}, Datasize: {l
     return DataLoader(
       StateActionRewardDataset(self.data, n_step=self.n_step),
       batch_size=batch_size,
-      shuffle=True,
+      # shuffle=True,  # use sampler
       persistent_workers=True,
       num_workers=num_workers,
       drop_last=True,
+      sampler=WeightedRandomSampler(self.sample_weights, len(self.sample_weights))
     )
 
 class PositionFinder:
@@ -195,9 +204,25 @@ class StateActionRewardDataset(Dataset):
     timestep = data['timestep'][idx:done_idx+1].astype(np.int32)
     return s, a, rtg, timestep
 
+def debug_save_features(path_save):
+  ds = StateActionRewardDataset(ds_builder.data, 30, lr_flip=False)
+  # print(ds.data['start_idx'])
+  s, a, r, t = ds[-1]
+  data = {'s': s, 'a': a, 'rtg': r, 'timestep': t}
+  # for i in range(len(data)):
+  #   if isinstance(data[i], dict):
+  #     for k in data[i]:
+  #       data[i][k] = data[i][k].numpy()
+  #   else:
+  #     data[i] = data[i].numpy()
+  np.save(path_save, data, allow_pickle=True)
+
 if __name__ == '__main__':
   path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data"
+  # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"
   ds_builder = DatasetBuilder(path_dataset, 30)
+  # debug_save_features("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_dataset_50")
+  # exit()
   print("n_cards:", ds_builder.n_cards)
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors

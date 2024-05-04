@@ -18,9 +18,10 @@ def ratio2name(img_size):
   raise Exception(f"Don't know ratio: {r:.4f}")
 
 class InteractEnv:
-  def __init__(self, show=True, save=False):
+  def __init__(self, show=True, save=False, verbose=False):
     """ Connect mobile phone """
     self.q_reset, self.q_sar, self.q_info = [multiprocessing.Queue() for _ in range(3)]
+    self.verbose = verbose
     multiprocessing.Process(target=SARDaemon, args=(self.q_reset, self.q_sar, self.q_info, show, save), daemon=True).start()
     info = self.q_info.get()
     self.idx2card = info['idx2card']
@@ -28,6 +29,7 @@ class InteractEnv:
     self.done = True
   
   def _show_dt(self):
+    if not self.verbose: return
     print(colorstr("Time used (Env):"), end='')
     tot = 0
     for k, t in self.dt.items():

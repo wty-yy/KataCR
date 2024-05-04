@@ -1,11 +1,11 @@
 from katacr.utils import Stopwatch
-from katacr.policy.visualization.visual_fusion import VisualFusion
-from katacr.policy.perceptron.state_builder import StateBuilder
-from katacr.policy.perceptron.action_builder import ActionBuilder
-from katacr.policy.perceptron.reward_builder import RewardBuilder
 
 class SARBuilder:
   def __init__(self, verbose=True):
+    from katacr.policy.visualization.visual_fusion import VisualFusion
+    from katacr.policy.perceptron.state_builder import StateBuilder
+    from katacr.policy.perceptron.action_builder import ActionBuilder
+    from katacr.policy.perceptron.reward_builder import RewardBuilder
     if verbose:
       print("Building SAR builder...")
     self.visual_fusion = VisualFusion()
