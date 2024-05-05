@@ -251,7 +251,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 ### v0.7.13 (2024.4.22~2024.5.1)
 1. 完成全部特征融合、特征提取的全部调试，将使用`sar_builder.py`中的`SARBuilder`可以对所有特征进行提取，完成模型所需特征转换，并进行决策模型StARformer的训练，并将模型在真机上进行测试，但效果非常差。
 
-### v0.7.14 (2024.5.3-2024.5.4)
+### v0.7.14 (2024.5.3-2024.5.5)
 1. 对决策模型加入梯度累计，`nominal batch size = 32`
 2. 优化Evaluator中action的执行逻辑，只执行可行的action，action输入直接通过预测结果给出，不再通过yolo识别结果给出（因为识别帧数无法稳定）
 3. 加入`video_env`用于对训练视频数据进行预测，用于调试
@@ -259,4 +259,4 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 **FIX BUG**
 - 修复数据增强中忘记对`action`进行左右反转（只对arena进行了左右反转）
 - 修复Evaluator中错误step_len的问题（使用了`len(self.s)`导致`step_len`只有4）
-
+- 修复重采样动作

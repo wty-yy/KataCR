@@ -1,5 +1,5 @@
 import scipy.spatial
-import bisect, torch, lzma, cv2
+import bisect, torch, lzma, cv2, random
 from io import BytesIO
 import numpy as np
 from pathlib import Path
@@ -12,6 +12,7 @@ N_BAR_SIZE = np.prod(BAR_SIZE)
 
 class DatasetBuilder:
   def __init__(self, path_dataset: str, n_step: int, seed=42):
+    random.seed(seed)
     torch.manual_seed(seed)
     self.path_dataset = path_dataset
     self.n_step = n_step
@@ -55,33 +56,50 @@ class DatasetBuilder:
     st, n = -1, len(replay['obs'])
     rtg = data['rtg'] = np.zeros(n, np.float32)
     data['timestep'] = np.array([s['time'] for s in data['obs']], np.int32)
-    start_idx = data['start_idx'] = []
+    end_idx = data['end_idx'] = []
     sample_weights = []
     for i in data['done_idx']:
       for j in range(i, st, -1):
         rtg[j] = replay['reward'][j] + (0 if j == i else rtg[j+1])
       for j in range(st+1, i+1):
-        if i - j + 1 >= self.n_step:
-          start_idx.append(j)
-        sample_weights.append(data['action'][j]['card_id'] != 0)
+        if j - st >= self.n_step:
+        # if i - j + 1 >= self.n_step:
+          end_idx.append(j)
+          sample_weights.append(data['action'][j]['card_id'] != 0)
       st = i
     self.sample_weights = np.array(sample_weights, np.float32)
-    sample_ratio = self.sample_weights.sum() / len(start_idx)
-    print(sample_ratio)
-    self.sample_weights = self.sample_weights * 1 / sample_ratio + (1 - self.sample_weights) * 1 / (1 - sample_ratio)
-    data['start_idx'] = np.array(data['start_idx'], np.int32)
+    # action_ratio = max(self.sample_weights.sum() / len(end_idx), 0.1)  # up to 10%
+    action_ratio = self.sample_weights.sum() / len(end_idx)
+    self.sample_weights = self.sample_weights * 1 / action_ratio + (1 - self.sample_weights) * 1 / (1 - action_ratio)
+    for i in np.argwhere(sample_weights).reshape(-1):
+      # print(i)
+      for j in range(i, i+30):
+        alpha = 1 / (j - i + 1)
+        self.sample_weights[j] = max(self.sample_weights[j], alpha * 1 / action_ratio)
+        # print(j, alpha, alpha * 1 / action_ratio)
+        if replay['terminal'][j]: break
+    data['end_idx'] = np.array(data['end_idx'], np.int32)
     data['info'] = f"Max rtg: {max(data['rtg']):.2f}, Mean rtg: {np.mean(data['rtg']):.2f}, \
-Max timestep: {max(data['timestep'])}, Obs len: {len(data['obs'])}, Datasize: {len(data['start_idx'])}, \
-Use action ratio: {sample_ratio*100:.2f}%, sample rate: {1/sample_ratio:.2f}:{1/(1-sample_ratio):.2f}"
+Max timestep: {max(data['timestep'])}, Obs len: {len(data['obs'])}, Datasize: {len(data['end_idx'])}, \
+Use action ratio: {action_ratio*100:.2f}%, sample rate: {1/action_ratio:.2f}:{1/(1-action_ratio):.2f}"
     print(colorstr("INFO"), "Dataset:", data['info'])
   
   def debug(self):
     import matplotlib.pyplot as plt
-    plt.hist(self.data['rtg'])
-    plt.title(f"Distribution of Return-To-Go")
+    # plt.figure()
+    # plt.hist(self.data['rtg'])
+    # plt.title("Distribution of Return-To-Go")
+    plt.figure()
+    plt.plot(self.data['end_idx'], self.sample_weights)
+    for i in self.data['end_idx']:
+      if self.data['action'][i]['card_id']:
+        plt.plot([i, i], [0, 30], 'r--')
+    plt.title("Sample ratio")
+    # plt.axis([75, 100, 0, 33])
     plt.show()
   
-  def get_dataset(self, batch_size: int, num_workers: int = 4):
+  def get_dataset(self, batch_size: int, num_workers: int = 4, lr_flip: bool = True):
+    sample_weights = np.concatenate([self.sample_weights] * (int(lr_flip) + 1))  # origin and flip left and right
     return DataLoader(
       StateActionRewardDataset(self.data, n_step=self.n_step),
       batch_size=batch_size,
@@ -89,7 +107,7 @@ Use action ratio: {sample_ratio*100:.2f}%, sample rate: {1/sample_ratio:.2f}:{1/
       persistent_workers=True,
       num_workers=num_workers,
       drop_last=True,
-      sampler=WeightedRandomSampler(self.sample_weights, len(self.sample_weights))
+      sampler=WeightedRandomSampler(sample_weights, len(sample_weights))
     )
 
 class PositionFinder:
@@ -108,7 +126,7 @@ class PositionFinder:
     self.used[y, x] = True
     return np.array((x, y), np.int32)
 
-def build_feature(state, action, lr_flip: bool=False):
+def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False):
   """
   Args:
     state (Dict, from `perceptron.state_builder.get_state()`):
@@ -164,26 +182,35 @@ def build_feature(state, action, lr_flip: bool=False):
   else:
     xy = (-1, 0)
   a['pos'] = np.array(xy[::-1], np.int32)
+  if shuffle:
+    idx = list(range(1, 5))
+    random.shuffle(idx)
+    idx = np.array([0] + idx, np.int32)
+    # print("before:", s['cards'], a['select'], idx)
+    s['cards'] = s['cards'][idx]
+    a['select'] = np.array(np.argwhere(idx == a['select'])[0,0], np.int32)
+    # print("after: ", s['cards'], a['select'], idx)
   return s, a
 
 class StateActionRewardDataset(Dataset):
-  def __init__(self, data: dict, n_step: int, lr_flip=True):
+  def __init__(self, data: dict, n_step: int, lr_flip=True, card_shuffle=True):
     self.data, self.n_step = data, n_step
     self.lr_flip = lr_flip
+    self.shuffle = card_shuffle
   
   def __len__(self):
     # return np.sum(self.data['timestep']!=0) - self.n_step + 1
-    return len(self.data['start_idx']) * (2 if self.lr_flip else 1)
+    return len(self.data['end_idx']) * (2 if self.lr_flip else 1)
   
   def __getitem__(self, idx):
-    datasize = len(self.data['start_idx'])
+    datasize = len(self.data['end_idx'])
     lr_flip = idx >= datasize; idx %= datasize
     data, n_step = self.data, self.n_step
     # done_idx = idx + n_step - 1
     # bisect_left(a, x): if x in a, return left x index, else return index with elem bigger than x
     # done_idx = min(data['done_idx'][bisect.bisect_left(data['done_idx'], done_idx)], done_idx)
     # idx = done_idx - n_step + 1
-    idx = self.data['start_idx'][idx]; done_idx = idx + n_step - 1
+    done_idx = self.data['end_idx'][idx]; idx = done_idx - n_step + 1
     L = self.n_step
     s = {
       'arena': np.empty((L, 32, 18, 1+1+2*N_BAR_SIZE), np.int32),
@@ -196,7 +223,7 @@ class StateActionRewardDataset(Dataset):
       'pos': np.empty((L, 2), np.int32),
     }
     for i in range(idx, done_idx+1):
-      ns, na = build_feature(data['obs'][i], data['action'][i], lr_flip=lr_flip)
+      ns, na = build_feature(data['obs'][i], data['action'][i], lr_flip=lr_flip, shuffle=self.shuffle)
       for x, nx in zip([s, a], [ns, na]):
         for k in x.keys():
           x[k][i-idx] = nx[k]
@@ -206,7 +233,6 @@ class StateActionRewardDataset(Dataset):
 
 def debug_save_features(path_save):
   ds = StateActionRewardDataset(ds_builder.data, 30, lr_flip=False)
-  # print(ds.data['start_idx'])
   s, a, r, t = ds[-1]
   data = {'s': s, 'a': a, 'rtg': r, 'timestep': t}
   # for i in range(len(data)):
@@ -221,13 +247,14 @@ if __name__ == '__main__':
   path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"
   ds_builder = DatasetBuilder(path_dataset, 30)
+  # ds_builder.debug()
   # debug_save_features("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_dataset_50")
   # exit()
   print("n_cards:", ds_builder.n_cards)
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image
-  ds = ds_builder.get_dataset(32)
+  ds = ds_builder.get_dataset(32, 4)
   for s, a, rtg, timestep in tqdm(ds):
     for x in [s, a]:
       for k, v in x.items():

@@ -17,7 +17,7 @@ from katacr.utils import colorstr, Stopwatch
 from katacr.constants.card_list import card2elixir
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer__3w_datasize__0__20240503_215816/ckpt"
+path_weights = path_root / "logs/Policy/StARformer-WeightSample__0__20240504_225245/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer-test-data1__0__20240504_170431/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
