@@ -32,7 +32,7 @@ class SARBuilder:
     box = info['arena'].get_data()
     if box.shape[-1] != 8:
       print(f"Warning(state): The last dim should be 8, but get {box.shape[-1]}")
-      return None, None
+      return None
     with self.sw[1]:
       self.action_builder.update(info)
     with self.sw[2]:
