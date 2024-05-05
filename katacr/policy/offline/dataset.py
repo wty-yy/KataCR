@@ -118,6 +118,8 @@ class PositionFinder:
   def find_near_pos(self, xy):
     yx = np.array(xy)[::-1]
     y, x = yx.astype(np.int32)
+    y = np.clip(y, 0, 31)
+    x = np.clip(x, 0, 17)
     if self.used[y, x]:
       avail_center = self.center[~self.used]
       map_index = np.argwhere(~self.used)

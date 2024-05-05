@@ -268,18 +268,18 @@ class StARformer(nn.Module):
     self.model_step = jax.jit(model_step, static_argnames='train')
 
     def predict(state: TrainState, s, a, r, timestep, step_len: Sequence[int] = None, rng: jax.Array = None, deterministic: bool = True):
-      select, pos = state.apply_fn({'params': state.params}, s, a, r, timestep, train=False)
+      logits_select, logits_pos = state.apply_fn({'params': state.params}, s, a, r, timestep, train=False)
       if step_len is not None:
-        select = select[jnp.arange(select.shape[0]), step_len-1, :]  # (B, 5)
-        pos = pos[jnp.arange(pos.shape[0]), step_len-1, :]  # (B, 32*18)
+        logits_select = logits_select[jnp.arange(logits_select.shape[0]), step_len-1, :]  # (B, 5)
+        logits_pos = logits_pos[jnp.arange(logits_pos.shape[0]), step_len-1, :]  # (B, 32*18)
       if deterministic:
-        select = jnp.argmax(select, -1, keepdims=True)
-        pos = jnp.argmax(pos, -1, keepdims=True)
+        select = jnp.argmax(logits_select, -1, keepdims=True)
+        pos = jnp.argmax(logits_pos, -1, keepdims=True)
       else:
-        select = jax.random.categorical(rng, select, -1)[..., None]
-        pos = jax.random.categorical(rng, pos, -1)[..., None]
+        select = jax.random.categorical(rng, logits_select, -1)[..., None]
+        pos = jax.random.categorical(rng, logits_pos, -1)[..., None]
       y, x = pos // 18, pos % 18
-      return jnp.concatenate([select, x, y], -1)
+      return jnp.concatenate([select, x, y], -1), logits_pos
     self.predict = jax.jit(predict, static_argnames='deterministic')
 
   def save_model(self, state, save_path):

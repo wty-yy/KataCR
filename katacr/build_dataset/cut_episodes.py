@@ -208,6 +208,6 @@ if __name__ == '__main__':
   # args = parser.parse_args()
   cutter = Cutter()
   # cutter.split_episodes(args.path_video, show=True)
-  for p in Path("/home/yy/Videos/CR_Videos/expert_videos").glob('*.mp4'):
+  for p in Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6").glob('*.mp4'):
     cutter.split_episodes(str(p), show=True)
   

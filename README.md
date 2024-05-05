@@ -256,7 +256,9 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 2. 优化Evaluator中action的执行逻辑，只执行可行的action，action输入直接通过预测结果给出，不再通过yolo识别结果给出（因为识别帧数无法稳定）
 3. 加入`video_env`用于对训练视频数据进行预测，用于调试
 4. 加入数据重采样，对有动作的样本加大采样率（当前有action的帧数仅占3%）
+5. 优化数据重采样分布，加入 $1/(1+delta)$ 平滑系数
+6. 加入数据增强：对卡牌位置的随机排列
 **FIX BUG**
 - 修复数据增强中忘记对`action`进行左右反转（只对arena进行了左右反转）
 - 修复Evaluator中错误step_len的问题（使用了`len(self.s)`导致`step_len`只有4）
-- 修复重采样动作
+- 修复重采样动作的分布问题
