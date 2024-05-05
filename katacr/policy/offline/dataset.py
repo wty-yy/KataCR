@@ -128,7 +128,13 @@ class PositionFinder:
     self.used[y, x] = True
     return np.array((x, y), np.int32)
 
-def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False):
+def get_shuffle_idx():
+  idx = list(range(1, 5))
+  random.shuffle(idx)
+  idx = np.array([0] + idx, np.int32)
+  return idx
+
+def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False, shuffle_idx=None):
   """
   Args:
     state (Dict, from `perceptron.state_builder.get_state()`):
@@ -185,9 +191,10 @@ def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False):
     xy = (-1, 0)
   a['pos'] = np.array(xy[::-1], np.int32)
   if shuffle:
-    idx = list(range(1, 5))
-    random.shuffle(idx)
-    idx = np.array([0] + idx, np.int32)
+    if shuffle_idx is not None:
+      idx = shuffle_idx
+    else:
+      idx = get_shuffle_idx()
     # print("before:", s['cards'], a['select'], idx)
     s['cards'] = s['cards'][idx]
     a['select'] = np.array(np.argwhere(idx == a['select'])[0,0], np.int32)
@@ -224,8 +231,10 @@ class StateActionRewardDataset(Dataset):
       'select': np.empty(L, np.int32),
       'pos': np.empty((L, 2), np.int32),
     }
+    if self.shuffle:
+      shuffle_idx = get_shuffle_idx()
     for i in range(idx, done_idx+1):
-      ns, na = build_feature(data['obs'][i], data['action'][i], lr_flip=lr_flip, shuffle=self.shuffle)
+      ns, na = build_feature(data['obs'][i], data['action'][i], lr_flip=lr_flip, shuffle=self.shuffle, shuffle_idx=shuffle_idx)
       for x, nx in zip([s, a], [ns, na]):
         for k in x.keys():
           x[k][i-idx] = nx[k]
@@ -246,8 +255,8 @@ def debug_save_features(path_save):
   np.save(path_save, data, allow_pickle=True)
 
 if __name__ == '__main__':
-  path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data"
-  # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"
+  # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data"
+  path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"
   ds_builder = DatasetBuilder(path_dataset, 30)
   # ds_builder.debug()
   # debug_save_features("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_dataset_50")
