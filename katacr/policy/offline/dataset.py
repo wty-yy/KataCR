@@ -67,11 +67,12 @@ class DatasetBuilder:
           end_idx.append(j)
           sample_weights.append(data['action'][j]['card_id'] != 0)
       st = i
+    data['done_idx'] = np.concatenate([[-1], data['done_idx']])
     self.sample_weights = np.array(sample_weights, np.float32)
     # action_ratio = max(self.sample_weights.sum() / len(end_idx), 0.1)  # up to 10%
     action_ratio = self.sample_weights.sum() / len(end_idx)
     self.sample_weights = self.sample_weights * 1 / action_ratio + (1 - self.sample_weights) * 1 / (1 - action_ratio)
-    for i in np.argwhere(sample_weights).reshape(-1):
+    for i in np.where(sample_weights)[0]:
       # print(i)
       for j in range(i, i+30):
         alpha = 1 / (j - i + 1)
@@ -98,10 +99,15 @@ Use action ratio: {action_ratio*100:.2f}%, sample rate: {1/action_ratio:.2f}:{1/
     # plt.axis([75, 100, 0, 33])
     plt.show()
   
-  def get_dataset(self, batch_size: int, num_workers: int = 4, lr_flip: bool = True):
+  def get_dataset(
+      self, batch_size: int, num_workers: int = 4, lr_flip: bool = True,
+      card_shuffle: bool = True, random_interval: int = 2
+    ):
     sample_weights = np.concatenate([self.sample_weights] * (int(lr_flip) + 1))  # origin and flip left and right
     return DataLoader(
-      StateActionRewardDataset(self.data, n_step=self.n_step),
+      StateActionRewardDataset(
+        self.data, n_step=self.n_step, lr_flip=lr_flip,
+        card_shuffle=card_shuffle, random_interval=random_interval),
       batch_size=batch_size,
       # shuffle=True,  # use sampler
       persistent_workers=True,
@@ -202,10 +208,11 @@ def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False, s
   return s, a
 
 class StateActionRewardDataset(Dataset):
-  def __init__(self, data: dict, n_step: int, lr_flip=True, card_shuffle=True):
+  def __init__(self, data: dict, n_step: int, lr_flip=True, card_shuffle=True, random_interval=2):
     self.data, self.n_step = data, n_step
     self.lr_flip = lr_flip
     self.shuffle = card_shuffle
+    self.random_interval = random_interval
   
   def __len__(self):
     # return np.sum(self.data['timestep']!=0) - self.n_step + 1
@@ -214,12 +221,12 @@ class StateActionRewardDataset(Dataset):
   def __getitem__(self, idx):
     datasize = len(self.data['end_idx'])
     lr_flip = idx >= datasize; idx %= datasize
-    data, n_step = self.data, self.n_step
+    data, L = self.data, self.n_step
     # done_idx = idx + n_step - 1
     # bisect_left(a, x): if x in a, return left x index, else return index with elem bigger than x
     # done_idx = min(data['done_idx'][bisect.bisect_left(data['done_idx'], done_idx)], done_idx)
     # idx = done_idx - n_step + 1
-    done_idx = self.data['end_idx'][idx]; idx = done_idx - n_step + 1
+    done_idx = self.data['end_idx'][idx]; idx = done_idx - L + 1
     L = self.n_step
     s = {
       'arena': np.empty((L, 32, 18, 1+1+2*N_BAR_SIZE), np.int32),
@@ -231,15 +238,32 @@ class StateActionRewardDataset(Dataset):
       'select': np.empty(L, np.int32),
       'pos': np.empty((L, 2), np.int32),
     }
+    rtg = np.empty(L, np.float32)
+    timestep = np.empty(L, np.int32)
     if self.shuffle:
       shuffle_idx = get_shuffle_idx()
-    for i in range(idx, done_idx+1):
-      ns, na = build_feature(data['obs'][i], data['action'][i], lr_flip=lr_flip, shuffle=self.shuffle, shuffle_idx=shuffle_idx)
+    now = done_idx
+    pre_done = self.data['done_idx'][bisect.bisect_left(self.data['done_idx'], done_idx)-1]
+    idxs = []
+    for i in range(L-1, -1, -1):
+      ns, na = build_feature(data['obs'][now], data['action'][now], lr_flip=lr_flip, shuffle=self.shuffle, shuffle_idx=shuffle_idx)
       for x, nx in zip([s, a], [ns, na]):
         for k in x.keys():
-          x[k][i-idx] = nx[k]
-    rtg = data['rtg'][idx:done_idx+1].astype(np.float32)
-    timestep = data['timestep'][idx:done_idx+1].astype(np.int32)
+          x[k][i] = nx[k]
+      rtg[i] = data['rtg'][now]
+      timestep[i] = data['timestep'][now]
+      # print(idx-pre_done, idx)
+      interval = random.randint(1, min(self.random_interval, idx-pre_done))
+      idxs.append(now)
+      now -= interval
+      idx -= interval - 1
+    # for i in range(idx, done_idx+1):
+    #   ns, na = build_feature(data['obs'][i], data['action'][i], lr_flip=lr_flip, shuffle=self.shuffle, shuffle_idx=shuffle_idx)
+    #   for x, nx in zip([s, a], [ns, na]):
+    #     for k in x.keys():
+    #       x[k][i-idx] = nx[k]
+    # rtg = data['rtg'][idx:done_idx+1].astype(np.float32)
+    # timestep = data['timestep'][idx:done_idx+1].astype(np.int32)
     return s, a, rtg, timestep
 
 def debug_save_features(path_save):
@@ -265,7 +289,7 @@ if __name__ == '__main__':
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image
-  ds = ds_builder.get_dataset(32, 4)
+  ds = ds_builder.get_dataset(32, 1)
   for s, a, rtg, timestep in tqdm(ds):
     for x in [s, a]:
       for k, v in x.items():

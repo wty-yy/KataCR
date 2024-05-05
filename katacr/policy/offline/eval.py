@@ -41,7 +41,7 @@ class Evaluator:
     self.base_rtg, self.deterministic = rtg, deterministic
     self.verbose, self.show_predict = verbose, show_predict
     if vid_path is not None:
-      self.env = VideoEnv(vid_path, show=show, verbose=verbose)
+      self.env = VideoEnv(vid_path, action_freq=3, show=show, verbose=verbose)
     else:
       self.env = InteractEnv(show=show, save=save)
     self.rng = jax.random.PRNGKey(42)
@@ -175,8 +175,8 @@ class Evaluator:
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
-  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
-  # evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=True, verbose=False)
+  # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=True, verbose=False)
   evaluator.eval()
 
