@@ -111,7 +111,7 @@ if __name__ == '__main__':
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_sub.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_deploy_ice-golem.mp4", verbose=True, show=True, save=True)
-  odb.process("/home/yy/Coding/GitHub/KataCR/logs/offline/list4.txt", verbose=True, show=False, save=False)
+  odb.process("/home/yy/Coding/GitHub/KataCR/logs/offline/list2.txt", verbose=True, show=False, save=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/*.mp4", verbose=True, show=False, save=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/4.mp4", verbose=True, show=False)

@@ -74,7 +74,7 @@ class DatasetBuilder:
     self.sample_weights = self.sample_weights * 1 / action_ratio + (1 - self.sample_weights) * 1 / (1 - action_ratio)
     for i in np.where(sample_weights)[0]:
       # print(i)
-      for j in range(i, i+30):
+      for j in range(i, min(i+30, len(self.sample_weights))):
         alpha = 1 / (j - i + 1)
         self.sample_weights[j] = max(self.sample_weights[j], alpha * 1 / action_ratio)
         # print(j, alpha, alpha * 1 / action_ratio)
