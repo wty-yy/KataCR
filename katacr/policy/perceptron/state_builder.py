@@ -184,7 +184,9 @@ class StateBuilder:
         idx = np.argmin(dis)
         if dis[idx] < DIS_BAR_AND_BODY_THRE:
           bar_item = self.bar_items[idx]
-          assert bar_item.bar2 is None, f"The bar1(id={bar_item.bar1[-4]}) has bar2(id={bar_item.bar2[-4]}), but bar2(id={box[-4]}) finds it again."
+          if bar_item.bar2 is not None:
+            print(f"Warning(state): (time={self.time}) The bar1(id={bar_item.bar1[-4]}) has bar2(id={bar_item.bar2[-4]}), but bar2(id={box[-4]}) finds it again.")
+          # assert bar_item.bar2 is None, f"The bar1(id={bar_item.bar1[-4]}) has bar2(id={bar_item.bar2[-4]}), but bar2(id={box[-4]}) finds it again."
           bar_item.bar2 = box
         else:
           self._add_bar_item(bar2=box)
@@ -469,10 +471,12 @@ class BarItem:
       bel = int(self.body[-1])
       if bel != self.bel:
         print(f"Warning(state): (time={self.time}) bars and body (id={self.body[-4]}) don't have same belong")
-        cnt = max(self.bel_memory[int(self.body[-4])].values())
-        if cnt > self.bel_cnt:
-          self.bel_cnt = cnt
-          self.bel = bel
+        counter = self.bel_memory[int(self.body[-4])]
+        if len(counter):
+          cnt = max(counter.values())
+          if cnt > self.bel_cnt:
+            self.bel_cnt = cnt
+            self.bel = bel
     for name in ['bar1', 'bar2']:
       bar = getattr(self, name)
       if bar is None: continue
