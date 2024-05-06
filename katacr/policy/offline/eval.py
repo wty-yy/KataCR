@@ -15,9 +15,10 @@ from pathlib import Path
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
 from katacr.constants.card_list import card2elixir
+from katacr.policy.replay_data.data_display import GridDrawer
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer__3w_datasize__0__20240503_215816/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_same_action_shuffle__random_interval__128__0__20240505_214216/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer-test-data1__0__20240504_170431/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
@@ -33,14 +34,18 @@ class Evaluator:
   s_key = ['arena', 'arena_mask', 'cards', 'elixir']
   a_key = ['select', 'pos']
 
-  def __init__(self, path_weights=path_weights, vid_path=None, show=True, save=False, rtg=3, deterministic=True, verbose=False):
+  def __init__(
+      self, path_weights=path_weights, vid_path=None, show=True, save=False,
+      rtg=3, deterministic=True, verbose=False, show_predict=True
+    ):
     self.base_rtg, self.deterministic = rtg, deterministic
-    self.verbose = verbose
+    self.verbose, self.show_predict = verbose, show_predict
     if vid_path is not None:
-      self.env = VideoEnv(vid_path, verbose=verbose)
+      self.env = VideoEnv(vid_path, action_freq=2, show=show, verbose=verbose)
     else:
       self.env = InteractEnv(show=show, save=save)
     self.rng = jax.random.PRNGKey(42)
+    self.open_window = False
     self._load_model(path_weights)
   
   def _load_model(self, path_weights):
@@ -110,16 +115,44 @@ class Evaluator:
       'rtg': pad(self.rtg),
       'timestep': pad(self.timestep),
     }
-    action = jax.device_get(self.model.predict(
+    action, logits_select, logits_pos = jax.device_get(self.model.predict(
       self.state,
       {k: pad(v) for k, v in self.s.items()},
       {k: pad(v) for k, v in self.a.items()},
       pad(self.rtg),
       pad(self.timestep),
-      step_len, rng, self.deterministic))[0]
+      step_len, rng, self.deterministic))
+    action = action[0]
+    prob_select = np.exp(logits_select)[0].reshape(5,)
+    prob_select /= prob_select.sum()
+    prob_pos = np.exp(logits_pos)[0].reshape(32, 18)
+    prob_pos /= prob_pos.sum()
     # if step_len == 30:
     #   np.save("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_eval_dataset_50.npy", data, allow_pickle=True)
     #   exit()
+    if self.show_predict:
+      sel_drawer = GridDrawer(1, 5, size=(5*50,1*50))
+      for i in range(5):
+        prob = prob_select[i]
+        sel_drawer.paint((i, 0), (0, 0, int(255*prob)), f"{prob*100:.2f}")
+      img = np.array(sel_drawer.image)
+      if not self.open_window:
+        cv2.namedWindow("Predict Select Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        cv2.resizeWindow("Predict Select Probability", img.shape[:2][::-1])
+      cv2.imshow("Predict Select Probability", img)
+      cv2.waitKey(1)
+      pos_drawer = GridDrawer()
+      for i in range(32):
+        for j in range(18):
+          prob = prob_pos[i,j]
+          pos_drawer.paint((j, i), (0,0,int(255*prob)), f"{prob*100:.2f}")
+      img = np.array(pos_drawer.image)
+      if not self.open_window:
+        self.open_window = True
+        cv2.namedWindow("Predict Position Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        cv2.resizeWindow("Predict Position Probability", img.shape[:2][::-1])
+      cv2.imshow("Predict Position Probability", img)
+      cv2.waitKey(1)
     return action
   
   def eval(self):
@@ -154,8 +187,8 @@ class Evaluator:
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
-  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
-  # evaluator = Evaluator(path_weights, vid_path, show=True, save=True, deterministic=True, verbose=False)
+  # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
 

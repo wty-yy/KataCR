@@ -2,7 +2,7 @@ from katacr.constants.label_list import ground_unit_list, flying_unit_list, towe
 ground_spell_list = list(set(ground_unit_list) & set(spell_unit_list))
 ground_unit_except_spell_list = list(set(ground_unit_list) - set(spell_unit_list))
 level2units = {
-  0: ground_spell_list + ['blood', 'butterfly', 'flower', 'skull', 'cup', 'snow', 'grave', 'ruin'],
+  0: ground_spell_list + ['blood', 'butterfly', 'flower', 'skull', 'cup', 'snow', 'grave', 'ruin', 'circle'],
   1: ground_unit_except_spell_list + tower_unit_list,
   2: flying_unit_list,
   3: other_unit_list + ['ribbon', 'scoreboard', 'crown-icon', 'king-tower-level'],
@@ -109,6 +109,7 @@ item_cfg = {
   'scoreboard0': (0.01, [[(17.5, 21.2), (0, 0), (0, 0), None, 1]]),  # right down
   'scoreboard1': (0.01, [[(17.5, 14.2), (0, 0), (0, 0), None, 1]]),  # right up
   'crown-icon': (0.01, [[(0, 0), (0, 18), (0, 32), (2, 3), 4]]),  # all
+  'circle': (0.05, [[(0, 0), (0, 18), (0, 32), None, 4]]),  # all
 }
 
 # Augmentation (mask and transparency)

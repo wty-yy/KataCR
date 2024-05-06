@@ -286,7 +286,7 @@ class StateBuilder:
     self._combine_bar_items()
     ### Step 3: Update bar history ###
     self._update_bar_items_history()
-    ### Step 4: Update class memory ###
+    ### Step 4: Update class memory, if body exists ###
     self._update_cls_memory()
   
   def get_state(self, verbose=False):

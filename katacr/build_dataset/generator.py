@@ -155,7 +155,7 @@ class Unit:
     xy = cell2pixel(self.xy_cell)
     # Note that xyxy is (x0,y0,x1+1,y1+1)
     self.xyxy = np.array((xy[0]-w//2, xy[1]-h, xy[0]+(w+1)//2, xy[1]), np.float32)  # xyxy relative to background
-    if self.cls_name in ['text', 'bar'] + spell_unit_list:  # if text or spell units, clip the out range
+    if self.cls_name in ['text', 'bar', 'circle'] + spell_unit_list:  # if text or spell units, clip the out range
       self.xyxy = np.array((
         max(self.xyxy[0], 0),
         max(self.xyxy[1], 0),

@@ -375,6 +375,7 @@ background_item_list = [
   'skull',
   'scoreboard',
   'snow',
+  'circle',
 ]
 object_unit_list = [
   'axe',
