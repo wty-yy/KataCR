@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parents[2]))
+sys.path.append(str(Path(__file__).parents[3]))
 from katacr.policy.perceptron.sar_builder import SARBuilder
 from katacr.yolov8.predict import ImageAndVideoLoader, Stopwatch, second2str
 from pathlib import Path
@@ -56,7 +56,8 @@ class OfflineDatasetBuilder:
           cv2.imwrite(str(Path(save_path).with_suffix('.jpg')), img)
       else:  # video
         if vid_path != save_path:  # new video
-          self.reset(vid_path)
+          if vid_path is not None:
+            self.reset(vid_path)
           vid_path = save_path
           if save:
             if isinstance(vid_writer, cv2.VideoWriter):
@@ -109,8 +110,8 @@ if __name__ == '__main__':
   # odb.process("/home/yy/Videos/CR_Videos/expert_videos/WTY_20240419_112947_1_golem_enermy_ai_episodes/5.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_sub.mp4", verbose=True, show=False)
-  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/test1.jpg", verbose=True, show=False)
-  odb.process("/home/yy/Videos/CR_Videos/expert_videos/list.txt", verbose=True, show=False, save=False)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_deploy_ice-golem.mp4", verbose=True, show=True, save=True)
+  odb.process("/home/yy/Coding/GitHub/KataCR/logs/offline/list4.txt", verbose=True, show=False, save=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/*.mp4", verbose=True, show=False, save=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/4.mp4", verbose=True, show=False)

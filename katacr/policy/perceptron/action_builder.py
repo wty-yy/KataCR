@@ -16,7 +16,7 @@ from katacr.yolov8.custom_result import CRResults
 from queue import Queue
 import numpy as np
 from katacr.constants.label_list import unit2idx
-from katacr.policy.perceptron.utils import pixel2cell
+from katacr.policy.perceptron.utils import pixel2cell, LOW_ALPHA, edit_distance
 from katacr.ocr_text.paddle_ocr import OCR
 from katacr.classification.elixir.predict import ElixirClassifier
 from katacr.constants.card_list import card2elixir
@@ -27,15 +27,16 @@ from pathlib import Path
 # path_wrong_classify_images.mkdir(exist_ok=True)
 
 OCR_TEXT_SIZE = (200, 120)  # bottom center = elixir top center
-LOW_ALPHA = [chr(ord('a')+i) for i in range(26)]
 WRONG_CARD_FRAME_DELTA = 10  # 10 * 0.1 = 1 sec
 EMPTY_CARD_UPDATE_FRAME_DELTA = 5  # 5 * 0.1 = 0.5 sec, delay to use last classification result after card empty
+EDIT_DISTANCE_THRE = 2  # Levenshtein distance between ocr text **in** target text
 
 class ActionBuilder:
-  def __init__(self, persist: int=2):
+  def __init__(self, persist: int=2, ocr: OCR = None):
     """
     Args:
       persist (int): The maximum time to memory in elixir_history (second)
+      ocr (OCR): paddle ocr model, if exists.
     Variables:
       elixir_history (Queue): val=(id, time), memory appeared elixir
       elixirs (set): used elixir ids
@@ -43,7 +44,7 @@ class ActionBuilder:
       actions (Queue[Dict]): Action stack in intervel frames
     """
     self.persist = persist
-    self.ocr = OCR(lang='en')
+    self.ocr = OCR(lang='en') if ocr is None else ocr
     self.elixir_classifier = ElixirClassifier()
     self.wrong_img_count = 0
     self.reset()
@@ -76,6 +77,7 @@ class ActionBuilder:
       return
       # cv2.imshow("wrong", self.img[...,::-1])
       # cv2.waitKey(0)
+    # print(f"Action(Time={self.time},frame={self.frame_count}): before {self.cards=}, {self.cards_memory=}, {self.deploy_cards=}")  # DEBUG
     for i, (nc, mc) in enumerate(zip(self.cards, self.cards_memory)):
       wrong_name = False
       if nc != 'empty':
@@ -144,10 +146,13 @@ class ActionBuilder:
       for info in result:
         det, rec = info
         rec = ''.join([c for c in rec[0].lower() if c in LOW_ALPHA])
+        if len(rec) == 0: continue
         recs.append(rec)
         # print(self.deploy_cards)
         for name in self.deploy_cards:
-          if rec in name.lower().replace('-', ''):
+          tname = name.lower().replace('-', '')
+          # if rec in name.lower().replace('-', ''):
+          if edit_distance(rec, tname, dis='s1') <= EDIT_DISTANCE_THRE:
             return name
     print(f"Warning(action): (time={self.time}) Don't find any {recs} in display_cards: {self.deploy_cards} by elixir (id={elixir_box[-4]})")
     return has_text  # Maybe ocr detection is wrong or other text cover on it, return has_text for further judgment

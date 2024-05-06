@@ -46,7 +46,7 @@ class OCR:
       [img1_info, img2_info, ...]:
         img{i}_info = [(det)_rec_info1, (det)_rec_info2, ...]:
           (det)_rec_info{i} = [(det_info,) rec_info]:
-            det_info = [x0, y0, x1, y1]
+            det_info = [left top, right top, right bottom, left bottom]
             rec_info = ('rec_text', confidence)
     """
     if not pil and not gray:

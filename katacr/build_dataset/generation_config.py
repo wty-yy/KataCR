@@ -70,11 +70,12 @@ component_cfg = {
   'skeleton-king-skill': ['center', (0, 0), (0, 0), None, 'center'],
   'skeleton-king-bar': ['top_center', (0, 0), (-0.5, -0.3), None, 'bottom_center'],
 }
-except_object_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list) - set(object_unit_list))
+except_spell_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list))
+except_object_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(object_unit_list))
 except_spell_and_object_unit_list = list(set(ground_unit_list).union(flying_unit_list) - set(spell_unit_list) - set(object_unit_list))
 component2unit = {  # the component below to units, prob
   'small-text': (except_object_unit_list, 0.0),
-  'elixir': (except_object_unit_list, 1/2),
+  'elixir': (except_spell_and_object_unit_list, 1/2),
   ('bar', 'bar-level'): (except_spell_and_object_unit_list, 1.0),
   'tower-bar': (except_king_tower_unit_list, 1.0),
   'dagger-duchess-tower-bar': (['dagger-duchess-tower'], 1.0),

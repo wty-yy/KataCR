@@ -9,9 +9,10 @@ class SARBuilder:
     if verbose:
       print("Building SAR builder...")
     self.visual_fusion = VisualFusion()
-    self.state_builder = StateBuilder()
-    self.action_builder = ActionBuilder()
-    self.reward_builder = RewardBuilder()
+    ocr = self.visual_fusion.ocr
+    self.state_builder = StateBuilder(ocr=ocr)
+    self.action_builder = ActionBuilder(ocr=ocr)
+    self.reward_builder = RewardBuilder(ocr=ocr)
     self.sw = [Stopwatch() for _ in range(5)]
     self.reset()
     if verbose:
@@ -36,7 +37,7 @@ class SARBuilder:
     with self.sw[1]:
       self.action_builder.update(info)
     with self.sw[2]:
-      self.state_builder.update(info)
+      self.state_builder.update(info, self.action_builder.deploy_cards)
     with self.sw[3]:
       self.reward_builder.update(info)
     return info, [self.sw[i].dt for i in range(4)]

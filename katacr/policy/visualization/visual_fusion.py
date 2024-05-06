@@ -8,8 +8,8 @@ import numpy as np
 
 path_root = Path(__file__).parents[3]
 path_detectors = [
-  path_root / './runs/detector1_v0.7.12.2.pt',
-  path_root / './runs/detector2_v0.7.12.2.pt',
+  path_root / './runs/detector1_v0.7.13.pt',
+  path_root / './runs/detector2_v0.7.13.pt',
 ]
 path_classifier = path_root / 'logs/CardClassification-checkpoints'
 
@@ -29,7 +29,7 @@ def draw_text(
 
 class VisualFusion:
   def __init__(self, ocr_onnx=False, ocr_gpu=True):
-    self.ocr_num = OCR(onnx=ocr_onnx, use_gpu=ocr_gpu, lang='en')
+    self.ocr = OCR(onnx=ocr_onnx, use_gpu=ocr_gpu, lang='en')
     self.yolo = ComboDetector(path_detectors)
     self.classifier = CardClassifier(path_classifier)
     self.open_window = False
@@ -55,10 +55,10 @@ class VisualFusion:
       parts_pos.append(box_params)
     parts_pos = np.array(parts_pos)
     self.parts_pos = (parts_pos.reshape(-1, 2) * np.array(x.shape[:2][::-1])).astype(np.int32).reshape(-1, 4)
-    time = self.ocr_num.process_part1(parts[0], pil=pil)
+    time = self.ocr.process_part1(parts[0], pil=pil)
     arena = self.yolo.infer(parts[1], pil=pil)
     cards = self.classifier.process_part3(parts[2], pil=pil)
-    elixir = self.ocr_num.process_part3_elixir(parts[2], pil=pil)
+    elixir = self.ocr.process_part3_elixir(parts[2], pil=pil)
     self.info = dict(
       time=time, arena=arena, cards=cards, elixir=elixir,
       card2idx=self.classifier.card2idx, idx2card=self.classifier.idx2card,

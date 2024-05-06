@@ -23,11 +23,13 @@ from katacr.yolov8.custom_result import CRResults
 from queue import Queue
 import numpy as np
 from katacr.constants.label_list import idx2unit, unit2idx, bar2_unit_list
-from katacr.policy.perceptron.utils import extract_img, pixel2cell, cell2pixel, xyxy2center, background_size, xyxy2sub, pil_draw_text
-from katacr.build_dataset.generation_config import except_king_tower_unit_list, except_spell_and_object_unit_list, spell_unit_list
-from typing import List, Dict
+from katacr.policy.perceptron.utils import extract_img, pixel2cell, cell2pixel, xyxy2center, background_size, xyxy2sub, pil_draw_text, LOW_ALPHA, xyxy2topcenter, edit_distance
+from katacr.build_dataset.generation_config import except_king_tower_unit_list, except_spell_and_object_unit_list, spell_unit_list, object_unit_list
+from typing import List, Dict, Tuple
 import scipy
 from collections import Counter, defaultdict
+from katacr.ocr_text.paddle_ocr import OCR
+from katacr.constants.card_list import card2idx, unit2cards
 
 BASE_UNIT_INFO = dict(xy=None, cls=None, bel=None, body=None, bar1=None, bar2=None)
 BAR_CENTER2BODY_DELTA_Y = 40
@@ -35,12 +37,15 @@ DIS_BAR_AND_BAR_LEVEL_THRE = 15  # the threshold of distance between bar and bar
 DIS_BAR_AND_BODY_THRE = 35  # the threshold of distance between bar and body
 SUB_XYXY_KING_TOWER_BAR = (0.22, 0.23, 1.0, 0.8)
 SUB_XYXY_TOWER_BAR = [(0.26, 0.2, 1.0, 0.8), (0.26, 0.35, 1.0, 0.9)]
+REMOVE_DEPLOY_DIS_THRE = 50  # dis between the bottom center of text and top center of unit
+DEPLOY_HISTORY_PERSIST_FRAME = 15  # 15 * 0.1 = 1.5 sec
+EDIT_DISTANCE_THRE = 2  # Levenshtein distance between ocr text **in** target text
 
 class StateBuilder:
   bar1_units = ['bar', 'tower-bar', 'king-tower-bar']
   bar2_units = [ 'dagger-duchess-tower-bar', 'skeleton-king-bar']
 
-  def __init__(self, persist: int=3):
+  def __init__(self, persist: int = 3, ocr: OCR = None):
     """
     Args:
       persist (int): The maximum time to memory in bar_history (second).
@@ -54,17 +59,23 @@ class StateBuilder:
         val (tuple)=(count of bel=0, count of bel=1)
       cls_memory (dict): key (int)=bar track_id,
         val (Counter)=count of each class
+      text_info (list): val=(text_class_name, x, y),
+        text_class_name is the name of text, xy is bottom center of text 
+      deploy_history (queue): The history of deploy cards.
     """
     self.persist = persist
+    self.ocr = OCR(lang='en') if ocr is None else ocr
     self.reset()
 
   def reset(self):
     self.time = 0
-    self.bar2xywht = {}
+    self.bar2xywht = dict()
+    self.frame_count = 0
     self.bar_history = Queue()
     self.bar_items: List[BarItem] = []
     self.bel_memory: Dict[int,Counter] = defaultdict(Counter)
     self.cls_memory: Dict[int,Counter] = defaultdict(Counter)
+    self.deploy_history = dict()
   
   def _add_bar_item(self, bar_level=None, bar1=None, bar2=None, body=None):
     self.bar_items.append(BarItem(self, bar_level=bar_level, bar1=bar1, bar2=bar2, body=body))
@@ -178,10 +189,32 @@ class StateBuilder:
         else:
           self._add_bar_item(bar2=box)
   
+  def _find_text_info(self, deploy_cards):
+    ### Update deploy history first ###
+    for card in deploy_cards:
+      self.deploy_history[card] = self.frame_count
+    for k, v in list(self.deploy_history.items()):
+      if self.frame_count - v >= DEPLOY_HISTORY_PERSIST_FRAME:
+        self.deploy_history.pop(k)
+    text_info = []
+    result = self.ocr(self.img)[0]
+    if 28 <= self.frame_count <= 30:
+      print(f"frame={self.frame_count}, ocr_result:", result)
+      print(f"deploy_history={self.deploy_history}, {deploy_cards=}")
+    if result is not None:
+      for info in result:
+        det, rec = info
+        rec = ''.join([c for c in rec[0].lower() if c in LOW_ALPHA])
+        if len(rec) <= 2: continue
+        for name in self.deploy_history:
+          tname = name.lower().replace('-', '')
+          if edit_distance(rec, tname, dis='s1') <= EDIT_DISTANCE_THRE:
+            text_info.append((card2idx[name], (det[2][0]+det[3][0])//2, (det[2][1]+det[3][1])//2))
+            print("Find text info:", name, rec)
+    self.text_info = np.array(text_info, np.int32).reshape(-1, 3)
+  
   def _combine_bar_items(self):
-    """
-    Combine body image with BarItem.
-    """
+    """ Combine body image with BarItem. """
     no_body_items = [i for i in self.bar_items if i.body is None]
     xy_bars = np.array([i.center for i in no_body_items], np.float32)
     mask_bars = np.ones((len(xy_bars),), np.bool_)
@@ -190,7 +223,21 @@ class StateBuilder:
     for box in self.box:
       cls = box[-2]
       cls_name = idx2unit[int(cls)]
-      if cls_name in spell_unit_list:
+      is_deploy = False
+      if cls_name in unit2cards:
+        cards = unit2cards[cls_name]
+        for c in cards:
+          idx = card2idx[c]
+          texts = self.text_info[self.text_info[:,0] == idx]
+          if len(texts) == 0: continue
+          dis = scipy.spatial.distance.cdist(xyxy2topcenter(box[:4])[None,...], texts[:,1:])
+          # print(f"Card {c} with unit id={box[-4]} distance:", dis)  # DEBUG
+          if dis.min() < REMOVE_DEPLOY_DIS_THRE:
+            is_deploy = True
+            # print(f"Skip card {c} with id={box[-4]}")
+            break
+      if is_deploy: continue
+      if cls_name in set(spell_unit_list).union(object_unit_list):
         no_bar_box.append(box)
       elif cls_name in set(except_spell_and_object_unit_list) - set(bar2_unit_list):
         moveable_box.append(box)
@@ -261,11 +308,12 @@ class StateBuilder:
           print(f"Warning(state): (time={self.time}) bars and body (id={item.body[-4]}) don't have same class, bar class={idx2unit[int(most_cls)]}, body class={idx2unit[int(cls)]}")
           item.body[-2] = most_cls
 
-  def update(self, info: dict):
+  def update(self, info: dict, deploy_cards: set):
     """
     Args:
       info (dict): The return in `VisualFusion.process()`,
         which has keys=[time, arena, cards, elixir]
+      deploy_cards (set): Get deploy_cards from action_builder.
     """
     self.time: int = info['time'] if not np.isinf(info['time']) else self.time
     self.arena: CRResults = info['arena']
@@ -275,16 +323,19 @@ class StateBuilder:
     self.parts_pos: np.ndarray = info['parts_pos']  # shape=(3, 4), part1,2,3, (x,y,w,h)
     self.box = self.arena.get_data()  # xyxy, track_id, conf, cls, bel
     self.img = self.arena.get_rgb()
+    self.frame_count += 1
     # assert box.shape[-1] == 8, 
     ### Step 0: Update belong memory ###
     self._update_bel_memory()
-    ### Step 1: Build bar items ###
+    ### Step 1: Find text information ###
+    self._find_text_info(deploy_cards)
+    ### Step 2: Build bar items ###
     self._build_bar_items()
-    ### Step 2: Combine units and bar2 with their BarItem ###
+    ### Step 3: Combine units and bar2 with their BarItem ###
     self._combine_bar_items()
-    ### Step 3: Update bar history ###
+    ### Step 4: Update bar history ###
     self._update_bar_items_history()
-    ### Step 4: Update class memory, if body exists ###
+    ### Step 5: Update class memory, if body exists ###
     self._update_cls_memory()
   
   def get_state(self, verbose=False):

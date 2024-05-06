@@ -18,8 +18,8 @@ MAX_DELTA_HP = 1600
 ELIXIR_OVER_FRAME = 10  # 0.1 * 5 = 1 sec
 
 class RewardBuilder:
-  def __init__(self, ocr_onnx=False, ocr_gpu=True):
-    self.ocr = OCR(onnx=ocr_onnx, use_gpu=ocr_gpu, lang='en')
+  def __init__(self, ocr: OCR = None):
+    self.ocr = OCR(lang='en') if ocr is None else ocr
     self.reset()
   
   def reset(self):

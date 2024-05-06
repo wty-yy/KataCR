@@ -87,6 +87,7 @@ elixir2card = {
     'baby-dragon',
     'battle-healer',
     'battle-ram',
+    'battle-ram-evolution',
     'bomb-tower',
     'dark-prince',
     'electro-wizard',
@@ -171,8 +172,25 @@ elixir2card = {
   10: []
 }
 
+unit2cards = {
+  'skeleton': ['skeletons', 'skeleton-army'],
+  'skeleton-evolution': ['skeletons-evolution'],
+  'ice-spirit': ['ice-spirit'],
+  'ice-spirit-evolution': ['ice-spirit-evolution'],
+  'hog-rider': ['hog-rider'],
+  'musketeer': ['musketeer', 'three-musketeers'],
+  'cannon': ['cannon'],
+  'fireball': ['fireball'],
+  'the-log': ['the-log'],
+  'ice-golem': ['ice-golem'],
+}
+
 card2elixir = {c: elixir for elixir, cs in elixir2card.items() for c in cs}
 card_list = list(card2elixir.keys())
+idx2card = dict(enumerate(card_list))
+card2idx = {c: i for i, c in idx2card.items()}
 
 if __name__ == '__main__':
   print("Total card number:", len(card_list))
+  print(idx2card)
+  print(card2idx)

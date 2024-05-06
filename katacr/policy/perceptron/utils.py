@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+LOW_ALPHA = [chr(ord('a')+i) for i in range(26)]
+
 def extract_img(img, xyxy, target_size=None):
   """
   Args:
@@ -34,6 +36,9 @@ def cell2pixel(xy):
 def xyxy2center(xyxy):
   return np.array([(xyxy[0]+xyxy[2])/2, (xyxy[1]+xyxy[3])/2], np.float32)
 
+def xyxy2topcenter(xyxy):
+  return np.array([(xyxy[0]+xyxy[2])/2, xyxy[1]], np.float32)
+
 def xyxy2sub(xyxy, sub):
   """
   'sub' is the sub-xyxy postion relative to xyxy
@@ -66,3 +71,35 @@ def pil_draw_text(img, xy, text, background_color=(0,0,0), text_color=(255,255,2
     draw.text((x_text, y_text), t, fill=text_color, font=font)
     xy[1] += h_text
   return img
+
+def edit_distance(s1, s2, dis=None):
+  """ Levenshtein distance: https://stackoverflow.com/a/24172422 """
+  if dis == 's2': s1, s2 = s2, s1
+  m=len(s1)+1
+  n=len(s2)+1
+  s1_dis = max(n, m)  # s1 complete matching
+  tbl = {}
+  for i in range(m): tbl[i,0]=i
+  for j in range(n): tbl[0,j]=j
+  for i in range(1, m):
+    for j in range(1, n):
+      cost = 0 if s1[i-1] == s2[j-1] else 1
+      tbl[i,j] = min(tbl[i, j-1]+1, tbl[i-1, j]+1, tbl[i-1, j-1]+cost)
+      if i == m-1:
+        s1_dis = min(s1_dis, tbl[i,j])
+  if dis == 's1' or dis == 's2':
+    return s1_dis
+  return tbl[i,j]
+
+if __name__ == '__main__':
+  import time
+  s1 = 'Lcegc'
+  s2 = 'icegolem'
+
+  st = time.time()
+  dis = edit_distance(s1, s2)
+  print(time.time() - st)
+  s1_dis = edit_distance(s1, s2, dis='s1')
+  s2_dis = edit_distance(s1, s2, dis='s2')
+  print(dis, s1_dis, s2_dis)
+
