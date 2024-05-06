@@ -18,7 +18,7 @@ from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer-WeightSample__0__20240504_225245/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_same_action_shuffle__random_interval__128__0__20240505_214216/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer-test-data1__0__20240504_170431/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
@@ -41,7 +41,7 @@ class Evaluator:
     self.base_rtg, self.deterministic = rtg, deterministic
     self.verbose, self.show_predict = verbose, show_predict
     if vid_path is not None:
-      self.env = VideoEnv(vid_path, action_freq=3, show=show, verbose=verbose)
+      self.env = VideoEnv(vid_path, action_freq=2, show=show, verbose=verbose)
     else:
       self.env = InteractEnv(show=show, save=save)
     self.rng = jax.random.PRNGKey(42)
@@ -115,7 +115,7 @@ class Evaluator:
       'rtg': pad(self.rtg),
       'timestep': pad(self.timestep),
     }
-    action, logits_pos = jax.device_get(self.model.predict(
+    action, logits_select, logits_pos = jax.device_get(self.model.predict(
       self.state,
       {k: pad(v) for k, v in self.s.items()},
       {k: pad(v) for k, v in self.a.items()},
@@ -123,12 +123,24 @@ class Evaluator:
       pad(self.timestep),
       step_len, rng, self.deterministic))
     action = action[0]
+    prob_select = np.exp(logits_select)[0].reshape(5,)
+    prob_select /= prob_select.sum()
     prob_pos = np.exp(logits_pos)[0].reshape(32, 18)
     prob_pos /= prob_pos.sum()
     # if step_len == 30:
     #   np.save("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_eval_dataset_50.npy", data, allow_pickle=True)
     #   exit()
     if self.show_predict:
+      sel_drawer = GridDrawer(1, 5, size=(5*50,1*50))
+      for i in range(5):
+        prob = prob_select[i]
+        sel_drawer.paint((i, 0), (0, 0, int(255*prob)), f"{prob*100:.2f}")
+      img = np.array(sel_drawer.image)
+      if not self.open_window:
+        cv2.namedWindow("Predict Select Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        cv2.resizeWindow("Predict Select Probability", img.shape[:2][::-1])
+      cv2.imshow("Predict Select Probability", img)
+      cv2.waitKey(1)
       pos_drawer = GridDrawer()
       for i in range(32):
         for j in range(18):
@@ -177,6 +189,6 @@ class Evaluator:
 if __name__ == '__main__':
   # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
   vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
-  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=True, verbose=False)
+  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
 

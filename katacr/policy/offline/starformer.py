@@ -279,7 +279,7 @@ class StARformer(nn.Module):
         select = jax.random.categorical(rng, logits_select, -1)[..., None]
         pos = jax.random.categorical(rng, logits_pos, -1)[..., None]
       y, x = pos // 18, pos % 18
-      return jnp.concatenate([select, x, y], -1), logits_pos
+      return jnp.concatenate([select, x, y], -1), logits_select, logits_pos
     self.predict = jax.jit(predict, static_argnames='deterministic')
 
   def save_model(self, state, save_path):
