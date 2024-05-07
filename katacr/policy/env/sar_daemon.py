@@ -18,7 +18,7 @@ class SARDaemon:
     self.show, self.save = show, save
     self.interval = interval
     self.sar_builder = SARBuilder()
-    self.q_info.put({'idx2card': self.sar_builder.visual_fusion.classifier.idx2card})
+    self.q_info.put({'idx2card': self.sar_builder.visual_fusion.classifier.idx2card, 'path_save_dir': path_save_dir})
     self.ocr = self.sar_builder.action_builder.ocr  # Share OCR with action text OCR
     self.cap = cv2.VideoCapture(2)
     assert self.cap.isOpened(), "The phone stream can't connect!"
@@ -68,12 +68,12 @@ class SARDaemon:
         self.episode += 1
         self.count = 0
         self.sar_builder.reset()
-        self.img = self._wait_next_episode()
         if self.vid_writer is not None:
           self.vid_writer.release()
           self.vid_writer_org.release()
         self.vid_writer = None
         self.vid_writer_org = None
+        self.img = self._wait_next_episode()
       else:
         self.img = self._read_img()
       ### Get SAR and Terminal ###
@@ -103,9 +103,9 @@ class SARDaemon:
           cv2.waitKey(1)
         if self.save:
           if self.vid_writer is None:
-            path_save_vid = path_save_dir / f"{self.episode}.avi"
-            self.vid_writer = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mjpg'), 10, rimg_size)
-            path_save_vid = path_save_dir / f"{self.episode}_org.avi"
-            self.vid_writer_org = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mjpg'), 10, (600, 1280))
+            path_save_vid = path_save_dir / f"{self.episode}.mp4"
+            self.vid_writer = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, rimg_size)
+            path_save_vid = path_save_dir / f"{self.episode}_org.mp4"
+            self.vid_writer_org = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, (600, 1280))
           self.vid_writer.write(rimg)
           self.vid_writer_org.write(cv2.resize(self.img, (600, 1280)))

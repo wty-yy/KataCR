@@ -58,7 +58,9 @@ def pil_draw_text(img, xy, text, background_color=(0,0,0), text_color=(255,255,2
   font = ImageFont.truetype(FONT_PATH, font_size)
   pil_version = int(PIL.__version__.split('.')[0])
   xy = np.array(xy)
-  for t in text.split('\n'):
+  texts = text.split('\n')
+  if 'down' in text_pos: texts = texts[::-1]
+  for t in texts:
     w_text, h_text = font.getbbox(t)[-2:] if pil_version >= 10 else font.getsize(t)
     if text_pos == 'left top':
       x_text, y_text = xy
@@ -69,7 +71,7 @@ def pil_draw_text(img, xy, text, background_color=(0,0,0), text_color=(255,255,2
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([x_text, y_text, x_text+w_text, y_text+h_text], radius=1.5, fill=background_color)
     draw.text((x_text, y_text), t, fill=text_color, font=font)
-    xy[1] += h_text
+    xy[1] += h_text * (1 if 'top' in text_pos else -1)
   return img
 
 def edit_distance(s1, s2, dis=None):

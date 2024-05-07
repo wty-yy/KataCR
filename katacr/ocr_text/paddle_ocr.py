@@ -31,6 +31,7 @@ class OCR:
     if onnx:
       kwargs.update({(k + '_model_dir'): str(v) for k, v in onnx_weight_paths.items()})
     self.ocr = PaddleOCR(use_angle_cls=use_angle_cls, show_log=False, lang=lang, **kwargs)
+    # self.save_count = 0  # DEBUG
   
   def __call__(self, x: np.ndarray, det=True, rec=True, cls=False, bin=False, pil=True, gray=False):
     """
@@ -94,6 +95,8 @@ class OCR:
     from katacr.build_dataset.utils.split_part import extract_bbox
     from katacr.build_dataset.constant import part3_elixir_params
     img = extract_bbox(img_part3, *part3_elixir_params)
+    # cv2.imwrite(f"/home/yy/Coding/datasets/Clash-Royale-Dataset/images/part3_elixir_classification/{self.save_count:3}.jpg", img)
+    # self.save_count += 1  # DEBUG: elixir position
     results = self(img, pil=pil, det=False)
     for info in results:
       rec = info[0][0].lower()

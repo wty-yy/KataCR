@@ -43,6 +43,14 @@ class OfflineDatasetBuilder:
       if self.count % save_freq == 0:
         s, a, r, dt[4] = self.sar_builder.get_sar(verbose=verbose)
         for name, x in zip(('state', 'action', 'reward'), (s, a, r)):
+          if name == 'action':
+            offset = (x['offset'] - 1) // save_freq + 1  # ceil
+            x = x.copy()
+            x.pop('offset')
+            if offset > 0:
+              assert self.data[name][-offset]['card_id'] == 0
+              self.data[name][-offset] = x
+              x = {'xy': None, 'card_id': 0}
           self.data[name].append(x)
       else: dt[4] = 0
       if show or save:
@@ -112,10 +120,12 @@ if __name__ == '__main__':
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_sub.mp4", verbose=True, show=False)
   # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_deploy_ice-golem.mp4", verbose=True, show=True, save=True)
   odb.process("/home/yy/Coding/GitHub/KataCR/logs/offline/list2.txt", verbose=True, show=False, save=False)
-  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4", verbose=True, show=False)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4", verbose=True, show=True, save=True)
+  # odb.process("/home/yy/Videos/CR_Videos/test/golem_ai/1_two_action.mp4", verbose=True, show=True, save=True)
+  # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/1.mp4", verbose=True, show=True, save=True)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/*.mp4", verbose=True, show=False, save=False)
   # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/lan77_20240406_episodes/4.mp4", verbose=True, show=False)
-  # odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240410_132216_1_episodes/7.mp4", debug=True)
+  #odb.process("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240410_132216_1_episodes/7.mp4", verbose=True, show=True)
   # odb.process("/home/yy/Pictures/ClashRoyale/build_policy/multi_bar3.png", debug=True)
   # odb.process("/home/yy/Videos/CR_Videos/test/test_feature_build2_sub_sub.mp4", debug=True)
   # odb.state_builder.debug()

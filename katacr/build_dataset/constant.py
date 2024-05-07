@@ -83,4 +83,4 @@ part3_bbox_params = [  # Configure for card positions in part3, card position is
   (0.600, 0.000, 0.185, 0.745),  # card3
   (0.785, 0.000, 0.185, 0.745),  # card4
 ]
-part3_elixir_params = (0.262, 0.700, 0.067, 0.160)
+part3_elixir_params = (0.265, 0.700, 0.067, 0.200)

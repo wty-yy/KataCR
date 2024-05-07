@@ -1,7 +1,5 @@
 """
-cnn_mode:
-1. "csp_darknet": Params: 15,182,444 (60.7 MB)
-2. "resnet": Params: 15,154,412 (60.6 MB)
+Use ViD feature to s in DT, remove auto position embedding
 """
 import jax, jax.numpy as jnp
 import flax.linen as nn
@@ -13,24 +11,23 @@ from katacr.utils import Config
 from functools import partial
 from einops import rearrange
 from katacr.policy.offline.dataset import BAR_SIZE
-from katacr.policy.offline.cnn.resnet import ResNet, ResNetConfig
 from katacr.policy.offline.cnn.csp_darknet import CSPDarkNet, CSPDarkNetConfig
 
 Dense = partial(nn.Dense, kernel_init=nn.initializers.normal(stddev=0.02))
 Embed = partial(nn.Embed, embedding_init=nn.initializers.normal(stddev=0.02))
 
-class StARConfig(Config):
+class ViDConfig(Config):
   n_embd_global = 192
   n_head_global = 8
   patch_size = (2, 2)
   n_embd_local = 64
   n_head_local = 4
-  n_block = 6  # StARBlock number
+  n_block = 6  # ViDBlock number
   p_drop_embd = 0.1
   p_drop_resid = 0.1
   p_drop_attn = 0.1
-  cnn_mode = "csp_darknet"  # or "resnet"
   bar_size = BAR_SIZE
+  bar_cfg = CSPDarkNetConfig(stage_sizes=[2,3,5], filters=8)
   n_elixir = 10
 
   def __init__(self, n_unit, n_cards, n_step, max_timestep, **kwargs):
@@ -41,14 +38,6 @@ class StARConfig(Config):
     self.n_bar_size = np.prod(self.bar_size)
     assert self.n_embd_global % self.n_head_global == 0, "n_embd_global must be devided by n_head_global"
     assert self.n_embd_local % self.n_head_local == 0, "n_embd_local must be devided by n_head_local"
-    if self.cnn_mode == 'resnet':
-      self.bar_cfg = ResNetConfig(stage_sizes=[1,1,2], filters=4)  # 24,912 (99.6 KB)
-      self.arena_cfg = ResNetConfig(stage_size=[3,4,6], filters=16)  # 392,736 (1.6 MB)
-      self.CNN = ResNet
-    if self.cnn_mode == 'csp_darknet':
-      self.bar_cfg = CSPDarkNetConfig(stage_sizes=[2,3,5], filters=8)  # 24,168 (96.7 KB)
-      self.arena_cfg = CSPDarkNetConfig(stage_size=[3,4,5], filters=32)  # 407,552 (1.6 MB)
-      self.CNN = CSPDarkNet
 
 class TrainConfig(Config):
   seed = 42
@@ -71,7 +60,7 @@ class TrainConfig(Config):
 class CausalSelfAttention(nn.Module):
   n_embd: int  # NOTE: n_embd % n_head == 0
   n_head: int
-  cfg: StARConfig
+  cfg: ViDConfig
 
   @nn.compact
   def __call__(self, q, k = None, v = None, mask = None, train = True):
@@ -99,7 +88,7 @@ class CausalSelfAttention(nn.Module):
 class TransformerBlock(nn.Module):
   n_embd: int
   n_head: int
-  cfg: StARConfig
+  cfg: ViDConfig
 
   @nn.compact
   def __call__(self, x, mask = None, train = True):
@@ -113,26 +102,25 @@ class TransformerBlock(nn.Module):
     x = x + dropout(mlp(nn.LayerNorm()(x)), deterministic=not train)
     return x
 
-class StARBlock(nn.Module):
-  cfg: StARConfig
+class ViDBlock(nn.Module):
+  cfg: ViDConfig
 
   @nn.compact
   def __call__(self, xl, xg, train = True):
     local_block = TransformerBlock(n_embd=self.cfg.n_embd_local, n_head=self.cfg.n_head_local, cfg=self.cfg)
     global_block = TransformerBlock(n_embd=self.cfg.n_embd_global, n_head=self.cfg.n_head_global, cfg=self.cfg)
-    B, N, M, Dl = xl.shape  # Batch, Step Length, Group Token Length, n_embd_local
-    B, N, Dg = xg.shape  # Batch, Step Length, n_embd_global
-    xl = local_block(xl.reshape(B * N, M, Dl), train=train).reshape(B, N, M, Dl)
-    zg = Dense(Dg)(xl.reshape(B, N, M * Dl))
-    zg = jnp.concatenate([zg, xg], 1)
-    mask = jnp.tri(2 * N)
-    mask = mask.at[jnp.arange(N) * 2, jnp.arange(N) * 2 + 1].set(1)
+    B, N, M, nl = xl.shape  # Batch, Step Length * 3, Group Token Length, n_embd_local
+    B, N3, ng = xg.shape  # Batch, Step Length, n_embd_global
+    xl = local_block(xl.reshape(B * N, M, nl), train=train).reshape(B, N, M, nl)
+    zg = Dense(ng)(xl.reshape(B, N, M * nl))  # Local state to globale state
+    zg = jnp.concatenate([zg, xg], 1).reshape(B, N + N3, ng)
+    mask = jnp.tri(N + N3)
+    mask = mask.at[jnp.arange(N) * 4 + 1, jnp.arange(N) * 4 + 2].set(1)  # action1 can see action2
     zg = global_block(zg, mask=mask, train=train)
-    xg = zg[:, 1::2, :]
-    return xl, xg
+    return xl, zg
 
-class StARformer(nn.Module):
-  cfg: StARConfig
+class ViDformer(nn.Module):
+  cfg: ViDConfig
 
   @nn.compact
   def __call__(self, s, a, r, timestep, train = True):
@@ -148,25 +136,22 @@ class StARformer(nn.Module):
     bar1 = jnp.array(bar1, np.float32) / 255.
     bar2 = arena[...,-cfg.n_bar_size:].reshape(B, N, H, W, cfg.bar_size[1], cfg.bar_size[0], 1)
     bar2 = jnp.array(bar2, np.float32) / 255.
-    bar1 = cfg.CNN(cfg.bar_cfg)(bar1).mean(-1)[...,0,:]  # (B, N, H, W, 3)
-    bar2 = cfg.CNN(cfg.bar_cfg)(bar2).mean(-1)[...,0,:]  # (B, N, H, W, 3)
+    bar1 = CSPDarkNet(cfg.bar_cfg)(bar1).mean(-1)[...,0,:]  # (B, N, H, W, 3)
+    bar2 = CSPDarkNet(cfg.bar_cfg)(bar2).mean(-1)[...,0,:]  # (B, N, H, W, 3)
     arena = jnp.concatenate([cls, bel, bar1, bar2], -1)  # (B, N, H, W, 15)
     arena = arena * arena_mask[..., None]  # add mask
     ### Embedding Global Token ###
-    pos_embd = nn.Embed(N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(N))  # (1, N, Ng)
-    cards_g = nn.Embed(cfg.n_cards, 8)(cards).reshape(B, N, -1)  # (B, N, 5*8)
-    elixir_g = nn.Embed(cfg.n_elixir+1, 4)(elixir).reshape(B, N, -1)  # (B, N, 4)
-    xg = nn.Sequential([
-      lambda x: cfg.CNN(cfg.arena_cfg)(x),  # (B, N, 4, 3, 128)
-      lambda x: jnp.concatenate([x.reshape(B, N, -1), cards_g, elixir_g], -1),  # (B, N, 1580)
-      Dense(ng)
-    ])(arena) + pos_embd
-    ### Embedding Local Token ###
-    ### Action ###
+    # pos_embd = nn.Embed(4*N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(4*N))  # (1, N, Ng) Don't need
+    # Action #
     select, pos = a['select'], a['pos']
-    select = Embed(5, nl)(select).reshape(B, N, 1, nl)
-    pos = Embed(32*18+1, nl)(pos[...,0]*18+pos[...,1]).reshape(B, N, 1, nl)
-    a = jnp.concatenate([select, pos], -2)  # (B, N, 2, Nl)
+    a1 = nn.Embed(5, ng)(select)  # (B, N, Ng)
+    a2 = nn.Embed(32*18+1, ng)(pos[...,0]*18+pos[...,1])  # (B, N, Ng)
+    time_embd_g = nn.Embed(cfg.max_timestep+1, ng, embedding_init=nn.initializers.zeros)(timestep)  # (B, N) -> (B, N, Ng)
+    # Reward #
+    r = nn.tanh(Dense(ng)(jnp.expand_dims(r, -1)))  # (B, N) -> (B, N, Ng)
+    # action1, action2, reward #
+    xg = jnp.concatenate([a1, a2, r], 1) + time_embd_g.repeat(3, 1)
+    ### Embedding Local Token ###
     ### State ###
     cards = nn.Embed(cfg.n_cards, nl)(cards)  # (B, N, 5, Nl)
     elixir = nn.Embed(cfg.n_elixir+1, nl)(elixir).reshape(B, N, 1, nl)  # (B, N, 1, Nl)
@@ -176,17 +161,19 @@ class StARformer(nn.Module):
     img_embd = nn.Embed(P, nl, embedding_init=nn.initializers.zeros)(jnp.arange(P))  # (P, Nl)
     arena = Dense(nl)(arena) + img_embd  # (B, N, P, Nl)
     s = jnp.concatenate([arena, cards, elixir], -2)  # (B, N, 144+5+1, Nl)
-    ### Reward ###
-    r = nn.tanh(Dense(nl)(jnp.expand_dims(r, -1))).reshape(B, N, 1, nl)  # (B, N) -> (B, N, 1, Nl)
-    ### Concatenate Group ###
-    xl = jnp.concatenate([a, s, r], 2)  # (B, N, 2 + 150 + 1, Nl)
-    time_embd = nn.Embed(cfg.max_timestep+1, nl, embedding_init=nn.initializers.zeros)(timestep).reshape(B, N, 1, nl)  # (B, N) -> (B, N, 1, Nl)
-    xl = xl + time_embd.repeat(xl.shape[2], 2)
-    ### StARformer ###
+    time_embd_l = nn.Embed(cfg.max_timestep+1, nl, embedding_init=nn.initializers.zeros)(timestep).reshape(B, N, 1, nl)  # (B, N) -> (B, N, Nl)
+    xl = s + time_embd_l.repeat(s.shape[2], 2)  # (B, N, 150, Nl)
+    ### ViDformer ###
     xl = nn.Dropout(cfg.p_drop_embd)(xl, deterministic=not train)
     xg = nn.Dropout(cfg.p_drop_embd)(xg, deterministic=not train)
-    for _ in range(cfg.n_block):
-      xl, xg = StARBlock(cfg=self.cfg)(xl, xg, train)
+    for i in range(cfg.n_block):
+      xl, zg = ViDBlock(cfg=self.cfg)(xl, xg, train)
+      zg = rearrange(zg, 'B (n N) Ng -> B Ng N n', n=4)
+      if i != cfg.n_block - 1:  # xg.shape=(B, 3*N, Ng), get a1, a2, r
+        xg = zg[...,1:]
+      else:  # xg.shape=(B, N, Ng), get state
+        xg = zg[...,0:1]
+      xg = rearrange(xg, 'B Ng N n -> B (n N) Ng')
     xg = nn.LayerNorm()(xg)
     select = Dense(5, use_bias=False)(xg)
     pos = Dense(32*18, use_bias=False)(xg)
@@ -232,7 +219,7 @@ class StARformer(nn.Module):
     dummy = (s, a, r, timestep)
     if verbose: print(self.tabulate(verbose_rng, *dummy, train=False))
     variables = self.init(rng, *dummy, train=False)
-    print("StARformer params:", sum([np.prod(x.shape) for x in jax.tree_util.tree_flatten(variables)[0]]))
+    print("ViDformer params:", sum([np.prod(x.shape) for x in jax.tree_util.tree_flatten(variables)[0]]))
     decay_mask = jax.tree_util.tree_map_with_path(check_decay_params, variables['params'])
     train_cfg.lr_fn = lr_fn()
     state = TrainState.create(
@@ -307,9 +294,9 @@ if __name__ == '__main__':
   n_cards = 20
   n_step = 30
   max_timestep = 300
-  gpt_cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep)
+  gpt_cfg = ViDConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep)
   print(dict(gpt_cfg))
-  gpt = StARformer(gpt_cfg)
+  gpt = ViDformer(gpt_cfg)
   # rng = jax.random.PRNGKey(42)
   # x = jax.random.randint(rng, (batch_size, n_len), 0, 6)
   # print(gpt.tabulate(rng, x, train=False))

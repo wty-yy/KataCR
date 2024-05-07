@@ -25,6 +25,7 @@ class InteractEnv:
     multiprocessing.Process(target=SARDaemon, args=(self.q_reset, self.q_sar, self.q_info, show, save), daemon=True).start()
     info = self.q_info.get()
     self.idx2card = info['idx2card']
+    self.path_save_dir = info['path_save_dir']
     self.dt = {'sar_update': None, 'sar_get': None, 'sar_total': None}
     self.done = True
   

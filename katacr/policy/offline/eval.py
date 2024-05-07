@@ -14,11 +14,12 @@ from katacr.policy.env.video_env import VideoEnv
 from pathlib import Path
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
+from katacr.utils.merge_videos import merge_videos_left_and_right
 from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_same_action_shuffle__random_interval__128__0__20240505_214216/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_v0.2_golem_ai_ep30__128__0__20240507_000035/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer-test-data1__0__20240504_170431/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
@@ -40,20 +41,27 @@ class Evaluator:
     ):
     self.base_rtg, self.deterministic = rtg, deterministic
     self.verbose, self.show_predict = verbose, show_predict
+    self.show, self.save = show, save
     if vid_path is not None:
       self.env = VideoEnv(vid_path, action_freq=2, show=show, verbose=verbose)
+      self.path_save_dir = None
     else:
       self.env = InteractEnv(show=show, save=save)
+      self.path_save_dir = self.env.path_save_dir
     self.rng = jax.random.PRNGKey(42)
     self.open_window = False
     self._load_model(path_weights)
+    self.vid_writer = None
   
   def _load_model(self, path_weights):
     print("Loading policy model...", end='')
     ckpt_mngr = CheckpointManager(str(path_weights))
-    load_step = int(sorted(Path(path_weights).glob('*'))[-1].name)
+    # load_step = int(sorted(Path(path_weights).glob('*'))[-1].name)
+    load_step = 8
     load_info = ckpt_mngr.restore(load_step)
     params, cfg = load_info['variables']['params'], load_info['config']
+    if 'cnn_mode' not in cfg:
+      cfg['cnn_mode'] = 'resnet'
     self.model = StARformer(StARConfig(**cfg))
     self.model.create_fns()
     state = self.model.get_state(TrainConfig(**cfg), train=False)
@@ -131,34 +139,50 @@ class Evaluator:
     #   np.save("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_eval_dataset_50.npy", data, allow_pickle=True)
     #   exit()
     if self.show_predict:
-      sel_drawer = GridDrawer(1, 5, size=(5*50,1*50))
+      sel_drawer = GridDrawer(1, 5, size=(576, 50))
       for i in range(5):
         prob = prob_select[i]
         sel_drawer.paint((i, 0), (0, 0, int(255*prob)), f"{prob*100:.2f}")
-      img = np.array(sel_drawer.image)
-      if not self.open_window:
-        cv2.namedWindow("Predict Select Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-        cv2.resizeWindow("Predict Select Probability", img.shape[:2][::-1])
-      cv2.imshow("Predict Select Probability", img)
-      cv2.waitKey(1)
-      pos_drawer = GridDrawer()
+      simg = np.array(sel_drawer.image)
+      # if not self.open_window:
+      #   cv2.namedWindow("Predict Select Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+      #   cv2.resizeWindow("Predict Select Probability", img.shape[:2][::-1])
+      # cv2.imshow("Predict Select Probability", img)
+      # cv2.waitKey(1)
+      pos_drawer = GridDrawer(32, 18, size=(576, 846))
       for i in range(32):
         for j in range(18):
           prob = prob_pos[i,j]
-          pos_drawer.paint((j, i), (0,0,int(255*prob)), f"{prob*100:.2f}")
-      img = np.array(pos_drawer.image)
+          pos_drawer.paint((j, i), (0,0,int(255*prob)), f"{prob*100:.1f}")
+      pimg = np.array(pos_drawer.image)
+      print(pimg.shape, simg.shape)
+      img = np.concatenate([pimg, simg], 0)
       if not self.open_window:
         self.open_window = True
-        cv2.namedWindow("Predict Position Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-        cv2.resizeWindow("Predict Position Probability", img.shape[:2][::-1])
-      cv2.imshow("Predict Position Probability", img)
+        cv2.namedWindow("Predict Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        cv2.resizeWindow("Predict Probability", img.shape[:2][::-1])
+      cv2.imshow("Predict Probability", img)
       cv2.waitKey(1)
+      if self.save:
+        if self.vid_writer is None:
+          self.path_save_vid = self.path_save_dir / f"{self.episode}_predict.mp4"
+          self.vid_writer = cv2.VideoWriter(str(self.path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, (576, 896))
+        self.vid_writer.write(img)
     return action
   
+  def _init_vid_writer(self):
+    if self.path_save_dir is None: return
+    if self.vid_writer is not None:
+      self.vid_writer.release()
+      merge_videos_left_and_right(self.path_save_vid.with_stem(str(self.episode)), self.path_save_vid)
+  
   def eval(self):
-    score = 0
+    self.episode = 0
     while True:
+      score = 0
+      self.episode += 1
       self._init_sart()
+      self._init_vid_writer()
       s, a, _ = self.env.reset()
       last_elixir = 0
       now_rtg, done = self.base_rtg, False
@@ -187,8 +211,8 @@ class Evaluator:
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
-  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
-  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
+  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  # evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
 

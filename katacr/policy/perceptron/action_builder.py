@@ -30,6 +30,7 @@ OCR_TEXT_SIZE = (200, 120)  # bottom center = elixir top center
 WRONG_CARD_FRAME_DELTA = 10  # 10 * 0.1 = 1 sec
 EMPTY_CARD_UPDATE_FRAME_DELTA = 5  # 5 * 0.1 = 0.5 sec, delay to use last classification result after card empty
 EDIT_DISTANCE_THRE = 2  # Levenshtein distance between ocr text **in** target text
+ELIXIR_MUTATION_FRAME_DELTA = 10
 
 class ActionBuilder:
   def __init__(self, persist: int=2, ocr: OCR = None):
@@ -47,6 +48,8 @@ class ActionBuilder:
     self.ocr = OCR(lang='en') if ocr is None else ocr
     self.elixir_classifier = ElixirClassifier()
     self.wrong_img_count = 0
+    self.elixir_mutation_frames = []  # memory last elixir mutation frame, make offset to current action, to make sure action time is correctly
+    self.last_elixir_num = None
     self.reset()
   
   def reset(self):
@@ -122,7 +125,9 @@ class ActionBuilder:
     cell_xy = pixel2cell(np.array([xyxy[[0,2]].mean(), xyxy[3]], np.int32))
     cell_xy[1] -= 0.2  # down bias 0.2 cell
     card_id = self.cards_memory.index(card_name)
-    self.actions.put({'xy': cell_xy, 'card_id': card_id})
+    offset = self.frame_count - (self.elixir_mutation_frames[0] if len(self.elixir_mutation_frames) else self.frame_count)
+    self.elixir_mutation_frames = []
+    self.actions.put({'xy': cell_xy, 'card_id': card_id, 'offset': offset})
   
   def _ocr_text(self, elixir_box):
     xyxy = elixir_box[:4]
@@ -169,6 +174,20 @@ class ActionBuilder:
     # cv2.imwrite(f"/home/yy/Coding/GitHub/KataCR/logs/offline/elixir/{self.elixir_count}.jpg", img[...,::-1])
     # self.elixir_count += 1
     return pred
+  
+  def _update_mutation_elixir_num(self):
+    if len(self.elixir_mutation_frames):
+      for i in range(len(self.elixir_mutation_frames)):
+        if self.frame_count - self.elixir_mutation_frames[i] <= ELIXIR_MUTATION_FRAME_DELTA:
+          break
+      if i > 0:
+        self.elixir_mutation_frames = self.elixir_mutation_frames[i:]
+    if self.last_elixir_num is not None:
+      if self.elixir is None or self.last_elixir_num > self.elixir:
+        self.elixir_mutation_frames.append(self.frame_count - 1)  # mutation pre-frame
+    self.last_elixir_num = self.elixir
+    if len(self.elixir_mutation_frames):
+      print(f"Mutation: (frame={self.frame_count}) mutation_frame={self.elixir_mutation_frames}")
     
   def _find_action(self):
     elixir = self.box[self.box[:,-2] == unit2idx['elixir']]
@@ -200,7 +219,7 @@ class ActionBuilder:
       self.deploy_cards.remove(class_name)
   
   def get_action(self, verbose=False):
-    action = {'xy': None, 'card_id': 0}
+    action = {'xy': None, 'card_id': 0, 'offset': 0}
     if not self.actions.empty():
       action = self.actions.get()
       self.cards_memory[action['card_id']] = 'empty'
@@ -222,11 +241,13 @@ class ActionBuilder:
     self.box = self.arena.get_data()  # xyxy, track_id, conf, cls, bel
     self.img = self.arena.get_rgb()
     self.frame_count += 1
-    ### Step 1: Udpate elixir history ###
+    ### Step 1: Update elixir history ###
     self._update_elixir()
     # print("Elixirs:", self.elixirs)
     ### Step 2: Update card memory ###
     self._update_cards()
-    ### Step 3: Find new action ###
+    ### Step 3: Update last elixir ###
+    self._update_mutation_elixir_num()
+    ### Step 4: Find new action ###
     self._find_action()
     # print(f"{info['cards']=}, {self.cards_memory=}")

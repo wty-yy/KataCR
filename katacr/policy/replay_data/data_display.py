@@ -30,23 +30,29 @@ class GridDrawer:
     self.used = np.zeros((r, c), np.bool_)
     self.center = np.swapaxes(np.array(np.meshgrid(np.arange(r), np.arange(c))), 0, -1) + 0.5  # (r, c, 2)
   
-  def paint(self, xy, color, text=None, fontsize=14, rect=True, circle=False, text_pos='left top'):
+  def paint(self, xy, color, text=None, fontsize=14, rect=True, circle=False, text_pos='left top', text_color=(255,255,255)):
     cell, draw = self.cell, self.draw
     xy = np.array(xy) * cell
     xyxy = ((int(xy[0])+1, int(xy[1])+1), (int(xy[0]+cell[0])-1, int(xy[1]+cell[1])-1))
     if rect:
       draw.rectangle(xyxy, color)
-    font = ImageFont.truetype(FONT_PATH, fontsize)
-    if text is not None and text_pos == 'left top':
-      draw.text((xyxy[0][0]+4, xyxy[0][1]-2), str(text), (255,255,255), font)
     if circle:
-      import PIL
-      pil_version = int(PIL.__version__.split('.')[0])
-      w_text, h_text = font.getbbox('0')[-2:] if pil_version >= 10 else font.getsize('0')
-      xyxy = ((xyxy[0][0]+w_text, xyxy[0][1]+h_text-3), xyxy[1])
+      # import PIL  # draw right down
+      # pil_version = int(PIL.__version__.split('.')[0])
+      # w_text, h_text = font.getbbox('0')[-2:] if pil_version >= 10 else font.getsize('0')
+      # xyxy = ((xyxy[0][0]+w_text, xyxy[0][1]+h_text-3), xyxy[1])
       draw.ellipse(xyxy, color)
+    font = ImageFont.truetype(FONT_PATH, fontsize)
+    import PIL  # draw right down
+    pil_version = int(PIL.__version__.split('.')[0])
+    w_text, h_text = font.getbbox('0')[-2:] if pil_version >= 10 else font.getsize('0')
+    text = str(text)
+    if text is not None and text_pos == 'left top':
+      w_offset = 4 if rect else 6
+      for i, text in enumerate(text.split('\n')):
+        draw.text((xyxy[0][0]+w_offset, xyxy[0][1]-2+i*h_text), text, text_color, font)
     if text is not None and text_pos == 'right down':
-      draw.text((xyxy[0][0]+4, xyxy[0][1]-2), str(text), (0,0,0), font)
+      draw.text((xyxy[0][0]+1, xyxy[0][1]-2), str(text), text_color, font)
   
   def find_near_pos(self, xy):
     yx = np.array(xy)[::-1]
@@ -81,7 +87,7 @@ class DataDisplayer:
     label2color = build_label2colors(unit_cls)
     label2color[None] = (255, 255, 255)
     print(label2color)
-    for d in self.data['state']:
+    for i, d in enumerate(self.data['state']):
       print(f"Time: {d['time']}, cards: {d['cards']}, elixir: {d['elixir']}, unit_num: {len(d['unit_infos'])}")
       arena = GridDrawer()
       for unit in d['unit_infos']:
@@ -92,7 +98,7 @@ class DataDisplayer:
               cv2.imshow(k, v[...,::-1])
               if 'bar' in k:
                 cv2.imshow(k+'_resize', cv2.resize(v[...,::-1], (24, 8)))
-              cv2.waitKey(0)
+              # cv2.waitKey(0)
             else:
               print(k, v, end=' ')
               if k == 'xy':
@@ -101,11 +107,15 @@ class DataDisplayer:
                 arena.paint(pos, label2color[unit['cls']], unit['bel'])
         self.check_new_window('arena', arena.image.size, rate=1.5)
         print()
+      action = self.data['action'][i]
+      if action['card_id']:
+        xy = np.array(action['xy'], np.int32)
+        arena.paint(xy, (255,236,158), action['card_id'], rect=False, circle=True, text_color=(0,0,0))
       cv2.imshow('arena', np.array(arena.image)[...,::-1])
       cv2.waitKey(0)
 
 if __name__ == '__main__':
-  path_data = "/home/yy/Coding/GitHub/KataCR/logs/offline/2024.04.29 20:07:43/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"
+  path_data = "/home/yy/Coding/GitHub/KataCR/logs/offline/2024.05.07 22:44:40/golem_ai_1_two_action.npy.xz"
   displayer = DataDisplayer(path_data=path_data)
   displayer.display()
   # drawer = GridDrawer()

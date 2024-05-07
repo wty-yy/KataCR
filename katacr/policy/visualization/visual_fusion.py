@@ -38,7 +38,6 @@ class VisualFusion:
     """
     Args:
       x (np.ndarray): Input image
-      persist (bool): If taggled, consider image with previous images as a consistent sequence.
       pil (bool): If taggled, image `x` is RGB format.
     Return:
       info (dict): with keys:
@@ -66,7 +65,7 @@ class VisualFusion:
     return self.info
   
   def render(self, x, pil=False, verbose=False):
-    self.process(x, persist=False, pil=pil)
+    self.process(x, pil=pil)
     time, arena, cards, elixir = self.info['time'], self.info['arena'], self.info['cards'], self.info['elixir']
     arena = arena.show_box(show_conf=True)
     parts = self.parts; parts_pos = self.parts_pos
