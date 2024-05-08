@@ -4,7 +4,6 @@ os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.32'  # allocate GPU memory as n
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parents[3]))
-from katacr.policy.offline.starformer import StARConfig, TrainConfig, StARformer
 from katacr.policy.offline.parse_and_writer import parse_args_and_writer, logs
 from katacr.policy.offline.dataset import DatasetBuilder
 from katacr.utils.ckpt_manager import CheckpointManager
@@ -23,13 +22,19 @@ def train():
   args.max_timestep = int(max(ds_builder.data['timestep']))
   args.steps_per_epoch = len(train_ds)
   ### Model ###
-  model_cfg = StARConfig(**vars(args))
-  model = StARformer(model_cfg)
+  if args.name == 'StARformer':
+    from katacr.policy.offline.starformer import StARConfig, TrainConfig, StARformer
+    ModelConfig, Model = StARConfig, StARformer
+  if args.name == 'ViDformer':
+    from katacr.policy.offline.vidformer import ViDConfig, TrainConfig, ViDformer
+    ModelConfig, Model = ViDConfig, ViDformer
+  model_cfg = ModelConfig(**vars(args))
+  model = Model(model_cfg)
   model.create_fns()
   train_cfg = TrainConfig(**vars(args))
   state = model.get_state(train_cfg, verbose=False)
   ### Checkpoint ###
-  ckpt_manager = CheckpointManager(str(args.path_logs / 'ckpt'))
+  ckpt_manager = CheckpointManager(str(args.path_logs / 'ckpt'), max_to_keep=10)
   write_tfboard_freq = min(100, len(train_ds))
 
   ### Train and Evaluate ###
@@ -56,6 +61,7 @@ def train():
         ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos',
          'train_acc_select_use', 'train_acc_select_and_pos'],
         [loss, loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp])
+      # print(loss, loss_s, loss_p)
       # print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
       bar.set_description(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}, acc_select_use={acc_su:.4f}, acc_select_and_pos={acc_sp:.4f}")
       if state.step % write_tfboard_freq == 0:

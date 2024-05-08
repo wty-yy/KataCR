@@ -264,7 +264,8 @@ class StARformer(nn.Module):
         loss_select = tmp[jnp.arange(tmp.shape[0]), y_select].mean()
         tmp = -jax.nn.log_softmax(pos).reshape(-1, pos.shape[-1])
         loss_pos = (tmp[jnp.arange(tmp.shape[0]), y_pos] * mask).sum() / n
-        loss = loss_select + loss_pos
+        B = r.shape[0]
+        loss = B * (loss_select + loss_pos)
 
         flag_select = (jnp.argmax(select, -1).reshape(-1) == y_select)
         acc_select = flag_select.mean()

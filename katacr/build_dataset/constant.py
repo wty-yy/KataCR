@@ -18,8 +18,9 @@ path_logs.mkdir(exist_ok=True)
 path_features = root / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
 # path_dataset = Path("/home/wty/Coding/datasets/CR")
-path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
+# path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
 # path_dataset = Path("/data/user/wutianyang/dataset/Clash-Royale-Dataset")
+path_dataset = Path("/data/user/zhihengwu/Coding/dataset/Clash-Royale-Dataset")
 assert path_dataset.exists(), "Dataset not exist!"
 
 image_size_part2 = (568, 896)  # ratio: 1.57~1.58
@@ -83,4 +84,4 @@ part3_bbox_params = [  # Configure for card positions in part3, card position is
   (0.600, 0.000, 0.185, 0.745),  # card3
   (0.785, 0.000, 0.185, 0.745),  # card4
 ]
-part3_elixir_params = (0.265, 0.700, 0.067, 0.200)
+part3_elixir_params = (0.262, 0.700, 0.067, 0.160)
