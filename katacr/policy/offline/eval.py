@@ -5,7 +5,6 @@ scrcpy --v4l2-sink=/dev/video2 --no-video-playback
 """
 import os
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
-from katacr.policy.offline.starformer import StARformer, StARConfig, TrainConfig
 from katacr.utils.ckpt_manager import CheckpointManager
 from katacr.policy.offline.dataset import build_feature
 import cv2, jax
@@ -19,8 +18,7 @@ from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_v0.2_golem_ai_ep30__128__0__20240507_000035/ckpt"
-# path_weights = path_root / "logs/Policy/StARformer-test-data1__0__20240504_170431/ckpt"
+path_weights = path_root / "logs/Policy/ViDformer_csp_darknet__128__0__20240508_155217/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -60,9 +58,16 @@ class Evaluator:
     load_step = 8
     load_info = ckpt_mngr.restore(load_step)
     params, cfg = load_info['variables']['params'], load_info['config']
-    if 'cnn_mode' not in cfg:
-      cfg['cnn_mode'] = 'resnet'
-    self.model = StARformer(StARConfig(**cfg))
+    if 'StARformer' in str(path_weights):
+      from katacr.policy.offline.starformer import StARformer, StARConfig, TrainConfig
+      if 'cnn_mode' not in cfg:
+        cfg['cnn_mode'] = 'resnet'
+      self.model = StARformer(StARConfig(**cfg))
+      self.model_name = 'StARformer'
+    if 'ViDformer' in str(path_weights):
+      from katacr.policy.offline.vidformer import ViDformer, ViDConfig, TrainConfig
+      self.model = ViDformer(ViDConfig(**cfg))
+      self.model_name = 'ViDformer'
     self.model.create_fns()
     state = self.model.get_state(TrainConfig(**cfg), train=False)
     self.state = state.replace(params=params, tx=None, opt_state=None)
@@ -200,9 +205,9 @@ class Evaluator:
         #   print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
         #   a[0] = 0  # Skip
         with self.sw[1]:
-          # s, _, r, done = self.env.step(a)
-          s, a, r, done = self.env.step(a)
-        # a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None}
+          s, _, r, done = self.env.step(a)
+          # s, a, r, done = self.env.step(a)
+        a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None}
         if self.verbose:
           print(colorstr("Time used (Eval):"), *[f"{k}={self.sw[i].dt*1e3:.1f}ms" for k, i in zip(['policy', 'step'], range(2))])
         now_rtg = max(now_rtg-r, 1)

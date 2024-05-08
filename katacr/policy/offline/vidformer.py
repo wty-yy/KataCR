@@ -112,10 +112,11 @@ class ViDBlock(nn.Module):
     B, N, M, nl = xl.shape  # Batch, Step Length, Group Token Length, n_embd_local
     B, N3, ng = xg.shape  # Batch, Step Length * 3, n_embd_global
     xl = local_block(xl.reshape(B * N, M, nl), train=train).reshape(B, N, M, nl)
-    zg = Dense(ng)(xl.reshape(B, N, M * nl))  # Local state to globale state
-    zg = jnp.concatenate([zg, xg], 1)  # shape=(B, N + N3, ng)
-    mask = jnp.tri(N + N3)
-    mask = mask.at[jnp.arange(N) * 4 + 1, jnp.arange(N) * 4 + 2].set(1)  # action1 can see action2
+    zg = Dense(ng)(xl.reshape(B, N, M * nl)).reshape(B, N, 1, ng)  # Local state to globale state
+    xg = xg.reshape(B, N, 3, ng)  # a1 a2 r
+    zg = jnp.concatenate([xg, zg], 2).reshape(B, N3+N, ng)  # a1 a2 r s
+    mask = jnp.tri(N3 + N)
+    mask = mask.at[jnp.arange(N) * 4, jnp.arange(N) * 4 + 1].set(1)  # action1 can see action2
     zg = global_block(zg, mask=mask, train=train)
     return xl, zg
 
@@ -144,13 +145,13 @@ class ViDformer(nn.Module):
     # pos_embd = nn.Embed(4*N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(4*N))  # (1, N, Ng) Don't need
     # Action #
     select, pos = a['select'], a['pos']
-    a1 = nn.Embed(5, ng)(select)  # (B, N, Ng)
-    a2 = nn.Embed(32*18+1, ng)(pos[...,0]*18+pos[...,1])  # (B, N, Ng)
+    a1 = nn.Embed(5, ng)(select).reshape(B, N, 1, ng)  # (B, N, 1, Ng)
+    a2 = nn.Embed(32*18+1, ng)(pos[...,0]*18+pos[...,1]).reshape(B, N, 1, ng)  # (B, N, 1, Ng)
     time_embd_g = nn.Embed(cfg.max_timestep+1, ng, embedding_init=nn.initializers.zeros)(timestep)  # (B, N) -> (B, N, Ng)
     # Reward #
-    r = nn.tanh(Dense(ng)(jnp.expand_dims(r, -1)))  # (B, N) -> (B, N, Ng)
+    r = nn.tanh(Dense(ng)(jnp.expand_dims(r, -1))).reshape(B, N, 1, ng)  # (B, N) -> (B, N, Ng)
     # action1, action2, reward #
-    xg = jnp.concatenate([a1, a2, r], 1) + time_embd_g.repeat(3, 1)
+    xg = jnp.concatenate([a1, a2, r], 2).reshape(B, N*3, ng) + time_embd_g.repeat(3, 1)
     ### Embedding Local Token ###
     ### State ###
     cards = nn.Embed(cfg.n_cards, nl)(cards)  # (B, N, 5, Nl)
@@ -170,9 +171,9 @@ class ViDformer(nn.Module):
       xl, zg = ViDBlock(cfg=self.cfg)(xl, xg, train)
       zg = rearrange(zg, 'B (n N) Ng -> B Ng N n', n=4)
       if i != cfg.n_block - 1:  # xg.shape=(B, 3*N, Ng), get a1, a2, r
-        xg = zg[...,1:]
+        xg = zg[...,:3]
       else:  # xg.shape=(B, N, Ng), get state
-        xg = zg[...,0:1]
+        xg = zg[...,3:4]
       xg = rearrange(xg, 'B Ng N n -> B (n N) Ng')
     xg = nn.LayerNorm()(xg)
     select = Dense(5, use_bias=False)(xg)
