@@ -109,11 +109,11 @@ class ViDBlock(nn.Module):
   def __call__(self, xl, xg, train = True):
     local_block = TransformerBlock(n_embd=self.cfg.n_embd_local, n_head=self.cfg.n_head_local, cfg=self.cfg)
     global_block = TransformerBlock(n_embd=self.cfg.n_embd_global, n_head=self.cfg.n_head_global, cfg=self.cfg)
-    B, N, M, nl = xl.shape  # Batch, Step Length * 3, Group Token Length, n_embd_local
-    B, N3, ng = xg.shape  # Batch, Step Length, n_embd_global
+    B, N, M, nl = xl.shape  # Batch, Step Length, Group Token Length, n_embd_local
+    B, N3, ng = xg.shape  # Batch, Step Length * 3, n_embd_global
     xl = local_block(xl.reshape(B * N, M, nl), train=train).reshape(B, N, M, nl)
     zg = Dense(ng)(xl.reshape(B, N, M * nl))  # Local state to globale state
-    zg = jnp.concatenate([zg, xg], 1).reshape(B, N + N3, ng)
+    zg = jnp.concatenate([zg, xg], 1)  # shape=(B, N + N3, ng)
     mask = jnp.tri(N + N3)
     mask = mask.at[jnp.arange(N) * 4 + 1, jnp.arange(N) * 4 + 2].set(1)  # action1 can see action2
     zg = global_block(zg, mask=mask, train=train)
