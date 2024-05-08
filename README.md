@@ -273,3 +273,9 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    1. 修复数据集中每个action前出现单位识别提示的问题（模型无法成功泛化的主要原因），
       通过对StateBuilder加入ocr文字识别与下方单位的像素距离进行派出，
    2. 加入编辑距离判断文字名称（StateBuilder, ActionBuilder）。
+
+### v0.7.16 (2024.5.7)
+- Replay Dataset
+   1. 修复数据集中elixir变换优先于action的问题，对action加入offset偏移量，将其前移到正确点位
+   2. 重新设计去除CNN部分的StARformer，简单称为ViDformer
+   3. StARformer的CNN部分换成特征提取能力更强的CSPDarkNet

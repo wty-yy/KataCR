@@ -22,10 +22,10 @@ def train():
   args.max_timestep = int(max(ds_builder.data['timestep']))
   args.steps_per_epoch = len(train_ds)
   ### Model ###
-  if args.name == 'StARformer':
+  if args.name.lower() == 'starformer':
     from katacr.policy.offline.starformer import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
-  if args.name == 'ViDformer':
+  if args.name.lower() == 'vidformer':
     from katacr.policy.offline.vidformer import ViDConfig, TrainConfig, ViDformer
     ModelConfig, Model = ViDConfig, ViDformer
   model_cfg = ModelConfig(**vars(args))
@@ -50,12 +50,15 @@ def train():
       rtg = rtg.numpy(); timestep = timestep.numpy()
       # s, y, rtg, timestep = s.numpy(), y.numpy(), rtg.numpy(), timestep.numpy()
       B = y['select'].shape[0]
-      a = {}
       # Look out the target is diff with input action,
       # we need select=0 and pos=(0,-1) as start action padding idx.
-      a['select'] = np.concatenate([np.full((B, 1), 0, np.int32), y['select'][:,:-1]], 1)  # (B, l)
-      pad = np.stack([np.full((B, 1), 0, np.int32), np.full((B, 1), -1, np.int32)], -1)
-      a['pos'] = np.concatenate([pad, y['pos'][:,:-1]], 1)  # (B, l, 2)
+      if args.name.lower() == 'starformer':
+        a = {}
+        a['select'] = np.concatenate([np.full((B, 1), 0, np.int32), y['select'][:,:-1]], 1)  # (B, l)
+        pad = np.stack([np.full((B, 1), 0, np.int32), np.full((B, 1), -1, np.int32)], -1)
+        a['pos'] = np.concatenate([pad, y['pos'][:,:-1]], 1)  # (B, l, 2)
+      if args.name.lower() == 'vidformer':
+        a = y
       state, (loss, (loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
       logs.update(
         ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos',
