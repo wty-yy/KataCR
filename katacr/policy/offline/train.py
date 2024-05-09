@@ -1,7 +1,8 @@
 import os
 # os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
-# os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.16'  # allocate GPU memory as needed
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.32'  # allocate GPU memory as needed
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.16'  # allocate GPU memory as needed
+# os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.24'  # allocate GPU memory as needed
+# 14.345Gb <-> 32 batch size (GRAY)
 # 14.345Gb <-> 32 batch size (GRAY)
 import sys
 from pathlib import Path

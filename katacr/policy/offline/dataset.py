@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from katacr.utils import colorstr
 
 BAR_SIZE = (24, 8)
-BAR_RGB = True
+BAR_RGB = False
 N_BAR_SIZE = np.prod(BAR_SIZE) * (3 if BAR_RGB else 1)
 
 class DatasetBuilder:
@@ -172,8 +172,10 @@ def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False, s
   def cvt_bar(bar):
     if bar is None:
       return np.zeros(N_BAR_SIZE, np.uint8)
-    # ret = cv2.cvtColor(cv2.resize(bar, BAR_SIZE), cv2.COLOR_RGB2GRAY).reshape(-1)
-    ret = cv2.resize(bar, BAR_SIZE).reshape(-1)
+    if BAR_RGB:
+      ret = cv2.resize(bar, BAR_SIZE).reshape(-1)
+    else:
+      ret = cv2.cvtColor(cv2.resize(bar, BAR_SIZE), cv2.COLOR_RGB2GRAY).reshape(-1)
     return ret
   for info in state['unit_infos']:
     xy = pos_finder.find_near_pos(info['xy'])
@@ -299,17 +301,17 @@ if __name__ == '__main__':
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image
-  ds = ds_builder.get_dataset(32, 1)
+  ds = ds_builder.get_dataset(32, 8)
   for s, a, rtg, timestep in tqdm(ds):
     for x in [s, a]:
       for k, v in x.items():
         x[k] = v.numpy()
     rtg = rtg.numpy(); timestep = timestep.numpy()
+    # continue
     print(s['arena'].shape, s['arena_mask'].shape, s['cards'].shape, s['elixir'].shape)
     print(a['select'].shape, a['pos'].shape)
     print(s['arena'].dtype, s['arena_mask'].dtype, s['cards'].dtype, s['elixir'].dtype, a['select'].dtype, a['pos'].dtype)
     break
-    continue
     img = s['arena'][0,0,...,0]
     label2color = build_label2colors(img.reshape(-1))
     img = np.vectorize(lambda x: label2color[x])(img)
