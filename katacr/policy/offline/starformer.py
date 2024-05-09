@@ -15,6 +15,7 @@ from einops import rearrange
 from katacr.policy.offline.dataset import BAR_SIZE
 from katacr.policy.offline.cnn.resnet import ResNet, ResNetConfig
 from katacr.policy.offline.cnn.csp_darknet import CSPDarkNet, CSPDarkNetConfig
+from katacr.policy.offline.cnn.cnn_block import CNNBlock, CNNBlockConfig
 
 Dense = partial(nn.Dense, kernel_init=nn.initializers.normal(stddev=0.02))
 Embed = partial(nn.Embed, embedding_init=nn.initializers.normal(stddev=0.02))
@@ -29,7 +30,7 @@ class StARConfig(Config):
   p_drop_embd = 0.1
   p_drop_resid = 0.1
   p_drop_attn = 0.1
-  cnn_mode = "csp_darknet"  # or "resnet"
+  cnn_mode = "cnn_blocks"  # "csp_darknet" or "resnet"
   bar_size = BAR_SIZE
   n_elixir = 10
 
@@ -49,6 +50,10 @@ class StARConfig(Config):
       self.bar_cfg = CSPDarkNetConfig(stage_sizes=[2,3,5], filters=8)  # 24,168 (96.7 KB)
       self.arena_cfg = CSPDarkNetConfig(stage_size=[3,4,5], filters=32)  # 407,552 (1.6 MB)
       self.CNN = CSPDarkNet
+    if self.cnn_mode == 'cnn_blocks':
+      self.bar_cfg = CNNBlockConfig(filters=[16, 32, 32], kernels=[6, 3, 3], strides=[2, 2, 2])  # Total Parameters: 14,480 (57.9 KB)
+      self.arena_cfg = CNNBlockConfig(filters=[64, 128, 128], kernels=[6, 3, 3], strides=[2, 2, 2])  # Total Parameters: 256,064 (1.0 MB)
+      self.CNN = CNNBlock
 
 class TrainConfig(Config):
   seed = 42
@@ -308,7 +313,7 @@ if __name__ == '__main__':
   n_cards = 20
   n_step = 30
   max_timestep = 300
-  gpt_cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep)
+  gpt_cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks')
   print(dict(gpt_cfg))
   gpt = StARformer(gpt_cfg)
   # rng = jax.random.PRNGKey(42)

@@ -53,10 +53,10 @@ class ResNet(nn.Module):
 if __name__ == '__main__':
   # cfg = ResNetConfig()
   cfg = ResNetConfig(stage_size=[1,1,2], filters=4)  # 24,912 (99.6 KB)
-  # cfg = ResNetConfig(stage_size=[3,4,6], filters=16)  # 392,736 (1.6 MB)
+  cfg = ResNetConfig(stage_size=[3,4,6], filters=16)  # 392,736 (1.6 MB)
   model = ResNet(cfg)
-  x = np.empty((32, 30, 8, 24, 1))
-  # x = np.empty((32, 30, 32, 18, 15))
+  # x = np.empty((32, 30, 8, 24, 1))
+  x = np.empty((32, 30, 32, 18, 15))
   print(model.tabulate(jax.random.PRNGKey(42), x))
   print(x.mean(-1).shape)
 

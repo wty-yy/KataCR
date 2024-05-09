@@ -6,9 +6,34 @@ from pathlib import Path
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from katacr.utils import colorstr
+import redis, pickle
 
 BAR_SIZE = (24, 8)
 N_BAR_SIZE = np.prod(BAR_SIZE)
+
+dbs = {
+  'obs': 0,
+  'action': 1,
+  'rtg': 2,
+  'timestep': 3,
+  'end_idx': 4,
+}
+
+class RedisManager:
+  def __init__(self, name):
+    self.r = redis.Redis(host='localhost', port=6379, db=dbs[name])
+    self.idx = 0
+  
+  def save(self, data):
+    self.r.set(str(self.idx), pickle.dumps(data))
+    self.idx += 1
+  
+  def get(self, idx):
+    return pickle.loads(self.r.get(str(idx)))
+  
+  def save_list(self, l):
+    for e in l:
+      self.save(e)
 
 class DatasetBuilder:
   def __init__(self, path_dataset: str, n_step: int, seed=42):
@@ -47,15 +72,17 @@ class DatasetBuilder:
     return replay
   
   def _preload(self):
-    data = self.data = {}
+    data = self.data = {name: RedisManager(name) for name in ['obs', 'action', 'rtg', 'timestep']}
     replay = self.replay = self._load_replay()
     # print(len(replay['obs']), len(replay['action']), len(replay['reward']), len(replay['terminal']))
-    data['obs'], data['action'] = replay['obs'], replay['action']
+    data['obs'].save_list(replay['obs'])
+    data['action'].save_list(replay['action'])
+    timestep = [s['time'] for s in replay['obs']]
+    data['timestep'].save_list(timestep)
     data['done_idx'] = np.where(replay['terminal'])[0]
     ### Build return-to-go ###
     st, n = -1, len(replay['obs'])
-    rtg = data['rtg'] = np.zeros(n, np.float32)
-    data['timestep'] = np.array([s['time'] for s in data['obs']], np.int32)
+    rtg = np.zeros(n, np.float32)
     end_idx = data['end_idx'] = []
     sample_weights = []
     for i in data['done_idx']:
@@ -65,8 +92,9 @@ class DatasetBuilder:
         if j - st >= self.n_step:
         # if i - j + 1 >= self.n_step:
           end_idx.append(j)
-          sample_weights.append(data['action'][j]['card_id'] != 0)
+          sample_weights.append(replay['action'][j]['card_id'] != 0)
       st = i
+    data['rtg'].save_list(rtg)
     data['done_idx'] = np.concatenate([[-1], data['done_idx']])
     self.sample_weights = np.array(sample_weights, np.float32)
     # action_ratio = max(self.sample_weights.sum() / len(end_idx), 0.1)  # up to 10%
@@ -80,8 +108,8 @@ class DatasetBuilder:
         # print(j, alpha, alpha * 1 / action_ratio)
         if replay['terminal'][j]: break
     data['end_idx'] = np.array(data['end_idx'], np.int32)
-    data['info'] = f"Max rtg: {max(data['rtg']):.2f}, Mean rtg: {np.mean(data['rtg']):.2f}, \
-Max timestep: {max(data['timestep'])}, Obs len: {len(data['obs'])}, Datasize: {len(data['end_idx'])}, \
+    data['info'] = f"Max rtg: {max(rtg):.2f}, Mean rtg: {np.mean(rtg):.2f}, \
+Max timestep: {max(timestep)}, Data len: {len(rtg)}, Datasize: {len(data['end_idx'])}, \
 Use action ratio: {action_ratio*100:.2f}%, sample rate: {1/action_ratio:.2f}:{1/(1-action_ratio):.2f}"
     print(colorstr("INFO"), "Dataset:", data['info'])
   
@@ -210,6 +238,7 @@ def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False, s
 class StateActionRewardDataset(Dataset):
   def __init__(self, data: dict, n_step: int, lr_flip=True, card_shuffle=True, random_interval=2):
     self.data, self.n_step = data, n_step
+    self.redis = {name: RedisManager(name) for name in ['obs', 'action', 'rtg', 'timestep']}
     self.lr_flip = lr_flip
     self.shuffle = card_shuffle
     self.random_interval = random_interval
@@ -246,12 +275,12 @@ class StateActionRewardDataset(Dataset):
     pre_done = self.data['done_idx'][bisect.bisect_left(self.data['done_idx'], done_idx)-1]
     idxs = []
     for i in range(L-1, -1, -1):
-      ns, na = build_feature(data['obs'][now], data['action'][now], lr_flip=lr_flip, shuffle=self.shuffle, shuffle_idx=shuffle_idx)
+      ns, na = build_feature(self.redis['obs'].get(now), self.redis['action'].get(now), lr_flip=lr_flip, shuffle=self.shuffle, shuffle_idx=shuffle_idx)
       for x, nx in zip([s, a], [ns, na]):
         for k in x.keys():
           x[k][i] = nx[k]
-      rtg[i] = data['rtg'][now]
-      timestep[i] = data['timestep'][now]
+      rtg[i] = self.redis['rtg'].get(now)
+      timestep[i] = self.redis['timestep'].get(now)
       # print(idx-pre_done, idx)
       interval = random.randint(1, min(self.random_interval, idx-pre_done))
       idxs.append(now)
