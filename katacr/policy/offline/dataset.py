@@ -8,8 +8,8 @@ from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from katacr.utils import colorstr
 
 BAR_SIZE = (24, 8)
-USE_RGB = True
-N_BAR_SIZE = np.prod(BAR_SIZE) * (3 if USE_RGB else 1)
+BAR_RGB = True
+N_BAR_SIZE = np.prod(BAR_SIZE) * (3 if BAR_RGB else 1)
 
 class DatasetBuilder:
   def __init__(self, path_dataset: str, n_step: int, seed=42):
@@ -299,16 +299,17 @@ if __name__ == '__main__':
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image
-  ds = ds_builder.get_dataset(64, 8)
+  ds = ds_builder.get_dataset(32, 1)
   for s, a, rtg, timestep in tqdm(ds):
     for x in [s, a]:
       for k, v in x.items():
         x[k] = v.numpy()
     rtg = rtg.numpy(); timestep = timestep.numpy()
-    continue
     print(s['arena'].shape, s['arena_mask'].shape, s['cards'].shape, s['elixir'].shape)
     print(a['select'].shape, a['pos'].shape)
     print(s['arena'].dtype, s['arena_mask'].dtype, s['cards'].dtype, s['elixir'].dtype, a['select'].dtype, a['pos'].dtype)
+    break
+    continue
     img = s['arena'][0,0,...,0]
     label2color = build_label2colors(img.reshape(-1))
     img = np.vectorize(lambda x: label2color[x])(img)

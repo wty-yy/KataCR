@@ -12,7 +12,7 @@ from typing import Callable, Sequence
 from katacr.utils import Config
 from functools import partial
 from einops import rearrange
-from katacr.policy.offline.dataset import BAR_SIZE
+from katacr.policy.offline.dataset import BAR_SIZE, BAR_RGB
 from katacr.policy.offline.cnn.resnet import ResNet, ResNetConfig
 from katacr.policy.offline.cnn.csp_darknet import CSPDarkNet, CSPDarkNetConfig
 from katacr.policy.offline.cnn.cnn_block import CNNBlock, CNNBlockConfig
@@ -32,6 +32,7 @@ class StARConfig(Config):
   p_drop_attn = 0.1
   cnn_mode = "cnn_blocks"  # "csp_darknet" or "resnet"
   bar_size = BAR_SIZE
+  bar_rgb = BAR_RGB
   n_elixir = 10
   use_action_coef = 1.0
 
@@ -40,7 +41,7 @@ class StARConfig(Config):
     self.max_timestep = max_timestep
     for k, v in kwargs.items():
       setattr(self, k, v)
-    self.n_bar_size = np.prod(self.bar_size)
+    self.n_bar_size = np.prod(self.bar_size) * (3 if BAR_RGB else 1)
     assert self.n_embd_global % self.n_head_global == 0, "n_embd_global must be devided by n_head_global"
     assert self.n_embd_local % self.n_head_local == 0, "n_embd_local must be devided by n_head_local"
     if self.cnn_mode == 'resnet':
@@ -150,9 +151,9 @@ class StARformer(nn.Module):
     cls, bel = arena[...,0], arena[...,1]
     cls = Embed(cfg.n_unit+1, 8)(cls)  # (B, N, H, W, 8)
     bel = bel[..., None]  # (B, N, H, W, 1)
-    bar1 = arena[...,-2*cfg.n_bar_size:-cfg.n_bar_size].reshape(B, N, H, W, cfg.bar_size[1], cfg.bar_size[0], 1)
+    bar1 = arena[...,-2*cfg.n_bar_size:-cfg.n_bar_size].reshape(B, N, H, W, cfg.bar_size[1], cfg.bar_size[0], -1)
     bar1 = jnp.array(bar1, np.float32) / 255.
-    bar2 = arena[...,-cfg.n_bar_size:].reshape(B, N, H, W, cfg.bar_size[1], cfg.bar_size[0], 1)
+    bar2 = arena[...,-cfg.n_bar_size:].reshape(B, N, H, W, cfg.bar_size[1], cfg.bar_size[0], -1)
     bar2 = jnp.array(bar2, np.float32) / 255.
     bar1 = cfg.CNN(cfg.bar_cfg)(bar1).mean(-1)[...,0,:]  # (B, N, H, W, 3)
     bar2 = cfg.CNN(cfg.bar_cfg)(bar2).mean(-1)[...,0,:]  # (B, N, H, W, 3)
