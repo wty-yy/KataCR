@@ -306,8 +306,6 @@ class StARformer(nn.Module):
     print(f"Save weights to {save_path}")
   
 if __name__ == '__main__':
-  import os
-  os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.95'
   from katacr.constants.label_list import unit_list
   n_unit = len(unit_list)
   n_cards = 20

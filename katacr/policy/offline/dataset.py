@@ -279,8 +279,11 @@ def debug_save_features(path_save):
   np.save(path_save, data, allow_pickle=True)
 
 if __name__ == '__main__':
+  from katacr.build_dataset.constant import path_dataset
+  # path_dataset = path_dataset / "replay_data/golem_ai"
+  path_dataset = path_dataset / "replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data"
-  path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
+  # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
   ds_builder = DatasetBuilder(path_dataset, 30)
   # ds_builder.debug()
   # debug_save_features("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_dataset_50")
@@ -289,7 +292,7 @@ if __name__ == '__main__':
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image
-  ds = ds_builder.get_dataset(32, 4)
+  ds = ds_builder.get_dataset(64, 8)
   for s, a, rtg, timestep in tqdm(ds):
     for x in [s, a]:
       for k, v in x.items():
