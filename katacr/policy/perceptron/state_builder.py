@@ -204,9 +204,9 @@ class StateBuilder:
         self.deploy_history.pop(k)
     text_info = []
     result = self.ocr(self.img)[0]
-    if 28 <= self.frame_count <= 30:
-      print(f"frame={self.frame_count}, ocr_result:", result)
-      print(f"deploy_history={self.deploy_history}, {deploy_cards=}")
+    # if 28 <= self.frame_count <= 30:
+    #   print(f"frame={self.frame_count}, ocr_result:", result)
+    #   print(f"deploy_history={self.deploy_history}, {deploy_cards=}")
     if result is not None:
       for info in result:
         det, rec = info
@@ -216,7 +216,7 @@ class StateBuilder:
           tname = name.lower().replace('-', '')
           if edit_distance(rec, tname, dis='s1') <= EDIT_DISTANCE_THRE:
             text_info.append((card2idx[name], (det[2][0]+det[3][0])//2, (det[2][1]+det[3][1])//2))
-            print("Find text info:", name, rec)
+            # print("Find text info:", name, rec)
     self.text_info = np.array(text_info, np.int32).reshape(-1, 3)
   
   def _combine_bar_items(self):

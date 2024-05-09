@@ -6,3 +6,4 @@ logs
 wandb
 runs
 yolov8n.pt
+.VSCodeCounter

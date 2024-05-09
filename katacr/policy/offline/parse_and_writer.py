@@ -26,6 +26,7 @@ def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.N
   parser.add_argument("--patch-size", default=(2, 2))
   parser.add_argument("--weight-decay", type=float, default=1e-1)
   parser.add_argument("--cnn-mode", type=str, default="cnn_blocks")  # "csp_darknet" or "resnet"
+  parser.add_argument("--use-action-coef", type=float, default=1.0)
   ### Dataset ###
   parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data/golem_ai"))
   # parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"))

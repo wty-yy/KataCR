@@ -33,6 +33,7 @@ class StARConfig(Config):
   cnn_mode = "cnn_blocks"  # "csp_darknet" or "resnet"
   bar_size = BAR_SIZE
   n_elixir = 10
+  use_action_coef = 1.0
 
   def __init__(self, n_unit, n_cards, n_step, max_timestep, **kwargs):
     self.n_unit, self.n_cards, self.n_step = n_unit, n_cards, n_step
@@ -267,6 +268,8 @@ class StARformer(nn.Module):
         n = mask.sum() + 1
         tmp = -jax.nn.log_softmax(select).reshape(-1, select.shape[-1])
         loss_select = tmp[jnp.arange(tmp.shape[0]), y_select].mean()
+        loss_select = loss_select * (1 + (self.cfg.use_action_coef - 1) * mask)
+        loss_select = loss_select.mean()
         tmp = -jax.nn.log_softmax(pos).reshape(-1, pos.shape[-1])
         loss_pos = (tmp[jnp.arange(tmp.shape[0]), y_pos] * mask).sum() / n
         B = r.shape[0]

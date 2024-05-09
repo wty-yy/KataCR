@@ -8,7 +8,8 @@ from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from katacr.utils import colorstr
 
 BAR_SIZE = (24, 8)
-N_BAR_SIZE = np.prod(BAR_SIZE)
+USE_RGB = True
+N_BAR_SIZE = np.prod(BAR_SIZE) * (3 if USE_RGB else 1)
 
 class DatasetBuilder:
   def __init__(self, path_dataset: str, n_step: int, seed=42):
@@ -171,7 +172,8 @@ def build_feature(state, action, lr_flip: bool = False, shuffle: bool = False, s
   def cvt_bar(bar):
     if bar is None:
       return np.zeros(N_BAR_SIZE, np.uint8)
-    ret = cv2.cvtColor(cv2.resize(bar, BAR_SIZE), cv2.COLOR_RGB2GRAY).reshape(-1)
+    # ret = cv2.cvtColor(cv2.resize(bar, BAR_SIZE), cv2.COLOR_RGB2GRAY).reshape(-1)
+    ret = cv2.resize(bar, BAR_SIZE).reshape(-1)
     return ret
   for info in state['unit_infos']:
     xy = pos_finder.find_near_pos(info['xy'])
@@ -221,6 +223,8 @@ class StateActionRewardDataset(Dataset):
   def __getitem__(self, idx):
     datasize = len(self.data['end_idx'])
     lr_flip = idx >= datasize; idx %= datasize
+    # print(f"{idx=}, {lr_flip=}")  # DEBUG: flip left and right
+    # lr_flip = True
     data, L = self.data, self.n_step
     # done_idx = idx + n_step - 1
     # bisect_left(a, x): if x in a, return left x index, else return index with elem bigger than x
@@ -253,7 +257,10 @@ class StateActionRewardDataset(Dataset):
       rtg[i] = data['rtg'][now]
       timestep[i] = data['timestep'][now]
       # print(idx-pre_done, idx)
-      interval = random.randint(1, min(self.random_interval, idx-pre_done))
+      if data['action'][now-1]['card_id']:  # don't skip action frame
+        interval = 1
+      else:
+        interval = random.randint(1, min(self.random_interval, idx-pre_done))
       idxs.append(now)
       now -= interval
       idx -= interval - 1

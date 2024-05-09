@@ -187,8 +187,8 @@ class ActionBuilder:
       if self.elixir is None or self.last_elixir_num > self.elixir:
         self.elixir_mutation_frames.append(self.frame_count - 1)  # mutation pre-frame
     self.last_elixir_num = self.elixir
-    if len(self.elixir_mutation_frames):
-      print(f"Mutation: (frame={self.frame_count}) mutation_frame={self.elixir_mutation_frames}")
+    # if len(self.elixir_mutation_frames):
+    #   print(f"Mutation: (frame={self.frame_count}) mutation_frame={self.elixir_mutation_frames}")
     
   def _find_action(self):
     elixir = self.box[self.box[:,-2] == unit2idx['elixir']]

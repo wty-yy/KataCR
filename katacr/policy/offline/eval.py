@@ -18,7 +18,7 @@ from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/ViDformer_csp_darknet__128__0__20240508_155217/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_csp_darknet__128__0__20240508_131231/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -54,8 +54,8 @@ class Evaluator:
   def _load_model(self, path_weights):
     print("Loading policy model...", end='')
     ckpt_mngr = CheckpointManager(str(path_weights))
-    # load_step = int(sorted(Path(path_weights).glob('*'))[-1].name)
-    load_step = 8
+    load_step = int(sorted(Path(path_weights).glob('*'))[-1].name)
+    # load_step = 25
     load_info = ckpt_mngr.restore(load_step)
     params, cfg = load_info['variables']['params'], load_info['config']
     if 'StARformer' in str(path_weights):
@@ -160,7 +160,6 @@ class Evaluator:
           prob = prob_pos[i,j]
           pos_drawer.paint((j, i), (0,0,int(255*prob)), f"{prob*100:.1f}")
       pimg = np.array(pos_drawer.image)
-      print(pimg.shape, simg.shape)
       img = np.concatenate([pimg, simg], 0)
       if not self.open_window:
         self.open_window = True
@@ -185,10 +184,10 @@ class Evaluator:
     self.episode = 0
     while True:
       score = 0
-      self.episode += 1
       self._init_sart()
       self._init_vid_writer()
       s, a, _ = self.env.reset()
+      self.episode += 1
       last_elixir = 0
       now_rtg, done = self.base_rtg, False
       self._add_sart(s, a, self.base_rtg, s['time'])

@@ -61,6 +61,10 @@ class SARDaemon:
       ### Check If Reset ###
       reset = self.terminal
       while not self.q_reset.empty() or self.terminal:
+        if self.vid_writer is not None:
+          self.vid_writer.release()
+          self.vid_writer_org.release()
+          self.vid_writer = None
         self.terminal = False
         reset = True
         self.q_reset.get()
@@ -68,9 +72,6 @@ class SARDaemon:
         self.episode += 1
         self.count = 0
         self.sar_builder.reset()
-        if self.vid_writer is not None:
-          self.vid_writer.release()
-          self.vid_writer_org.release()
         self.vid_writer = None
         self.vid_writer_org = None
         self.img = self._wait_next_episode()
