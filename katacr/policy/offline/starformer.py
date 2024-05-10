@@ -34,6 +34,7 @@ class StARConfig(Config):
   n_elixir = 10
   use_action_coef = 1.0
   max_delay = 20
+  pred_card_idx = False
 
   def __init__(self, n_unit, n_cards, n_step, max_timestep, **kwargs):
     self.n_unit, self.n_cards, self.n_step = n_unit, n_cards, n_step
@@ -177,7 +178,10 @@ class StARformer(nn.Module):
     ### Embedding Local Token ###
     ### Action ###
     select, pos = a['select'], a['pos']
-    select = Embed(5, nl)(select).reshape(B, N, 1, nl)
+    if cfg.pred_card_idx:
+      select = Embed(5, nl)(select).reshape(B, N, 1, nl)
+    else:
+      select = Embed(cfg.n_card, nl)(select).reshape(B, N, 1, nl)
     pos = Embed(32*18+1, nl)(pos[...,0]*18+pos[...,1]).reshape(B, N, 1, nl)
     a = jnp.concatenate([select, pos], -2)  # (B, N, 2, Nl)
     ### State ###
@@ -206,7 +210,10 @@ class StARformer(nn.Module):
     # pos = Dense(32*18, use_bias=False)(xg)
     # NEW: future action predict and card, arena sequence
     card, arena = xg[...,0,:], xg[...,1,:]
-    select = Dense(4, use_bias=False)(card)
+    if cfg.pred_card_idx:
+      select = Dense(4, use_bias=False)(card)
+    else:
+      select = Dense(cfg.n_cards, use_bias=False)(card)
     y = Dense(32, use_bias=False)(arena)
     x = Dense(18, use_bias=False)(arena)
     delay = Dense(cfg.max_delay+1, use_bias=False)(arena)

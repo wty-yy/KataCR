@@ -8,7 +8,7 @@ def str2bool(x): return x in ['yes', 'y', 'True', '1']
 def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.Namespace, SummaryWriter]:
   parser = argparse.ArgumentParser()
   ### Gobal ###
-  parser.add_argument("--name", type=str, default="StARformer")  # or "ViDformer"
+  parser.add_argument("--name", type=str, default="StARformer_3L")  # or "StARformer_2L" or "StARformer_no_delay" or "ViDformer"
   parser.add_argument("--seed", type=int, default=0)
   parser.add_argument("--wandb", type=str2bool, default=False, const=True, nargs='?')
   ### Training ###
@@ -26,13 +26,15 @@ def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.N
   parser.add_argument("--patch-size", default=(2, 2))
   parser.add_argument("--weight-decay", type=float, default=1e-1)
   parser.add_argument("--cnn-mode", type=str, default="cnn_blocks")  # "csp_darknet" or "resnet"
-  parser.add_argument("--use-action-coef", type=float, default=1.0)
+  parser.add_argument("--use-action-coef", type=float, default=5.0)  # just for "StARformer_no_delay"
   ### Dataset ###
   parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data/golem_ai"))
   # parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"))
   parser.add_argument("--num-workers", type=int, default=8)
   parser.add_argument("--max-delay", type=int, default=20)
   parser.add_argument("--random-interval", type=int, default=1)
+  parser.add_argument("--card-shuffle", type=str2bool, default=True)
+  parser.add_argument("--pred-card-idx", type=str2bool, default=False, const=True, nargs='?')
 
   args = parser.parse_args(input_args)
   assert Path(args.replay_dataset).exists(), "The path of replay buffer must exist"

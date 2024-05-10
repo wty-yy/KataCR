@@ -19,7 +19,9 @@ def train():
   args, writer = parse_args_and_writer()
   ### Dataset ###
   ds_builder = DatasetBuilder(args.replay_dataset, args.n_step)
-  train_ds = ds_builder.get_dataset(args.batch_size, args.num_workers, random_interval=args.random_interval, max_delay=args.max_delay)
+  train_ds = ds_builder.get_dataset(
+    args.batch_size, args.num_workers, random_interval=args.random_interval,
+    max_delay=args.max_delay, card_shuffle=args.card_shuffle)
   args.n_unit = len(unit_list)
   args.n_cards = ds_builder.n_cards
   args.max_timestep = int(max(ds_builder.data['timestep']))
@@ -33,6 +35,9 @@ def train():
     ModelConfig, Model = ViDConfig, ViDformer
   if 'starformer_2l' in args.name.lower():
     from katacr.policy.offline.starformer_2L import StARConfig, TrainConfig, StARformer
+    ModelConfig, Model = StARConfig, StARformer
+  if 'starformer_no_delay' in args.name.lower():
+    from katacr.policy.offline.starformer_no_delay import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
   model_cfg = ModelConfig(**vars(args))
   model = Model(model_cfg)

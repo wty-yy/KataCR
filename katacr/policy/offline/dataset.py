@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+from katacr.classification.predict import CardClassifier
 from katacr.utils import colorstr
 
 BAR_SIZE = (24, 8)
@@ -122,20 +123,20 @@ Action number: {(self.action_delays==0).sum()}"
   def get_dataset(
       self, batch_size: int, num_workers: int = 4, lr_flip: bool = True,
       card_shuffle: bool = True, random_interval: int = 1,
-      max_delay=20
+      max_delay=20, use_card_idx=False
     ):
     sample_weights = np.concatenate([self.sample_weights] * (int(lr_flip) + 1))  # origin and flip left and right
     return DataLoader(
       StateActionRewardDataset(
         self.data, n_step=self.n_step, lr_flip=lr_flip,
         card_shuffle=card_shuffle, random_interval=random_interval,
-        delay_clip=max_delay),
+        delay_clip=max_delay, use_card_idx=use_card_idx),
       batch_size=batch_size,
       # shuffle=True,  # use sampler
       persistent_workers=True,
       num_workers=num_workers,
       drop_last=True,
-      sampler=WeightedRandomSampler(sample_weights, len(sample_weights))
+      sampler=WeightedRandomSampler(sample_weights, len(sample_weights)),
     )
 
 class PositionFinder:
@@ -165,7 +166,7 @@ def get_shuffle_idx():
 def build_feature(
     state, action, target_action=None,
     lr_flip: bool = False, shuffle: bool = False, shuffle_idx=None,
-    train=False, delay_clip=None):
+    train=False, delay_clip=None, use_card_idx=True):
   """
   Args:
     state (Dict, from `perceptron.state_builder.get_state()`):
@@ -179,6 +180,7 @@ def build_feature(
     shuffle_idx (List): Specify shuffle index, otherwise random get one.
     train (bool): If taggled, the target action feature `y` will be returned.
     delay_clip (int): If train, delay of target action will be clip by delay_clip.
+    use_card_idx (bool): If taggled, action['select'] will be card_idx, otherwise it is card_name_idx
   Returns:
     s (Dict):
       'arena': Unit features in arena, shape=(32, 18, 386)
@@ -243,6 +245,8 @@ def build_feature(
     s['cards'] = s['cards'][idx]
     a['select'] = np.array(np.argwhere(idx == a['select'])[0,0], np.int32)
     # print("after: ", s['cards'], a['select'], idx)
+  if not use_card_idx:
+    a['select'] = s['cards'][a['select']]
   if not train:
     return s, a
   ### Build Target Action ###
@@ -254,15 +258,20 @@ def build_feature(
     xy[0] = 18 - xy[0] - 1
   y['pos'] = np.array(xy[::-1], np.int32)
   y['delay'] = np.clip(target_action['delay'], 0, delay_clip)
+  if not use_card_idx:
+    y['select'] = s['cards'][y['select']]
   return s, a, y
 
 class StateActionRewardDataset(Dataset):
-  def __init__(self, data: dict, n_step: int, lr_flip=True, card_shuffle=True, random_interval=1, delay_clip=20):
+  def __init__(
+      self, data: dict, n_step: int, lr_flip=True, card_shuffle=True,
+      random_interval=1, delay_clip=20, use_card_idx=False):
     self.data, self.n_step = data, n_step
     self.lr_flip = lr_flip
     self.shuffle = card_shuffle
     self.random_interval = random_interval
     self.delay_clip = delay_clip
+    self.use_card_idx = use_card_idx
   
   def __len__(self):
     # return np.sum(self.data['timestep']!=0) - self.n_step + 1
@@ -297,15 +306,15 @@ class StateActionRewardDataset(Dataset):
     }
     rtg = np.empty(L, np.float32)
     timestep = np.empty(L, np.int32)
-    if self.shuffle:
-      shuffle_idx = get_shuffle_idx()
+    shuffle_idx = get_shuffle_idx() if self.shuffle else None
     now = done_idx
     pre_done = self.data['done_idx'][bisect.bisect_left(self.data['done_idx'], done_idx)-1]
     idxs = []
     for i in range(L-1, -1, -1):
       ns, na, ny = build_feature(
         data['obs'][now], data['action'][now], data['target_action'][now], lr_flip=lr_flip, shuffle=self.shuffle,
-        shuffle_idx=shuffle_idx, train=True, delay_clip=self.delay_clip)
+        shuffle_idx=shuffle_idx, train=True, delay_clip=self.delay_clip,
+        use_card_idx=self.use_card_idx)
       for x, nx in zip([s, a, y], [ns, na, ny]):
         for k in x.keys():
           x[k][i] = nx[k]
