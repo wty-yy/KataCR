@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+from katacr.classification.train import EMPTY_CARD_INDEX
 from katacr.utils import colorstr
 
 BAR_SIZE = (24, 8)
@@ -130,7 +131,7 @@ Action number: {(self.action_delays==0).sum()}"
       StateActionRewardDataset(
         self.data, n_step=self.n_step, lr_flip=lr_flip,
         card_shuffle=card_shuffle, random_interval=random_interval,
-        delay_clip=max_delay, use_card_idx=use_card_idx, empty_card_idx=1),
+        delay_clip=max_delay, use_card_idx=use_card_idx),
       batch_size=batch_size,
       # shuffle=True,  # use sampler
       persistent_workers=True,
@@ -166,7 +167,7 @@ def get_shuffle_idx():
 def build_feature(
     state, action, target_action=None,
     lr_flip: bool = False, shuffle: bool = False, shuffle_idx=None,
-    train=False, delay_clip=None, use_card_idx=True, empty_card_idx=None):
+    train=False, delay_clip=None, use_card_idx=True, empty_card_idx=EMPTY_CARD_INDEX):
   """
   Args:
     state (Dict, from `perceptron.state_builder.get_state()`):
@@ -268,14 +269,13 @@ def build_feature(
 class StateActionRewardDataset(Dataset):
   def __init__(
       self, data: dict, n_step: int, lr_flip=True, card_shuffle=True,
-      random_interval=1, delay_clip=20, use_card_idx=False, empty_card_idx=None):
+      random_interval=1, delay_clip=20, use_card_idx=False):
     self.data, self.n_step = data, n_step
     self.lr_flip = lr_flip
     self.shuffle = card_shuffle
     self.random_interval = random_interval
     self.delay_clip = delay_clip
     self.use_card_idx = use_card_idx
-    self.empty_card_idx = empty_card_idx
   
   def __len__(self):
     # return np.sum(self.data['timestep']!=0) - self.n_step + 1
@@ -318,7 +318,7 @@ class StateActionRewardDataset(Dataset):
       ns, na, ny = build_feature(
         data['obs'][now], data['action'][now], data['target_action'][now], lr_flip=lr_flip, shuffle=self.shuffle,
         shuffle_idx=shuffle_idx, train=True, delay_clip=self.delay_clip,
-        use_card_idx=self.use_card_idx, empty_card_idx=self.empty_card_idx)
+        use_card_idx=self.use_card_idx)
       for x, nx in zip([s, a, y], [ns, na, ny]):
         for k in x.keys():
           x[k][i] = nx[k]

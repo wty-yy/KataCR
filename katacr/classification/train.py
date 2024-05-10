@@ -13,6 +13,8 @@ from functools import partial
 from katacr.utils import Config
 import numpy as np
 
+EMPTY_CARD_INDEX = 1
+
 class ModelConfig(Config):  # Mini ResNet   # ResNet50
   stage_sizes = [1, 1, 2, 1]                # (3, 4, 6, 3)
   filters = 4                               # 64
@@ -207,10 +209,14 @@ class DatasetBuilder:
   def preprocss(self):
     path_dirs = sorted(list(x for x in Path(self.path_dataset).glob('*')))
     path_dirs = [p for p in path_dirs if re.search(r'^[a-zA-Z]', p.name)]
-    self.card_list = [x.name for x in path_dirs]
+    cl = self.card_list = [x.name for x in path_dirs]
     self.augments = sorted(list(x for x in (Path(self.path_dataset)/"_augmentation").glob('*.png')))
+    if cl[EMPTY_CARD_INDEX] != 'empty':
+      idx1 = EMPTY_CARD_INDEX
+      idx2 = self.card_list.index('empty')
+      cl[idx1], cl[idx2] = cl[idx2], cl[idx1]
     self.idx2card = dict(enumerate(self.card_list))
-    self.card2idx = {c: i for i, c in enumerate(self.card_list)}
+    self.card2idx = {c: i for i, c in self.idx2card.items()}
     self.images, self.labels = [], []
     for d in path_dirs:
       cls = d.name
