@@ -292,3 +292,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 模型版本v0.6
 1. 修复StARformer中对序列的错误顺序连接
 2. 将card和elixir状态序列在Global中单独提取出来，用于预测select，其余pos_x,pos_y和delay由arena对应的序列进行预测
+
+模型版本v0.7
+1. 加入`pred_card_idx`可选项，将action和target_action中的card_idx转为`card_name_idx`，修改模型的输出与输入编码
+2. 修改数据集读入，使其支持`pred_card_idx`，注意`target_action`直接从`card_name_idx`获取未来的放置单位，而非从当前的`state`中获取放置单位名称索引

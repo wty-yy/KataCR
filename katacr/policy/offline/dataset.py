@@ -5,7 +5,6 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
-from katacr.classification.predict import CardClassifier
 from katacr.utils import colorstr
 
 BAR_SIZE = (24, 8)
@@ -19,8 +18,6 @@ class DatasetBuilder:
     self.path_dataset = path_dataset
     self.n_step = n_step
     self.n_cards = 0
-    card_cls = CardClassifier()
-    self.card2idx = card_cls.card2idx
     self._preload()
   
   def _load_replay(self):
@@ -133,7 +130,7 @@ Action number: {(self.action_delays==0).sum()}"
       StateActionRewardDataset(
         self.data, n_step=self.n_step, lr_flip=lr_flip,
         card_shuffle=card_shuffle, random_interval=random_interval,
-        delay_clip=max_delay, use_card_idx=use_card_idx, empty_card_idx=self.card2idx['empty']),
+        delay_clip=max_delay, use_card_idx=use_card_idx, empty_card_idx=1),
       batch_size=batch_size,
       # shuffle=True,  # use sampler
       persistent_workers=True,
@@ -357,6 +354,8 @@ def debug_save_features(path_save):
   np.save(path_save, data, allow_pickle=True)
 
 if __name__ == '__main__':
+  import os
+  os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
   from katacr.build_dataset.constant import path_dataset
   # path_dataset = path_dataset / "replay_data/golem_ai"
   path_dataset = path_dataset / "replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
