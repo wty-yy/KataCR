@@ -28,12 +28,17 @@ for s, a, rtg, timestep, y in tqdm(ds):
   # print(s['arena'].shape, s['arena_mask'].shape, s['cards'].shape, s['elixir'].shape)
   # print(a['select'].shape, a['pos'].shape)
   # print(s['arena'].dtype, s['arena_mask'].dtype, s['cards'].dtype, s['elixir'].dtype, a['select'].dtype, a['pos'].dtype)
+  print(idx2cls)
+  print(s['cards'][0])
+  print(a['select'][0])
+  print(y['select'][0])
   for i in range(30):
     select = a['select'][0,i]
     cards = s['cards'][0,i]
-    if select != 0:
-      # print(f"Action select={select}, card_idx={idx2cls[str(cards[select])]} at frame={i}")
-      print(f"Action select={select}, card_idx={idx2cls[str(select)]} at frame={i}")
+    # if select != 0:
+    if idx2cls[str(select)] != 'empty':
+      # print(f"Action select={select}, card_name={idx2cls[str(cards[select])]} at frame={i}")
+      print(f"Action select={select}, card_name={idx2cls[str(select)]} at frame={i}")
   for i in range(30):
     # img = s['arena'][0,i,...,0]
     arena = s['arena'][0,i]  # (32, 18, [cls, bel, bar1, bar2])
@@ -41,8 +46,8 @@ for s, a, rtg, timestep, y in tqdm(ds):
     select = y['select'][0,i]
     cards = s['cards'][0,i]
     delay = y['delay'][0,i]
-    # print(f"Target Action select={select}, card_idx={idx2cls[str(cards[select])]}, delay={delay}")
-    print(f"Target Action select={select}, card_idx={idx2cls[str(select)]}, delay={delay}")
+    # print(f"Target Action select={select}, card_name={idx2cls[str(cards[select])]}, delay={delay}")
+    print(f"Target Action select={select}, card_name={idx2cls[str(select)]}, delay={delay}")
     # print("RTG:", rtg[0,i])
     # print(mask.shape, img.shape)
     label2color = build_label2colors(arena[...,0].reshape(-1))

@@ -178,14 +178,15 @@ class StARformer(nn.Module):
     ### Embedding Local Token ###
     ### Action ###
     select, pos = a['select'], a['pos']
+    card_embd_local = Embed(cfg.n_cards, nl)
     if cfg.pred_card_idx:
       select = Embed(5, nl)(select).reshape(B, N, 1, nl)
     else:
-      select = Embed(cfg.n_card, nl)(select).reshape(B, N, 1, nl)
+      select = card_embd_local(select).reshape(B, N, 1, nl)
     pos = Embed(32*18+1, nl)(pos[...,0]*18+pos[...,1]).reshape(B, N, 1, nl)
     a = jnp.concatenate([select, pos], -2)  # (B, N, 2, Nl)
     ### State ###
-    cards = Embed(cfg.n_cards, nl)(cards)  # (B, N, 5, Nl)
+    cards = card_embd_local(cards)  # (B, N, 5, Nl)
     elixir = Embed(cfg.n_elixir+1, nl)(elixir).reshape(B, N, 1, nl)  # (B, N, 1, Nl)
     p1, p2 = self.cfg.patch_size
     arena = rearrange(arena, 'B N (H p1) (W p2) C -> B N (H W) (p1 p2 C)', p1=p1, p2=p2)
@@ -350,8 +351,9 @@ if __name__ == '__main__':
   n_cards = 20
   n_step = 30
   max_timestep = 300
-  # Total Parameters: 14,931,040 (59.7 MB)
-  cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks')
+  # pred_card_idx: Total Parameters: 14,931,040 (59.7 MB)
+  # pred_card_name_idx: Total Parameters: 14,933,792 (59.7 MB)
+  cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks', pred_card_idx=False)
   print(dict(cfg))
   model = StARformer(cfg)
   # rng = jax.random.PRNGKey(42)

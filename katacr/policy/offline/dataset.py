@@ -19,6 +19,8 @@ class DatasetBuilder:
     self.path_dataset = path_dataset
     self.n_step = n_step
     self.n_cards = 0
+    card_cls = CardClassifier()
+    self.card2idx = card_cls.card2idx
     self._preload()
   
   def _load_replay(self):
@@ -55,7 +57,7 @@ class DatasetBuilder:
     data = self.data = {}
     replay = self.replay = self._load_replay()
     # print(len(replay['obs']), len(replay['action']), len(replay['reward']), len(replay['terminal']))
-    data['obs'] = replay['obs']
+    state = data['obs'] = replay['obs']
     action = data['action'] = replay['action']
     taction = data['target_action'] = [dict() for _ in range(len(action))]
     data['done_idx'] = np.where(replay['terminal'])[0]
@@ -71,9 +73,10 @@ class DatasetBuilder:
         rtg[j] = replay['reward'][j] + (0 if j == i else rtg[j+1])
         if action[j]['card_id'] != 0:
           last_action = action[j].copy()
-          last_action.update({'frame': j})
+          last_action.update({'frame': j, 'card_name_idx': state[j]['cards'][last_action['card_id']]})
         taction[j].update(last_action)
         taction[j]['delay'] = last_action['frame'] - j
+        taction[j].pop('frame')
       for j in range(st+1, i+1):
         if j - st >= self.n_step:
         # if i - j + 1 >= self.n_step:
@@ -130,7 +133,7 @@ Action number: {(self.action_delays==0).sum()}"
       StateActionRewardDataset(
         self.data, n_step=self.n_step, lr_flip=lr_flip,
         card_shuffle=card_shuffle, random_interval=random_interval,
-        delay_clip=max_delay, use_card_idx=use_card_idx),
+        delay_clip=max_delay, use_card_idx=use_card_idx, empty_card_idx=self.card2idx['empty']),
       batch_size=batch_size,
       # shuffle=True,  # use sampler
       persistent_workers=True,
@@ -166,7 +169,7 @@ def get_shuffle_idx():
 def build_feature(
     state, action, target_action=None,
     lr_flip: bool = False, shuffle: bool = False, shuffle_idx=None,
-    train=False, delay_clip=None, use_card_idx=True):
+    train=False, delay_clip=None, use_card_idx=True, empty_card_idx=None):
   """
   Args:
     state (Dict, from `perceptron.state_builder.get_state()`):
@@ -246,32 +249,36 @@ def build_feature(
     a['select'] = np.array(np.argwhere(idx == a['select'])[0,0], np.int32)
     # print("after: ", s['cards'], a['select'], idx)
   if not use_card_idx:
-    a['select'] = s['cards'][a['select']]
+    if a['select']:
+      a['select'] = s['cards'][a['select']]
+    else:
+      a['select'] = empty_card_idx
   if not train:
     return s, a
   ### Build Target Action ###
   y['select'] = np.array(target_action['card_id'], np.int32)
   if shuffle:
     y['select'] = np.array(np.argwhere(idx == y['select'])[0,0], np.int32)
+  if not use_card_idx:
+    y['select'] = target_action['card_name_idx']
   xy = np.array(target_action['xy'], np.int32)
   if lr_flip:
     xy[0] = 18 - xy[0] - 1
   y['pos'] = np.array(xy[::-1], np.int32)
   y['delay'] = np.clip(target_action['delay'], 0, delay_clip)
-  if not use_card_idx:
-    y['select'] = s['cards'][y['select']]
   return s, a, y
 
 class StateActionRewardDataset(Dataset):
   def __init__(
       self, data: dict, n_step: int, lr_flip=True, card_shuffle=True,
-      random_interval=1, delay_clip=20, use_card_idx=False):
+      random_interval=1, delay_clip=20, use_card_idx=False, empty_card_idx=None):
     self.data, self.n_step = data, n_step
     self.lr_flip = lr_flip
     self.shuffle = card_shuffle
     self.random_interval = random_interval
     self.delay_clip = delay_clip
     self.use_card_idx = use_card_idx
+    self.empty_card_idx = empty_card_idx
   
   def __len__(self):
     # return np.sum(self.data['timestep']!=0) - self.n_step + 1
@@ -314,7 +321,7 @@ class StateActionRewardDataset(Dataset):
       ns, na, ny = build_feature(
         data['obs'][now], data['action'][now], data['target_action'][now], lr_flip=lr_flip, shuffle=self.shuffle,
         shuffle_idx=shuffle_idx, train=True, delay_clip=self.delay_clip,
-        use_card_idx=self.use_card_idx)
+        use_card_idx=self.use_card_idx, empty_card_idx=self.empty_card_idx)
       for x, nx in zip([s, a, y], [ns, na, ny]):
         for k in x.keys():
           x[k][i] = nx[k]
