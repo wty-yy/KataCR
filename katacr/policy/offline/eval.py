@@ -16,9 +16,10 @@ from katacr.utils import colorstr, Stopwatch
 from katacr.utils.merge_videos import merge_videos_left_and_right
 from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
+import time
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_csp_darknet__128__0__20240508_131231/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_v0.4_golem_ai_cnn_blocks__nbc128__ep100__0__20240509_230349/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -177,8 +178,10 @@ class Evaluator:
   def _init_vid_writer(self):
     if self.path_save_dir is None: return
     if self.vid_writer is not None:
+      time.sleep(1)
       self.vid_writer.release()
       merge_videos_left_and_right(self.path_save_vid.with_stem(str(self.episode)), self.path_save_vid)
+      self.vid_writer = None
   
   def eval(self):
     self.episode = 0
@@ -215,8 +218,8 @@ class Evaluator:
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
-  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
-  # evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
+  # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
 

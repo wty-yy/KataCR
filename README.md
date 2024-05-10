@@ -278,4 +278,11 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 - Replay Dataset
    1. 修复数据集中elixir变换优先于action的问题，对action加入offset偏移量，将其前移到正确点位
    2. 重新设计去除CNN部分的StARformer，简单称为ViDformer
-   3. StARformer的CNN部分换成特征提取能力更强的CSPDarkNet
+   3. StARformer的CNN部分换成特征提取能力更强的CSPDarkNet（后发现效果更差）
+
+### v0.7.17 (2024.5.10)
+- Dataset
+   1. 将预测action修改为向未来20帧进行预测，使action更稠密
+   2. 加入use action的权重系数
+   3. 去除random_interval
+

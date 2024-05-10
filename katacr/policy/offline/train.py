@@ -7,7 +7,7 @@ os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.16'  # allocate GPU memory as n
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parents[3]))
-from katacr.policy.offline.parse_and_writer import parse_args_and_writer, logs
+from katacr.policy.offline.parse_and_logs import parse_args_and_writer, logs
 from katacr.policy.offline.dataset import DatasetBuilder
 from katacr.utils.ckpt_manager import CheckpointManager
 from tqdm import tqdm
@@ -19,7 +19,7 @@ def train():
   args, writer = parse_args_and_writer()
   ### Dataset ###
   ds_builder = DatasetBuilder(args.replay_dataset, args.n_step)
-  train_ds = ds_builder.get_dataset(args.batch_size, args.num_workers)
+  train_ds = ds_builder.get_dataset(args.batch_size, args.num_workers, random_interval=args.random_interval, max_delay=args.max_delay)
   args.n_unit = len(unit_list)
   args.n_cards = ds_builder.n_cards
   args.max_timestep = int(max(ds_builder.data['timestep']))
@@ -46,27 +46,27 @@ def train():
     print("Training...")
     logs.reset()
     bar = tqdm(train_ds, ncols=200)
-    for s, y, rtg, timestep in bar:
-      for x in [s, y]:
+    for s, a, rtg, timestep, y in bar:
+      for x in [s, a, y]:
         for k, v in x.items():
           x[k] = v.numpy()
       rtg = rtg.numpy(); timestep = timestep.numpy()
-      # s, y, rtg, timestep = s.numpy(), y.numpy(), rtg.numpy(), timestep.numpy()
       B = y['select'].shape[0]
-      a = {}
-      # Look out the target is diff with input action,
+      # a is real action in each frame, y is target action with future action time delay predict
       # we need select=0 and pos=(0,-1) as start action padding idx.
-      a['select'] = np.concatenate([np.full((B, 1), 0, np.int32), y['select'][:,:-1]], 1)  # (B, l)
+      a['select'] = np.concatenate([np.full((B, 1), 0, np.int32), a['select'][:,:-1]], 1)  # (B, l)
       pad = np.stack([np.full((B, 1), 0, np.int32), np.full((B, 1), -1, np.int32)], -1)
-      a['pos'] = np.concatenate([pad, y['pos'][:,:-1]], 1)  # (B, l, 2)
-      state, (loss, (loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
+      a['pos'] = np.concatenate([pad, a['pos'][:,:-1]], 1)  # (B, l, 2)
+      state, (loss, (loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
       logs.update(
-        ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_acc_select', 'train_acc_pos',
-         'train_acc_select_use', 'train_acc_select_and_pos'],
-        [loss, loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp])
+        ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_loss_delay',
+         'train_acc_select_use', 'train_acc_pos',
+         'train_acc_delay', 'train_acc_select_and_pos',
+         'train_acc_select_and_pos_and_delay'],
+        [loss, loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd])
       # print(loss, loss_s, loss_p)
       # print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
-      bar.set_description(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}, acc_select_use={acc_su:.4f}, acc_select_and_pos={acc_sp:.4f}")
+      bar.set_description(f"{loss=:.4f}, {loss_s=:.4f}, {loss_p=:.4f}, {loss_d:.4f}, {acc_su=:.4f}, {acc_p=:.4f}, {acc_d=:.4f}, {acc_sp=:.4f}, {acc_spd=:.4f}")
       if state.step % write_tfboard_freq == 0:
         logs.update(
           ['SPS', 'epoch', 'learning_rate'],

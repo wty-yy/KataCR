@@ -19,8 +19,8 @@ ds_builder = DatasetBuilder(path_dataset, 30)
 # ds_builder.debug()
 ds = ds_builder.get_dataset(1, 1)
 cv2.namedWindow("Arena", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-for s, a, rtg, timestep in tqdm(ds):
-  for x in [s, a]:
+for s, a, rtg, timestep, y in tqdm(ds):
+  for x in [s, a, y]:
     for k, v in x.items():
       x[k] = v.numpy()
   rtg = rtg.numpy(); timestep = timestep.numpy()
@@ -37,6 +37,10 @@ for s, a, rtg, timestep in tqdm(ds):
     # img = s['arena'][0,i,...,0]
     arena = s['arena'][0,i]  # (32, 18, [cls, bel, bar1, bar2])
     mask = s['arena_mask'][0,i,...,None]
+    select = y['select'][0,i]
+    cards = s['cards'][0,i]
+    delay = y['delay'][0,i]
+    print(f"Target Action select={select}, card_idx={idx2cls[str(cards[select])]}, delay={delay}")
     # print("RTG:", rtg[0,i])
     # print(mask.shape, img.shape)
     label2color = build_label2colors(arena[...,0].reshape(-1))
@@ -49,20 +53,23 @@ for s, a, rtg, timestep in tqdm(ds):
           cls = arena[r,c,0]
           bel = arena[r,c,1]
           drawer.paint((c,r), label2color[cls], bel)
-          bar1 = arena[r,c,-2*N_BAR_SIZE:-N_BAR_SIZE].reshape(BAR_SIZE[::-1]+(3,)).astype(np.uint8)
-          bar2 = arena[r,c,-N_BAR_SIZE:].reshape(BAR_SIZE[::-1]+(3,)).astype(np.uint8)
+          bar1 = arena[r,c,-2*N_BAR_SIZE:-N_BAR_SIZE].reshape(BAR_SIZE[::-1]).astype(np.uint8)
+          bar2 = arena[r,c,-N_BAR_SIZE:].reshape(BAR_SIZE[::-1]).astype(np.uint8)
           name = f'bar1 ({c},{r})'
           if bar1.sum() != 0:
-            cv2.imshow(name, bar1[...,::-1])
+            cv2.imshow(name, bar1)
             subwindows.append(name)
           if bar2.sum() != 0:
             name.replace('1', '2')
-            cv2.imshow(name, bar2[...,::-1])
+            cv2.imshow(name, bar2)
             subwindows.append(name)
-    select = a['select'][0,i]
-    if select != 0:
-      y, x = a['pos'][0,i]
-      drawer.paint((x,y), (255,236,158), select, rect=False, circle=True, text_color=(0,0,0))
+    # select = a['select'][0,i]
+    delay = y['delay'][0,i]
+    # if select != 0:
+    if delay == 0:
+      # y, x = a['pos'][0,i]
+      yx = y['pos'][0,i]
+      drawer.paint(yx[::-1], (255,236,158), select, rect=False, circle=True, text_color=(0,0,0))
     # img = np.stack(np.vectorize(lambda x: label2color[x])(img), -1).astype(np.uint8)
     # print(mask.shape, img.shape)
     # img = mask * img

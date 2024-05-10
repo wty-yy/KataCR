@@ -31,6 +31,8 @@ def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.N
   parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data/golem_ai"))
   # parser.add_argument("--replay-dataset", type=str, default=str(path_dataset/"replay_data/golem_ai/WTY_20240419_112947_1_golem_enermy_ai_episodes_1.npy.xz"))
   parser.add_argument("--num-workers", type=int, default=8)
+  parser.add_argument("--max-delay", type=int, default=20)
+  parser.add_argument("--random-interval", type=int, default=1)
 
   args = parser.parse_args(input_args)
   assert Path(args.replay_dataset).exists(), "The path of replay buffer must exist"
@@ -65,18 +67,21 @@ logs = Logs(
     'train_loss': MeanMetric(),
     'train_loss_select': MeanMetric(),
     'train_loss_pos': MeanMetric(),
-    'train_acc_select': MeanMetric(),
-    'train_acc_pos': MeanMetric(),
+    'train_loss_delay': MeanMetric(),
     'train_acc_select_use': MeanMetric(),
+    'train_acc_pos': MeanMetric(),
+    'train_acc_delay': MeanMetric(),
     'train_acc_select_and_pos': MeanMetric(),
+    'train_acc_select_and_pos_and_delay': MeanMetric(),
     'SPS': MeanMetric(),
     'epoch': 0,
     'learning_rate': MeanMetric(),
   },
   folder2name={
     'Chart': ['learning_rate', 'SPS', 'epoch'],
-    'Metrics': ['train_loss', 'train_loss_select', 'train_loss_pos',
-                'train_acc_select', 'train_acc_pos',
-                'train_acc_select_use', 'train_acc_select_and_pos'],
+    'Metrics': ['train_loss',
+                'train_loss_select', 'train_loss_pos', 'train_loss_delay',
+                'train_acc_select_use', 'train_acc_pos', 'train_acc_delay',
+                'train_acc_select_and_pos', 'train_acc_select_and_pos_and_delay'],
   }
 )
