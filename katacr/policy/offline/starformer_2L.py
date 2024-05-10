@@ -1,7 +1,5 @@
 """
-cnn_mode:
-1. "csp_darknet": Params: 15,182,444 (60.7 MB)
-2. "resnet": Params: 15,154,412 (60.6 MB)
+Global transformer with sequence length=n_step*2, (local_embd, card_and_elixir_arena_cnn_embd)
 """
 import jax, jax.numpy as jnp
 import flax.linen as nn
@@ -197,9 +195,15 @@ class StARformer(nn.Module):
     for _ in range(cfg.n_block):
       xl, xg = StARBlock(cfg=self.cfg)(xl, xg, train)
     xg = nn.LayerNorm()(xg)
-    select = Dense(5, use_bias=False)(xg)
-    pos = Dense(32*18, use_bias=False)(xg)
-    return select, pos
+    # OLD: action predict just time
+    # select = Dense(5, use_bias=False)(xg)
+    # pos = Dense(32*18, use_bias=False)(xg)
+    # NEW: future action predict
+    select = Dense(4, use_bias=False)(xg)
+    y = Dense(32, use_bias=False)(xg)
+    x = Dense(18, use_bias=False)(xg)
+    delay = Dense(cfg.max_delay+1, use_bias=False)(xg)
+    return select, y, x, delay
     
   def get_state(self, train_cfg: TrainConfig, verbose: bool = False, train: bool = True) -> TrainState:
     def check_decay_params(kp, x):
@@ -260,31 +264,41 @@ class StARformer(nn.Module):
     return state
   
   def create_fns(self):
-    def model_step(state: TrainState, s, a, r, timestep, y, train: bool):
+    def model_step(state: TrainState, s, a, r, timestep, target, train: bool):
       dropout_rng, base_rng = jax.random.split(state.dropout_rng)
+      def ce(logits, target, mask, eps=1e-6):
+        tmp = -jax.nn.log_softmax(logits).reshape(-1, logits.shape[-1])
+        # print(tmp.shape, target.shape, mask.shape)
+        return (tmp[jnp.arange(tmp.shape[0]), target.reshape(-1)] * mask).sum() / (mask.sum() + eps)
+      def acc(logits, target, mask, eps=1e-6):
+        # print(logits.shape, target.shape, mask.shape)
+        flag = (jnp.argmax(logits, -1).reshape(-1) == target.reshape(-1))
+        accuracy = (flag * mask).sum() / (mask.sum() + eps)
+        return accuracy, flag
       def loss_fn(params):
         # (B, l, 5), (B, l, 32*18)
-        select, pos = state.apply_fn({'params': params}, s, a, r, timestep, train=train, rngs={'dropout': dropout_rng})
-        y_select, y_pos = y['select'].reshape(-1), y['pos']
-        y_pos = (y_pos[...,0] * 18 + y_pos[...,1]).reshape(-1)
-        mask = y_select != 0
-        n = mask.sum() + 1
-        tmp = -jax.nn.log_softmax(select).reshape(-1, select.shape[-1])
-        loss_select = tmp[jnp.arange(tmp.shape[0]), y_select]
-        loss_select = loss_select * (1 + (self.cfg.use_action_coef - 1) * mask)
-        loss_select = loss_select.mean()
-        tmp = -jax.nn.log_softmax(pos).reshape(-1, pos.shape[-1])
-        loss_pos = (tmp[jnp.arange(tmp.shape[0]), y_pos] * mask).sum() / n
+        select, y, x, delay = state.apply_fn({'params': params}, s, a, r, timestep, train=train, rngs={'dropout': dropout_rng})
+        y_select, y_pos, y_delay = target['select'], target['pos'], target['delay']
+        mask = (y_delay.reshape(-1) < self.cfg.max_delay)
+        loss_select = ce(select, y_select, mask)
+        loss_pos_y = ce(y, y_pos[...,0], mask)
+        loss_pos_x = ce(x, y_pos[...,1], mask)
+        loss_pos = loss_pos_y + loss_pos_x
+        loss_delay = ce(delay, y_delay, mask)
         B = r.shape[0]
-        loss = B * (loss_select + loss_pos)
+        loss = B * (loss_select + loss_pos + loss_delay)
 
-        flag_select = (jnp.argmax(select, -1).reshape(-1) == y_select)
-        acc_select = flag_select.mean()
-        acc_select_use = (flag_select * mask).sum() / n
-        flag_pos = (jnp.argmax(pos, -1).reshape(-1) == y_pos)
-        acc_pos = (flag_pos * mask).sum() /  n
+        n = (mask.sum() + 1e-6)
+        acc_select_use, flag_select = acc(select, y_select-1, mask)  # y_select in [1,2,3,4]
+        acc_pos_y, flag_pos_y = acc(y, y_pos[...,0], mask)
+        acc_pos_x, flag_pos_x = acc(x, y_pos[...,1], mask)
+        acc_delay, flag_delay = acc(delay, y_delay, mask)
+
+        flag_pos = flag_pos_y * flag_pos_x
+        acc_pos = (flag_pos * mask).sum() / n
         acc_select_and_pos = (flag_select * flag_pos * mask).sum() / n
-        return loss, (loss_select, loss_pos, acc_select, acc_pos, acc_select_use, acc_select_and_pos)
+        acc_select_and_pos_and_delay = (flag_select * flag_pos * flag_delay * mask).sum() / n
+        return loss, (loss_select, loss_pos, loss_delay, acc_select_use, acc_pos, acc_delay, acc_select_and_pos, acc_select_and_pos_and_delay)
       (loss, metrics), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
       state = accumulate_grads(state, grads)
       state = state.replace(dropout_rng=base_rng)
@@ -292,18 +306,21 @@ class StARformer(nn.Module):
     self.model_step = jax.jit(model_step, static_argnames='train')
 
     def predict(state: TrainState, s, a, r, timestep, step_len: Sequence[int] = None, rng: jax.Array = None, deterministic: bool = True):
-      logits_select, logits_pos = state.apply_fn({'params': state.params}, s, a, r, timestep, train=False)
+      select, y, x, delay = state.apply_fn({'params': state.params}, s, a, r, timestep, train=False)
+      logits = dict(select=select, y=y, x=x, delay=delay)
+      ret = dict()
       if step_len is not None:
-        logits_select = logits_select[jnp.arange(logits_select.shape[0]), step_len-1, :]  # (B, 5)
-        logits_pos = logits_pos[jnp.arange(logits_pos.shape[0]), step_len-1, :]  # (B, 32*18)
-      if deterministic:
-        select = jnp.argmax(logits_select, -1, keepdims=True)
-        pos = jnp.argmax(logits_pos, -1, keepdims=True)
-      else:
-        select = jax.random.categorical(rng, logits_select, -1)[..., None]
-        pos = jax.random.categorical(rng, logits_pos, -1)[..., None]
-      y, x = pos // 18, pos % 18
-      return jnp.concatenate([select, x, y], -1), logits_select, logits_pos
+        for k, v in logits.items():
+          logits[k] = v[jnp.arange(v.shape[0]), step_len-1, :]
+      for k, v in logits.items():
+        if deterministic:
+          ret[k] = jnp.argmax(v, -1, keepdims=True)
+        else:
+          ret[k] = jax.random.categorical(rng, v, -1)[..., None]
+        if k == 'select':
+          ret[k] += 1  # card select start from 1
+      ret = jnp.concatenate([ret[k] for k in ['select', 'x', 'y', 'delay']], -1)
+      return ret, logits['select'], logits['pos']
     self.predict = jax.jit(predict, static_argnames='deterministic')
 
   def save_model(self, state, save_path):
@@ -319,13 +336,14 @@ if __name__ == '__main__':
   n_cards = 20
   n_step = 30
   max_timestep = 300
-  gpt_cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks')
-  print(dict(gpt_cfg))
-  gpt = StARformer(gpt_cfg)
+  # Total Parameters: 14,932,940 (59.7 MB)
+  cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks')
+  print(dict(cfg))
+  model = StARformer(cfg)
   # rng = jax.random.PRNGKey(42)
   # x = jax.random.randint(rng, (batch_size, n_len), 0, 6)
   # print(gpt.tabulate(rng, x, train=False))
   # variable = gpt.init(rng, x, train=False)
   # print("params:", sum([np.prod(x.shape) for x in jax.tree_util.tree_flatten(variable)[0]]))
   train_cfg = TrainConfig(batch_size=1, steps_per_epoch=512, n_step=n_step, accumulate=64)
-  state = gpt.get_state(train_cfg, verbose=True)
+  state = model.get_state(train_cfg, verbose=True)

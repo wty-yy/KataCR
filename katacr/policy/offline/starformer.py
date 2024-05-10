@@ -1,7 +1,5 @@
 """
-cnn_mode:
-1. "csp_darknet": Params: 15,182,444 (60.7 MB)
-2. "resnet": Params: 15,154,412 (60.6 MB)
+Global transformer with sequence length=n_step*3, (local_embd, card_and_elixir_embd, arena_cnn_embd)
 """
 import jax, jax.numpy as jnp
 import flax.linen as nn
@@ -44,6 +42,7 @@ class StARConfig(Config):
       setattr(self, k, v)
     self.n_bar_size = np.prod(self.bar_size) * (3 if BAR_RGB else 1)
     assert self.n_embd_global % self.n_head_global == 0, "n_embd_global must be devided by n_head_global"
+    assert self.n_embd_global % 6 == 0, "We need n_embd_global be devided by 6, since add the number of cards and elixir is 6"
     assert self.n_embd_local % self.n_head_local == 0, "n_embd_local must be devided by n_head_local"
     if self.cnn_mode == 'resnet':
       self.bar_cfg = ResNetConfig(stage_sizes=[1,1,2], filters=4)  # 24,912 (99.6 KB)
@@ -128,15 +127,18 @@ class StARBlock(nn.Module):
   def __call__(self, xl, xg, train = True):
     local_block = TransformerBlock(n_embd=self.cfg.n_embd_local, n_head=self.cfg.n_head_local, cfg=self.cfg)
     global_block = TransformerBlock(n_embd=self.cfg.n_embd_global, n_head=self.cfg.n_head_global, cfg=self.cfg)
-    B, N, M, Dl = xl.shape  # Batch, Step Length, Group Token Length, n_embd_local
-    B, N, Dg = xg.shape  # Batch, Step Length, n_embd_global
-    xl = local_block(xl.reshape(B * N, M, Dl), train=train).reshape(B, N, M, Dl)
-    zg = Dense(Dg)(xl.reshape(B, N, M * Dl))
-    zg = jnp.concatenate([zg, xg], 1)
-    mask = jnp.tri(2 * N)
-    mask = mask.at[jnp.arange(N) * 2, jnp.arange(N) * 2 + 1].set(1)
+    B, N, M, nl = xl.shape  # Batch, Step Length, Group Token Length, n_embd_local
+    B, N2, ng = xg.shape  # Batch, Step Length * 2, n_embd_global
+    xl = local_block(xl.reshape(B * N, M, nl), train=train).reshape(B, N, M, nl)
+    zg = Dense(ng)(xl.reshape(B, N, 1, M * nl))  # (B, N, 1, ng)
+    xg = xg.reshape(B, N, 2, ng)  # (B, N, 2, ng)
+    zg = jnp.concatenate([zg, xg], -2).reshape(B, 3*N, ng)  # (local_embd, card_elixir_embd, arena_embd)
+    mask = jnp.tri(N+N2)
+    mask = mask.at[jnp.arange(N) * 3, jnp.arange(N) * 3 + 1].set(1)
+    mask = mask.at[jnp.arange(N) * 3, jnp.arange(N) * 3 + 2].set(1)
+    mask = mask.at[jnp.arange(N) * 3 + 1, jnp.arange(N) * 3 + 2].set(1)
     zg = global_block(zg, mask=mask, train=train)
-    xg = zg[:, 1::2, :]
+    xg = zg.reshape(B, N, 3, ng)[...,1:,:].reshape(B, N2, ng)
     return xl, xg
 
 class StARformer(nn.Module):
@@ -161,14 +163,17 @@ class StARformer(nn.Module):
     arena = jnp.concatenate([cls, bel, bar1, bar2], -1)  # (B, N, H, W, 15)
     arena = arena * arena_mask[..., None]  # add mask
     ### Embedding Global Token ###
-    pos_embd = nn.Embed(N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(N))  # (1, N, Ng)
-    cards_g = nn.Embed(cfg.n_cards, 8)(cards).reshape(B, N, -1)  # (B, N, 5*8)
-    elixir_g = nn.Embed(cfg.n_elixir+1, 4)(elixir).reshape(B, N, -1)  # (B, N, 4)
-    xg = nn.Sequential([
-      lambda x: cfg.CNN(cfg.arena_cfg)(x),  # (B, N, 4, 3, 128)
-      lambda x: jnp.concatenate([x.reshape(B, N, -1), cards_g, elixir_g], -1),  # (B, N, 1580)
+    pos_embd = nn.Embed(2*N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(2*N))[None,...]  # (1, 2*N, Ng)
+    ng6 = ng // 6
+    cards_g = Embed(cfg.n_cards, ng6)(cards).reshape(B, N, -1)  # (B, N, 5*ng6)
+    elixir_g = Embed(cfg.n_elixir+1, ng6)(elixir)  # (B, N, ng6)
+    z1 = jnp.concatenate([cards_g, elixir_g], -1)  # (B, N, ng)
+    z2 = nn.Sequential([
+      cfg.CNN(cfg.arena_cfg),  # (B, N, 4, 3, 128)
+      lambda x: x.reshape(B, N, -1),
       Dense(ng)
-    ])(arena) + pos_embd
+    ])(arena)
+    xg = jnp.concatenate([z1, z2], -1).reshape(B, 2*N, ng) + pos_embd  # (B, 2*N, ng)
     ### Embedding Local Token ###
     ### Action ###
     select, pos = a['select'], a['pos']
@@ -176,8 +181,8 @@ class StARformer(nn.Module):
     pos = Embed(32*18+1, nl)(pos[...,0]*18+pos[...,1]).reshape(B, N, 1, nl)
     a = jnp.concatenate([select, pos], -2)  # (B, N, 2, Nl)
     ### State ###
-    cards = nn.Embed(cfg.n_cards, nl)(cards)  # (B, N, 5, Nl)
-    elixir = nn.Embed(cfg.n_elixir+1, nl)(elixir).reshape(B, N, 1, nl)  # (B, N, 1, Nl)
+    cards = Embed(cfg.n_cards, nl)(cards)  # (B, N, 5, Nl)
+    elixir = Embed(cfg.n_elixir+1, nl)(elixir).reshape(B, N, 1, nl)  # (B, N, 1, Nl)
     p1, p2 = self.cfg.patch_size
     arena = rearrange(arena, 'B N (H p1) (W p2) C -> B N (H W) (p1 p2 C)', p1=p1, p2=p2)
     P = H * W // p1 // p2
@@ -195,15 +200,16 @@ class StARformer(nn.Module):
     xg = nn.Dropout(cfg.p_drop_embd)(xg, deterministic=not train)
     for _ in range(cfg.n_block):
       xl, xg = StARBlock(cfg=self.cfg)(xl, xg, train)
-    xg = nn.LayerNorm()(xg)
+    xg = nn.LayerNorm()(xg).reshape(B, N, 2, ng)
     # OLD: action predict just time
     # select = Dense(5, use_bias=False)(xg)
     # pos = Dense(32*18, use_bias=False)(xg)
-    # NEW: future action predict
-    select = Dense(4, use_bias=False)(xg)
-    y = Dense(32, use_bias=False)(xg)
-    x = Dense(18, use_bias=False)(xg)
-    delay = Dense(cfg.max_delay+1, use_bias=False)(xg)
+    # NEW: future action predict and card, arena sequence
+    card, arena = xg[...,0,:], xg[...,1,:]
+    select = Dense(4, use_bias=False)(card)
+    y = Dense(32, use_bias=False)(arena)
+    x = Dense(18, use_bias=False)(arena)
+    delay = Dense(cfg.max_delay+1, use_bias=False)(arena)
     return select, y, x, delay
     
   def get_state(self, train_cfg: TrainConfig, verbose: bool = False, train: bool = True) -> TrainState:
@@ -265,21 +271,22 @@ class StARformer(nn.Module):
     return state
   
   def create_fns(self):
-    def model_step(state: TrainState, s, a, r, timestep, y, train: bool):
+    def model_step(state: TrainState, s, a, r, timestep, target, train: bool):
       dropout_rng, base_rng = jax.random.split(state.dropout_rng)
       def ce(logits, target, mask, eps=1e-6):
         tmp = -jax.nn.log_softmax(logits).reshape(-1, logits.shape[-1])
+        # print(tmp.shape, target.shape, mask.shape)
         return (tmp[jnp.arange(tmp.shape[0]), target.reshape(-1)] * mask).sum() / (mask.sum() + eps)
       def acc(logits, target, mask, eps=1e-6):
-        flag = (jnp.argmax(logits, -1).reshape(-1) == target)
+        # print(logits.shape, target.shape, mask.shape)
+        flag = (jnp.argmax(logits, -1).reshape(-1) == target.reshape(-1))
         accuracy = (flag * mask).sum() / (mask.sum() + eps)
         return accuracy, flag
       def loss_fn(params):
         # (B, l, 5), (B, l, 32*18)
         select, y, x, delay = state.apply_fn({'params': params}, s, a, r, timestep, train=train, rngs={'dropout': dropout_rng})
-        y_select, y_pos, y_delay = y['select'].reshape(-1), y['pos'], y['delay'].reshape(-1)
-        mask = (y_delay < self.cfg.max_delay)
-        y_pos = (y_pos[...,0] * 18 + y_pos[...,1]).reshape(-1)
+        y_select, y_pos, y_delay = target['select'], target['pos'], target['delay']
+        mask = (y_delay.reshape(-1) < self.cfg.max_delay)
         loss_select = ce(select, y_select, mask)
         loss_pos_y = ce(y, y_pos[...,0], mask)
         loss_pos_x = ce(x, y_pos[...,1], mask)
@@ -329,12 +336,14 @@ class StARformer(nn.Module):
     print(f"Save weights to {save_path}")
   
 if __name__ == '__main__':
+  import os
+  os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
   from katacr.constants.label_list import unit_list
   n_unit = len(unit_list)
   n_cards = 20
   n_step = 30
   max_timestep = 300
-  # Total Parameters: 14,932,940 (59.7 MB)
+  # Total Parameters: 14,931,040 (59.7 MB)
   cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks')
   print(dict(cfg))
   model = StARformer(cfg)

@@ -99,7 +99,7 @@ Use action ratio: {action_ratio*100:.2f}%, sample rate: {1/action_ratio:.2f}:{1/
 Max action delay: {self.action_delays.max()}, Mean action delay: {self.action_delays.mean():.2f}, \
 Action number: {(self.action_delays==0).sum()}"
     # print("Max delay idx:", np.argmax(self.action_delays), "Action frame:", np.where(self.action_delays==0), "Action number:", (self.action_delays==0).sum())
-    print(data['done_idx'])
+    # print(data['done_idx'])
     print(colorstr("INFO"), "Dataset:", data['info'])
   
   def debug(self):

@@ -25,12 +25,15 @@ def train():
   args.max_timestep = int(max(ds_builder.data['timestep']))
   args.steps_per_epoch = len(train_ds)
   ### Model ###
-  if 'starformer' in args.name.lower():
+  if 'starformer_3l' in args.name.lower():
     from katacr.policy.offline.starformer import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
   if 'vidformer' in args.name.lower():
     from katacr.policy.offline.vidformer import ViDConfig, TrainConfig, ViDformer
     ModelConfig, Model = ViDConfig, ViDformer
+  if 'starformer_2l' in args.name.lower():
+    from katacr.policy.offline.starformer_2L import StARConfig, TrainConfig, StARformer
+    ModelConfig, Model = StARConfig, StARformer
   model_cfg = ModelConfig(**vars(args))
   model = Model(model_cfg)
   model.create_fns()
@@ -66,7 +69,7 @@ def train():
         [loss, loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd])
       # print(loss, loss_s, loss_p)
       # print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
-      bar.set_description(f"{loss=:.4f}, {loss_s=:.4f}, {loss_p=:.4f}, {loss_d:.4f}, {acc_su=:.4f}, {acc_p=:.4f}, {acc_d=:.4f}, {acc_sp=:.4f}, {acc_spd=:.4f}")
+      bar.set_description(f"{loss=:.4f}, {loss_s=:.4f}, {loss_p=:.4f}, {loss_d=:.4f}, {acc_su=:.4f}, {acc_p=:.4f}, {acc_d=:.4f}, {acc_sp=:.4f}, {acc_spd=:.4f}")
       if state.step % write_tfboard_freq == 0:
         logs.update(
           ['SPS', 'epoch', 'learning_rate'],
