@@ -163,12 +163,15 @@ class StARformer(nn.Module):
     arena = arena * arena_mask[..., None]  # add mask
     ### Embedding Global Token ###
     pos_embd = nn.Embed(N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(N))  # (1, N, Ng)
-    cards_g = Embed(cfg.n_cards, 8)(cards).reshape(B, N, -1)  # (B, N, 5*8)
-    elixir_g = Embed(cfg.n_elixir+1, 4)(elixir).reshape(B, N, -1)  # (B, N, 4)
+    cards_g = Embed(cfg.n_cards, 2)(cards).reshape(B, N, -1)  # (B, N, 5*2)
+    elixir_g = Embed(cfg.n_elixir+1, 2)(elixir).reshape(B, N, -1)  # (B, N, 2)
     xg = nn.Sequential([
       lambda x: cfg.CNN(cfg.arena_cfg)(x),  # (B, N, 4, 3, 128)
-      lambda x: jnp.concatenate([x.reshape(B, N, -1), cards_g, elixir_g], -1),  # (B, N, 1580)
-      Dense(ng)
+      lambda x: x.reshape(B, N, -1),
+      Dense(ng-6*2),
+      lambda x: jnp.concatenate([x, cards_g, elixir_g], -1)  # (B, N, Ng)
+      # lambda x: jnp.concatenate([x.reshape(B, N, -1), cards_g, elixir_g], -1),  # (B, N, 1580)
+      # Dense(ng)
     ])(arena) + pos_embd
     ### Embedding Local Token ###
     ### Action ###
