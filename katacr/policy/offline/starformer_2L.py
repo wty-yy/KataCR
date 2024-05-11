@@ -289,7 +289,7 @@ class StARformer(nn.Module):
         loss = B * (loss_select + loss_pos + loss_delay)
 
         n = (mask.sum() + 1e-6)
-        acc_select_use, flag_select = acc(select, y_select-1, mask)  # y_select in [1,2,3,4]
+        acc_select_use, flag_select = acc(select, y_select, mask)
         acc_pos_y, flag_pos_y = acc(y, y_pos[...,0], mask)
         acc_pos_x, flag_pos_x = acc(x, y_pos[...,1], mask)
         acc_delay, flag_delay = acc(delay, y_delay, mask)

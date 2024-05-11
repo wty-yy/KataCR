@@ -6,12 +6,14 @@
 #   --name "StARformer_v0.2_golem_ai" --replay-dataset "/data/user/zhihengwu/Coding/dataset/clash-royale-replay-dataset/golem_ai" $2
 # CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 100 --batch-size 32 --nominal-batch-size 128 --cnn-mode "cnn_blocks" \
 #   --name "StARformer_v0.4_fast_pig_2.6" --replay-dataset "/data/user/zhihengwu/Coding/dataset/Clash-Royale-Replay-Dataset" $2
-# CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 10 --batch-size 32 --nominal-batch-size 128 --cnn-mode "cnn_blocks" \
-#   --name "StARformer_3L_v0.6_golem_ai_no_shuffle" --card-shuffle False --pred-card-idx $2
-CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 30 --batch-size 32 --nominal-batch-size 128 --cnn-mode "cnn_blocks" \
-  --name "StARformer_3L_v0.7_golem_ai" $2
 # CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 30 --batch-size 32 --nominal-batch-size 128 --cnn-mode "cnn_blocks" \
-#   --name "StARformer_2L_v0.6_golem_ai" $2
+#   --name "StARformer_3L_v0.6_golem_ai_no_shuffle" --card-shuffle False --pred-card-idx $2
+# CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 30 --batch-size 32 --nominal-batch-size 128 --cnn-mode "cnn_blocks" \
+#   --name "StARformer_3L_v0.6_golem_ai" --pred-card-idx $2
+# CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 30 --batch-size 32 --nominal-batch-size 128 --cnn-mode "cnn_blocks" \
+#   --name "StARformer_3L_v0.7_golem_ai" $2
+CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 30 --batch-size 32 --nominal-batch-size 128 --cnn-mode "cnn_blocks" \
+  --name "StARformer_2L_v0.6_golem_ai" --pred-card-idx $2
 # CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 30 --batch-size 32 --nominal-batch-size 128 --cnn-mode "csp_darknet" \
 #   --name "StARformer_v0.4_golem_ai" $2
 # CUDA_VISIBLE_DEVICES=$1 python katacr/policy/offline/train.py --wandb --total-epochs 100 --batch-size 16 --nominal-batch-size 128 \

@@ -192,7 +192,7 @@ def build_feature(
       'select': Index of selecting card, shape=(), value=(0,1,2,3,4)
       'pos': Position (yx) of placing the card, shape=(2,), value in (32x18) and (-1, 0) (padding)
     y (Dict): (If train==True)
-      'select': Index of selecting card (future action), shape=(), value=(1,2,3,4)
+      'select': Index of selecting card (future action), shape=(), value=(0,1,2,3)
       'pos': Position (yx) of placing the card (future action), shape=(2,), value in (32x18)
       'delay': Delay time for the nearest future action
   NOTE: Empty index embedding:
@@ -256,7 +256,8 @@ def build_feature(
   ### Build Target Action ###
   y['select'] = np.array(target_action['card_id'], np.int32)
   if shuffle:
-    y['select'] = np.array(np.argwhere(idx == y['select'])[0,0], np.int32)
+    y['select'] = np.array(np.argwhere(idx == y['select'])[0,0], np.int32) - 1
+    assert y['select'] != -1
   if not use_card_idx:
     y['select'] = target_action['card_name_idx']
   xy = np.array(target_action['xy'], np.int32)
