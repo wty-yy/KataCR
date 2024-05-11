@@ -2,6 +2,9 @@
 cnn_mode:
 1. "csp_darknet": Params: 15,182,444 (60.7 MB)
 2. "resnet": Params: 15,154,412 (60.6 MB)
+
+v0.6:
+1. Split card and elixir with arena global embd: Total Parameters: 15,003,058 (60.0 MB)
 """
 import jax, jax.numpy as jnp
 import flax.linen as nn

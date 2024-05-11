@@ -253,6 +253,8 @@ def build_feature(
       a['select'] = empty_card_idx
   if not train:
     return s, a
+  if train and delay_clip is None:
+    return s, a, a
   ### Build Target Action ###
   y['select'] = np.array(target_action['card_id'], np.int32)
   if shuffle:

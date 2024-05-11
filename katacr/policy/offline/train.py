@@ -42,6 +42,8 @@ def train():
     from katacr.policy.offline.starformer_no_delay import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
     args.no_delay = True
+  print(args.no_delay)
+  exit()
   model_cfg = ModelConfig(**vars(args))
   model = Model(model_cfg)
   model.create_fns()
