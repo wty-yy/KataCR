@@ -268,7 +268,7 @@ class StARformer(nn.Module):
         y_select, y_pos = y['select'].reshape(-1), y['pos']
         y_pos = (y_pos[...,0] * 18 + y_pos[...,1]).reshape(-1)
         mask = y_select != 0
-        n = mask.sum() + 1
+        n = mask.sum() + 1e-6
         tmp = -jax.nn.log_softmax(select).reshape(-1, select.shape[-1])
         loss_select = tmp[jnp.arange(tmp.shape[0]), y_select]
         loss_select = loss_select * (1 + (self.cfg.use_action_coef - 1) * mask)

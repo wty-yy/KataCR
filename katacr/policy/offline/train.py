@@ -27,6 +27,7 @@ def train():
   args.max_timestep = int(max(ds_builder.data['timestep']))
   args.steps_per_epoch = len(train_ds)
   ### Model ###
+  args.no_delay = False
   if 'starformer_3l' in args.name.lower():
     from katacr.policy.offline.starformer import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
@@ -40,6 +41,7 @@ def train():
   if 'starformer_no_delay' in args.name.lower():
     from katacr.policy.offline.starformer_no_delay import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
+    args.no_delay = True
   model_cfg = ModelConfig(**vars(args))
   model = Model(model_cfg)
   model.create_fns()
@@ -66,13 +68,22 @@ def train():
       a['select'] = np.concatenate([np.full((B, 1), 0, np.int32), a['select'][:,:-1]], 1)  # (B, l)
       pad = np.stack([np.full((B, 1), 0, np.int32), np.full((B, 1), -1, np.int32)], -1)
       a['pos'] = np.concatenate([pad, a['pos'][:,:-1]], 1)  # (B, l, 2)
-      state, (loss, (loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
-      logs.update(
-        ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_loss_delay',
-         'train_acc_select_use', 'train_acc_pos',
-         'train_acc_delay', 'train_acc_select_and_pos',
-         'train_acc_select_and_pos_and_delay'],
-        [loss, loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd])
+      if args.no_delay:
+        state, (loss, (loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
+        logs.update(
+          ['train_loss', 'train_loss_select', 'train_loss_pos',
+          'train_acc_select', 'train_acc_pos', 'train_acc_select_use',
+          'train_acc_select_and_pos',],
+          [loss, loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp])
+        loss_d = acc_spd = None
+      else:
+        state, (loss, (loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
+        logs.update(
+          ['train_loss', 'train_loss_select', 'train_loss_pos', 'train_loss_delay',
+          'train_acc_select_use', 'train_acc_pos',
+          'train_acc_delay', 'train_acc_select_and_pos',
+          'train_acc_select_and_pos_and_delay'],
+          [loss, loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd])
       # print(loss, loss_s, loss_p)
       # print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
       bar.set_description(f"{loss=:.4f}, {loss_s=:.4f}, {loss_p=:.4f}, {loss_d=:.4f}, {acc_su=:.4f}, {acc_p=:.4f}, {acc_d=:.4f}, {acc_sp=:.4f}, {acc_spd=:.4f}")
