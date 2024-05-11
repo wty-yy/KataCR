@@ -15,9 +15,10 @@ card_cls = CardClassifier()
 idx2cls = card_cls.idx2card
 
 path_dataset = path_dataset / "replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
-ds_builder = DatasetBuilder(path_dataset, 30)
+ds_builder = DatasetBuilder(path_dataset, 5)
 # ds_builder.debug()
-ds = ds_builder.get_dataset(1, 1, use_card_idx=False)
+use_card_idx = True
+ds = ds_builder.get_dataset(1, 1, use_card_idx=use_card_idx, random_interval=2)
 cv2.namedWindow("Arena", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
 for s, a, rtg, timestep, y in tqdm(ds):
   for x in [s, a, y]:
@@ -32,22 +33,25 @@ for s, a, rtg, timestep, y in tqdm(ds):
   print(s['cards'][0])
   print(a['select'][0])
   print(y['select'][0])
-  for i in range(30):
+  for i in range(ds_builder.n_step):
     select = a['select'][0,i]
     cards = s['cards'][0,i]
-    # if select != 0:
-    if idx2cls[str(select)] != 'empty':
-      # print(f"Action select={select}, card_name={idx2cls[str(cards[select])]} at frame={i}")
-      print(f"Action select={select}, card_name={idx2cls[str(select)]} at frame={i}")
-  for i in range(30):
+    if (use_card_idx and select != 0) or (not use_card_idx and idx2cls[str(select)] != 'empty'):
+      if use_card_idx:
+        print(f"Action select={select}, card_name={idx2cls[str(cards[select])]} at frame={i}")
+      else:
+        print(f"Action select={select}, card_name={idx2cls[str(select)]} at frame={i}")
+  for i in range(ds_builder.n_step):
     # img = s['arena'][0,i,...,0]
     arena = s['arena'][0,i]  # (32, 18, [cls, bel, bar1, bar2])
     mask = s['arena_mask'][0,i,...,None]
     select = y['select'][0,i]
     cards = s['cards'][0,i]
     delay = y['delay'][0,i]
-    # print(f"Target Action select={select}, card_name={idx2cls[str(cards[select])]}, delay={delay}")
-    print(f"Target Action select={select}, card_name={idx2cls[str(select)]}, delay={delay}")
+    if use_card_idx:
+      print(f"Target Action select={select}, card_name={idx2cls[str(cards[select])]}, delay={delay}")
+    else:
+      print(f"Target Action select={select}, card_name={idx2cls[str(select)]}, delay={delay}")
     # print("RTG:", rtg[0,i])
     # print(mask.shape, img.shape)
     label2color = build_label2colors(arena[...,0].reshape(-1))

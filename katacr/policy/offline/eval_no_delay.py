@@ -19,8 +19,7 @@ from katacr.policy.replay_data.data_display import GridDrawer
 import time
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232147/ckpt"
-# path_weights = path_root / "logs/Policy/StARformer_2L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232848/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_no_delay_v0.6_golem_ai_cnn_blocks__nbc128__ep15__0__20240511_133617/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -60,11 +59,8 @@ class Evaluator:
     # load_step = 25
     load_info = ckpt_mngr.restore(load_step)
     params, cfg = load_info['variables']['params'], load_info['config']
-    if 'StARformer' in str(path_weights):
-      if 'starformer_3l' in str(path_weights).lower():
-        from katacr.policy.offline.starformer import StARformer, StARConfig, TrainConfig
-      if 'starformer_2l' in str(path_weights).lower():
-        from katacr.policy.offline.starformer_2L import StARformer, StARConfig, TrainConfig
+    if 'starformer_no_delay' in str(path_weights).lower():
+      from katacr.policy.offline.starformer_no_delay import StARformer, StARConfig, TrainConfig
       if 'cnn_mode' not in cfg:
         cfg['cnn_mode'] = 'resnet'
       self.model = StARformer(StARConfig(**cfg))
@@ -133,7 +129,7 @@ class Evaluator:
       'rtg': pad(self.rtg),
       'timestep': pad(self.timestep),
     }
-    action, logits_select, logits_x, logits_y = jax.device_get(self.model.predict(
+    action, logits_select, logits_pos = jax.device_get(self.model.predict(
       self.state,
       {k: pad(v) for k, v in self.s.items()},
       {k: pad(v) for k, v in self.a.items()},
@@ -141,24 +137,17 @@ class Evaluator:
       pad(self.timestep),
       step_len, rng, self.deterministic))
     action = action[0]
-    prob_select = np.exp(logits_select)[0].reshape(4,)  # future action: 5->4
+    prob_select = np.exp(logits_select)[0]
     prob_select /= prob_select.sum()
-    prob_x = np.exp(logits_x-logits_x.max())[0].reshape(1, 18)
-    prob_x /= prob_x.sum()
-    prob_y = np.exp(logits_y-logits_y.max())[0].reshape(32, 1)
-    prob_y /= prob_y.sum()
-    prob_pos = prob_y * prob_x
+    prob_pos = np.exp(logits_pos-logits_pos.max())[0].reshape(32, 18)
     prob_pos /= prob_pos.sum()
-    # prob_pos = np.exp(logits_pos-logits_pos.max())[0].reshape(32, 18)
-    # prob_pos /= prob_pos.sum()
     # if step_len == 30:
     #   np.save("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_eval_dataset_50.npy", data, allow_pickle=True)
     #   exit()
     if self.show_predict:
       sel_drawer = GridDrawer(1, 5, size=(576, 50))
-      sel_drawer.paint((0, 0), (0,0,0), f"delay:\n{action[-1]:.0f}")  # future action
-      for i in range(1,5):
-        prob = prob_select[i-1]
+      for i in range(5):
+        prob = prob_select[i]
         sel_drawer.paint((i, 0), (0, 0, int(255*prob)), f"{prob*100:.2f}")
       simg = np.array(sel_drawer.image)
       # if not self.open_window:
@@ -218,9 +207,9 @@ class Evaluator:
         #   print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
         #   a[0] = 0  # Skip
         with self.sw[1]:
-          s, _, r, done = self.env.step(a)
+          s, _, r, done = self.env.step(a, max_delay=None)
           # s, a, r, done = self.env.step(a)
-        a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None, 'delay': a[3]}
+        a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None}
         print("Action:", a)
         # When use future action predict, a[0] in [1,2,3,4]
         if self.verbose:
@@ -232,7 +221,8 @@ class Evaluator:
 
 if __name__ == '__main__':
   # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
-  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4"
   evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
 

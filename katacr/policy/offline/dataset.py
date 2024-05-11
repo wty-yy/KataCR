@@ -88,7 +88,7 @@ class DatasetBuilder:
     action_ratio = self.sample_weights.sum() / len(end_idx)
     self.sample_weights = self.sample_weights * 1 / action_ratio + (1 - self.sample_weights) * 1 / (1 - action_ratio)
     for i in np.where(sample_weights)[0]:
-      for j in range(i, min(i+30, len(self.sample_weights))):
+      for j in range(i, min(i+self.n_step, len(self.sample_weights))):
         alpha = 1 / (j - i + 1)
         self.sample_weights[j] = max(self.sample_weights[j], alpha * 1 / action_ratio)
         if replay['terminal'][end_idx[j]]:
@@ -365,9 +365,10 @@ if __name__ == '__main__':
   # path_dataset = "/home/yy/Coding/GitHub/KataCR/logs/offline/test_replay_data"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
-  ds_builder = DatasetBuilder(path_dataset, 30)
-  # ds_builder.debug()
-  # exit()
+  # ds_builder = DatasetBuilder(path_dataset, 30)
+  ds_builder = DatasetBuilder(path_dataset, 5)
+  ds_builder.debug()
+  exit()
   # debug_save_features("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_dataset_50")
   # exit()
   print("n_cards:", ds_builder.n_cards)

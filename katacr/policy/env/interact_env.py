@@ -78,9 +78,10 @@ class InteractEnv:
     """
     assert self.done, "self.done=True, need reset first!"
     act_time = None
-    if action[0] and (len(action) == 3 or (len(action) == 4 and action[-1] <= max_delay)):
-      self._act(action[0], action[1:3])
-      act_time = time.time()
+    if action[0]:
+      if (max_delay is None) or (len(action) == 3 or (len(action) == 4 and action[-1] <= max_delay)):
+        self._act(action[0], action[1:3])
+        act_time = time.time()
     s, a, r, done, info = self.q_sar.get()
     while action[0] and not done and act_time is not None and info['timestamp'] < act_time:
       s, a, r, done, info = self.q_sar.get()
