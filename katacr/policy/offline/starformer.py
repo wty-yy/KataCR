@@ -332,10 +332,10 @@ class StARformer(nn.Module):
           ret[k] = jnp.argmax(v, -1, keepdims=True)
         else:
           ret[k] = jax.random.categorical(rng, v, -1)[..., None]
-        if k == 'select':
+        if k == 'select' and self.cfg.pred_card_idx:
           ret[k] += 1  # card select start from 1
       ret = jnp.concatenate([ret[k] for k in ['select', 'x', 'y', 'delay']], -1)
-      return ret, logits['select'], logits['pos']
+      return ret, logits['select'], logits['x'], logits['y']
     self.predict = jax.jit(predict, static_argnames='deterministic')
 
   def save_model(self, state, save_path):

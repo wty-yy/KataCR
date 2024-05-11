@@ -70,17 +70,19 @@ class InteractEnv:
     tap2part = [params[i] / background_size[i] for i in range(2)]
     self._tap(get_xy(2, tap2part))
 
-  def step(self, action):
+  def step(self, action, max_delay=5):
     """
     Args:
-      action (np.ndarray): [select_index, position_xy], shape=(3,)
+      action (np.ndarray): [select_index, position_xy, (delay)], shape=(3,) or (4,)
+      max_delay (int): The max delay time.
     """
     assert self.done, "self.done=True, need reset first!"
-    if action[0]:
-      self._act(action[0], action[1:])
+    act_time = None
+    if action[0] and (len(action) == 3 or (len(action) == 4 and action[-1] <= max_delay)):
+      self._act(action[0], action[1:3])
       act_time = time.time()
     s, a, r, done, info = self.q_sar.get()
-    while action[0] and not done and info['timestamp'] < act_time:
+    while action[0] and not done and act_time is not None and info['timestamp'] < act_time:
       s, a, r, done, info = self.q_sar.get()
     self.dt.update(info['dt'])
     self._show_dt()

@@ -19,8 +19,7 @@ from katacr.policy.replay_data.data_display import GridDrawer
 import time
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232147/ckpt"
-# path_weights = path_root / "logs/Policy/StARformer_2L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232848/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_3L_v0.7_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_231638/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -61,10 +60,7 @@ class Evaluator:
     load_info = ckpt_mngr.restore(load_step)
     params, cfg = load_info['variables']['params'], load_info['config']
     if 'StARformer' in str(path_weights):
-      if 'starformer_3l' in str(path_weights).lower():
-        from katacr.policy.offline.starformer import StARformer, StARConfig, TrainConfig
-      if 'starformer_2l' in str(path_weights).lower():
-        from katacr.policy.offline.starformer_2L import StARformer, StARConfig, TrainConfig
+      from katacr.policy.offline.starformer import StARformer, StARConfig, TrainConfig
       if 'cnn_mode' not in cfg:
         cfg['cnn_mode'] = 'resnet'
       self.model = StARformer(StARConfig(**cfg))
@@ -80,7 +76,8 @@ class Evaluator:
     self.n_bar_size = self.model.cfg.n_bar_size
     self._warmup()
     self.sw = [Stopwatch() for _ in range(2)]
-    self.idx2card = self.env.idx2card
+    self.idx2card = {int(k): v for k , v in self.env.idx2card.items()}
+    self.card2idx = {v: k for k, v in self.idx2card.items()}
     print("Complete!")
   
   def _init_sart(self):
@@ -90,7 +87,7 @@ class Evaluator:
     self.timestep = []
   
   def _add_sart(self, s, a, rtg, timestep):
-    ns, na = build_feature(s, a)
+    ns, na = build_feature(s, a, use_card_idx=False)
     for x, nx in zip([self.s, self.a], [ns, na]):
       for k in x.keys():
         x[k].append(nx[k])
@@ -115,7 +112,7 @@ class Evaluator:
       self.state,
       s, a, r, timestep, l, self.rng, self.deterministic)
   
-  def get_action(self):
+  def get_action(self, cards):
     n_step = self.n_step
     def pad(x):
       x = np.expand_dims(np.stack(x[-n_step:]), 0)
@@ -140,8 +137,17 @@ class Evaluator:
       pad(self.rtg),
       pad(self.timestep),
       step_len, rng, self.deterministic))
-    action = action[0]
-    prob_select = np.exp(logits_select)[0].reshape(4,)  # future action: 5->4
+    action = np.array(action[0])
+    for i in range(len(cards)):
+      if self.idx2card[cards[i]] == 'ice-spirit-evolution':
+        cards[i] = self.card2idx['ice-spirit']
+    action[0] = np.argmax(logits_select[0,cards])+1
+    prob_select_all = np.exp(logits_select-logits_select.max())[0]
+    prob_select_all /= prob_select_all.sum()
+    for i in np.argsort(prob_select_all)[::-1]:
+      print(f"{self.idx2card[i]}={prob_select_all[i]:.2f}", end=',')
+    print()
+    prob_select = np.exp(logits_select[0,cards]-logits_select[0,cards].max())
     prob_select /= prob_select.sum()
     prob_x = np.exp(logits_x-logits_x.max())[0].reshape(1, 18)
     prob_x /= prob_x.sum()
@@ -208,15 +214,15 @@ class Evaluator:
       while not done:
         if s['elixir'] is not None: last_elixir = s['elixir']
         with self.sw[0]:
-          a = self.get_action()
+          a = self.get_action(s['cards'][1:])
         a = np.array(a)
-        card = self.idx2card[str(s['cards'][a[0]])]
+        card = self.idx2card[s['cards'][a[0]]]
         if a[0] and card == 'empty':
           print(f"Skip action, since card index {a[0]} is 'empty'")
           a[0] = 0  # Skip
-        # if a[0] and card2elixir[card] > last_elixir:
-        #   print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
-        #   a[0] = 0  # Skip
+        if a[0] and card2elixir[card] > last_elixir:
+          print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
+          a[0] = 0  # Skip
         with self.sw[1]:
           s, _, r, done = self.env.step(a)
           # s, a, r, done = self.env.step(a)

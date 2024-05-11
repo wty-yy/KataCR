@@ -311,7 +311,7 @@ class StARformer(nn.Module):
       ret = dict()
       if step_len is not None:
         for k, v in logits.items():
-          logits[k] = v[jnp.arange(v.shape[0]), step_len-1, :]
+          logits[k] = v[jnp.arange(v.shape[0]), step_len-1, :]  # (B, -1)
       for k, v in logits.items():
         if deterministic:
           ret[k] = jnp.argmax(v, -1, keepdims=True)
@@ -320,7 +320,7 @@ class StARformer(nn.Module):
         if k == 'select':
           ret[k] += 1  # card select start from 1
       ret = jnp.concatenate([ret[k] for k in ['select', 'x', 'y', 'delay']], -1)
-      return ret, logits['select'], logits['pos']
+      return ret, logits['select'], logits['x'], logits['y']
     self.predict = jax.jit(predict, static_argnames='deterministic')
 
   def save_model(self, state, save_path):

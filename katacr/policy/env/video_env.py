@@ -64,15 +64,16 @@ class VideoEnv:
     self._show_dt()
     return s, a, r
   
-  def step(self, action):
+  def step(self, action, max_delay=5):
     """
     Args:
-      action (np.ndarray): [select_index, position_xy], shape=(3,)
+      action (np.ndarray): [select_index, position_xy, (delay)], shape=(3,) or (4,)
+      max_delay (int): The max delay time.
     """
     assert self.done, "self.done=True, need reset first!"
     s, a, r, done = self.get_sar()
-    if action[0]:
-      print(colorstr('yellow', 'bold', f"Predict Action (time={s['time']},frame={self.count}):"), action)
+    if action[0] and (len(action) == 3 or (len(action) == 4 and action[-1] <= max_delay)):
+      print(colorstr('yellow', 'bold', f"Predict Action (time={s['time']},frame={self.count},delay={action[-1]}):"), action)
     self._show_dt()
     return s, a, r, done
 
