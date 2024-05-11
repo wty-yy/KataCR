@@ -282,7 +282,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
    2. 重新设计去除CNN部分的StARformer，简单称为ViDformer
    3. StARformer的CNN部分换成特征提取能力更强的CSPDarkNet（后发现效果更差）
 
-### v0.7.17 (2024.5.10)
+### v0.7.17 (2024.5.10-2024.5.11)
 模型版本v0.5
 1. 将预测action修改为向未来20帧（包括当前帧）最近的动作进行预测，使action更稠密，相应修改loss和模型输出
 2. 加入use action的权重系数
@@ -296,3 +296,6 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 模型版本v0.7
 1. 加入`pred_card_idx`可选项，将action和target_action中的card_idx转为`card_name_idx`，修改模型的输出与输入编码
 2. 修改数据集读入，使其支持`pred_card_idx`，注意`target_action`直接从`card_name_idx`获取未来的放置单位，而非从当前的`state`中获取放置单位名称索引
+
+模型版本v0.8
+1. 尝试减少`n_ste=5`，使用`no_delay`版本进行训练
