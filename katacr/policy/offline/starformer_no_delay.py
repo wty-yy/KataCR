@@ -196,7 +196,7 @@ class StARformer(nn.Module):
     ### Concatenate Group ###
     xl = jnp.concatenate([a, s, r], 2)  # (B, N, 2 + 150 + 1, Nl)
     time_embd = nn.Embed(cfg.max_timestep+1, nl, embedding_init=nn.initializers.zeros)(timestep).reshape(B, N, 1, nl)  # (B, N) -> (B, N, 1, Nl)
-    xl = xl + time_embd.repeat(xl.shape[2], 2)
+    xl = xl + time_embd.repeat(xl.shape[2], 2)  # TEST: NO time_embd
     ### StARformer ###
     xl = nn.Dropout(cfg.p_drop_embd)(xl, deterministic=not train)
     xg = nn.Dropout(cfg.p_drop_embd)(xg, deterministic=not train)
@@ -277,6 +277,7 @@ class StARformer(nn.Module):
         n = mask.sum() + 1e-6
         tmp = -jax.nn.log_softmax(select).reshape(-1, select.shape[-1])
         loss_select = tmp[jnp.arange(tmp.shape[0]), y_select]
+        # print("DEBUG:", loss_select.shape, mask.shape)
         loss_select = loss_select * (1 + (self.cfg.use_action_coef - 1) * mask)
         loss_select = loss_select.mean()
         tmp = -jax.nn.log_softmax(pos).reshape(-1, pos.shape[-1])
@@ -323,7 +324,7 @@ if __name__ == '__main__':
   from katacr.constants.label_list import unit_list
   n_unit = len(unit_list)
   n_cards = 20
-  n_step = 30
+  n_step = 5
   max_timestep = 300
   gpt_cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks')
   print(dict(gpt_cfg))

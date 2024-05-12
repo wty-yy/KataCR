@@ -70,6 +70,7 @@ logs = Logs(
     'train_loss_select': MeanMetric(),
     'train_loss_pos': MeanMetric(),
     'train_loss_delay': MeanMetric(),
+    'train_acc_select': MeanMetric(),
     'train_acc_select_use': MeanMetric(),
     'train_acc_pos': MeanMetric(),
     'train_acc_delay': MeanMetric(),
@@ -83,7 +84,7 @@ logs = Logs(
     'Chart': ['learning_rate', 'SPS', 'epoch'],
     'Metrics': ['train_loss',
                 'train_loss_select', 'train_loss_pos', 'train_loss_delay',
-                'train_acc_select_use', 'train_acc_pos', 'train_acc_delay',
+                'train_acc_select', 'train_acc_select_use', 'train_acc_pos', 'train_acc_delay',
                 'train_acc_select_and_pos', 'train_acc_select_and_pos_and_delay'],
   }
 )

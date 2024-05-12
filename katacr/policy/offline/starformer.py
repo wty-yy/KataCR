@@ -281,9 +281,11 @@ class StARformer(nn.Module):
   def create_fns(self):
     def model_step(state: TrainState, s, a, r, timestep, target, train: bool):
       dropout_rng, base_rng = jax.random.split(state.dropout_rng)
-      def ce(logits, target, mask, eps=1e-6):
+      def ce(logits, target, mask=None, eps=1e-6):
         tmp = -jax.nn.log_softmax(logits).reshape(-1, logits.shape[-1])
         # print(tmp.shape, target.shape, mask.shape)
+        if mask is None:
+          return tmp[jnp.arange(tmp.shape[0]), target.reshape(-1)].mean()
         return (tmp[jnp.arange(tmp.shape[0]), target.reshape(-1)] * mask).sum() / (mask.sum() + eps)
       def acc(logits, target, mask, eps=1e-6):
         # print(logits.shape, target.shape, mask.shape)
@@ -295,11 +297,11 @@ class StARformer(nn.Module):
         select, y, x, delay = state.apply_fn({'params': params}, s, a, r, timestep, train=train, rngs={'dropout': dropout_rng})
         y_select, y_pos, y_delay = target['select'], target['pos'], target['delay']
         mask = (y_delay.reshape(-1) < self.cfg.max_delay)
-        loss_select = ce(select, y_select, mask)
-        loss_pos_y = ce(y, y_pos[...,0], mask)
-        loss_pos_x = ce(x, y_pos[...,1], mask)
+        loss_select = ce(select, y_select)
+        loss_pos_y = ce(y, y_pos[...,0])
+        loss_pos_x = ce(x, y_pos[...,1])
         loss_pos = loss_pos_y + loss_pos_x
-        loss_delay = ce(delay, y_delay, mask)
+        loss_delay = ce(delay, y_delay)
         B = r.shape[0]
         loss = B * (loss_select + loss_pos + loss_delay)
 

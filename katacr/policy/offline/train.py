@@ -19,6 +19,8 @@ def train():
   args, writer = parse_args_and_writer()
   ### Dataset ###
   ds_builder = DatasetBuilder(args.replay_dataset, args.n_step)
+  if 'starformer_no_delay' in args.name.lower():
+    args.max_delay = None
   train_ds = ds_builder.get_dataset(
     args.batch_size, args.num_workers, random_interval=args.random_interval,
     max_delay=args.max_delay, card_shuffle=args.card_shuffle, use_card_idx=args.pred_card_idx)
@@ -42,8 +44,6 @@ def train():
     from katacr.policy.offline.starformer_no_delay import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
     args.no_delay = True
-  print(args.no_delay)
-  exit()
   model_cfg = ModelConfig(**vars(args))
   model = Model(model_cfg)
   model.create_fns()
@@ -77,7 +77,7 @@ def train():
           'train_acc_select', 'train_acc_pos', 'train_acc_select_use',
           'train_acc_select_and_pos',],
           [loss, loss_s, loss_p, acc_s, acc_p, acc_su, acc_sp])
-        loss_d = acc_spd = None
+        acc_d = loss_d = acc_spd = 0.0
       else:
         state, (loss, (loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd)) = model.model_step(state, s, a, rtg, timestep, y, train=True)
         logs.update(
@@ -86,9 +86,10 @@ def train():
           'train_acc_delay', 'train_acc_select_and_pos',
           'train_acc_select_and_pos_and_delay'],
           [loss, loss_s, loss_p, loss_d, acc_su, acc_p, acc_d, acc_sp, acc_spd])
+        acc_s = 0.0
       # print(loss, loss_s, loss_p)
       # print(f"loss={loss:.4f}, loss_select={loss_s:.4f}, loss_pos={loss_p:.4f}, acc_select={acc_s:.4f}, acc_pos={acc_p:.4f}")
-      bar.set_description(f"{loss=:.4f}, {loss_s=:.4f}, {loss_p=:.4f}, {loss_d=:.4f}, {acc_su=:.4f}, {acc_p=:.4f}, {acc_d=:.4f}, {acc_sp=:.4f}, {acc_spd=:.4f}")
+      bar.set_description(f"{loss=:.4f}, {loss_s=:.4f}, {loss_p=:.4f}, {loss_d=:.4f}, {acc_s=:.4f}, {acc_su=:.4f}, {acc_p=:.4f}, {acc_d=:.4f}, {acc_sp=:.4f}, {acc_spd=:.4f}")
       if state.step % write_tfboard_freq == 0:
         logs.update(
           ['SPS', 'epoch', 'learning_rate'],

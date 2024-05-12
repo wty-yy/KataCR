@@ -323,7 +323,7 @@ class StateActionRewardDataset(Dataset):
         shuffle_idx=shuffle_idx, train=True, delay_clip=self.delay_clip,
         use_card_idx=self.use_card_idx)
       for x, nx in zip([s, a, y], [ns, na, ny]):
-        for k in x.keys():
+        for k in nx.keys():
           x[k][i] = nx[k]
       rtg[i] = data['rtg'][now]
       timestep[i] = data['timestep'][now]
@@ -367,15 +367,13 @@ if __name__ == '__main__':
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
   # ds_builder = DatasetBuilder(path_dataset, 30)
   ds_builder = DatasetBuilder(path_dataset, 5)
-  ds_builder.debug()
-  exit()
   # debug_save_features("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_dataset_50")
   # exit()
   print("n_cards:", ds_builder.n_cards)
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image
-  ds = ds_builder.get_dataset(32, 1)
+  ds = ds_builder.get_dataset(32, 1, max_delay=None)
   for s, a, rtg, timestep, y in tqdm(ds):
     for x in [s, a, y]:
       for k, v in x.items():
