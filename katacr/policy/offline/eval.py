@@ -20,6 +20,7 @@ import time
 
 path_root = Path(__file__).parents[3]
 path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232147/ckpt"
+# path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_no_mask_cnn_blocks__nbc128__ep15__0__20240511_133058/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer_2L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232848/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
@@ -214,11 +215,11 @@ class Evaluator:
         if a[0] and card == 'empty':
           print(f"Skip action, since card index {a[0]} is 'empty'")
           a[0] = 0  # Skip
-        # if a[0] and card2elixir[card] > last_elixir:
-        #   print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
-        #   a[0] = 0  # Skip
+        if a[0] and card2elixir[card] > last_elixir:
+          print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
+          a[0] = 0  # Skip
         with self.sw[1]:
-          s, _, r, done = self.env.step(a)
+          s, _, r, done = self.env.step(a, max_delay=10)
           # s, a, r, done = self.env.step(a)
         a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None, 'delay': a[3]}
         print("Action:", a)
@@ -231,8 +232,8 @@ class Evaluator:
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
-  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
-  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
+  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
+  # evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
 

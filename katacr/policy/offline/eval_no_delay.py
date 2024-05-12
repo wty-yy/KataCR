@@ -19,7 +19,8 @@ from katacr.policy.replay_data.data_display import GridDrawer
 import time
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_no_delay_v0.6_golem_ai_cnn_blocks__nbc128__ep15__0__20240511_133617/ckpt"
+# path_weights = path_root / "logs/Policy/StARformer_no_delay_v0.6_golem_ai_cnn_blocks__nbc128__ep15__0__20240511_133617/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_no_delay_v0.8_golem_ai_cnn_blocks__nbc128__ep15__0__20240511_174521/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -56,7 +57,7 @@ class Evaluator:
     print("Loading policy model...", end='')
     ckpt_mngr = CheckpointManager(str(path_weights))
     load_step = int(sorted(Path(path_weights).glob('*'))[-1].name)
-    # load_step = 25
+    # load_step = 4
     load_info = ckpt_mngr.restore(load_step)
     params, cfg = load_info['variables']['params'], load_info['config']
     if 'starformer_no_delay' in str(path_weights).lower():
@@ -220,9 +221,9 @@ class Evaluator:
       print(f"score {score}, timestep {s['time']}")
 
 if __name__ == '__main__':
-  # evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
   # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
-  vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4"
-  evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
+  # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4"
+  # evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
 

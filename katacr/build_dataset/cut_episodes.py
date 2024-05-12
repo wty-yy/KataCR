@@ -93,8 +93,8 @@ def get_time(ocr: OCR, img, time_split=True, show=False):
     if 'over' in rec:
       stage = 1
     if (':' in rec) or ('：' in rec):
-      m, s = rec.split(':' if ':' in rec else '：')
       try:
+        m, s = rec.split(':' if ':' in rec else '：')
         m = int(m.strip())
         s = int(s.strip())
       except ValueError:
@@ -204,10 +204,10 @@ class Cutter:
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   # parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/CR/videos/WTY_20240213.mp4")
-  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Videos/CR_Videos/expert_videos/WTY_20240503_161336_1_golem_ai_30fps_an.mp4")
+  parser.add_argument("--path-video", type=cvt2Path, default="/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6/WTY_20240512_134920_golem_ai.mp4")
   args = parser.parse_args()
   cutter = Cutter()
-  cutter.split_episodes(args.path_video, show=True)
+  cutter.split_episodes(args.path_video, show=False)
   # for p in Path("/home/yy/Coding/datasets/Clash-Royale-Dataset/videos/fast_pig_2.6").glob('*.mp4'):
   #   cutter.split_episodes(str(p), show=True)
   

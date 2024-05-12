@@ -299,3 +299,6 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 
 模型版本v0.8
 1. 尝试减少`n_ste=5`，使用`no_delay`版本进行训练
+
+### v0.7.18 (2024.5.12)
+1. 增大离线数据集到
