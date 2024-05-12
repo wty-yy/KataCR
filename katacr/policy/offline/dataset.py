@@ -366,9 +366,7 @@ if __name__ == '__main__':
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
   # ds_builder = DatasetBuilder(path_dataset, 30)
-  ds_builder = DatasetBuilder(path_dataset, 5)
-  ds_builder.debug()
-  exit()
+  ds_builder = DatasetBuilder(path_dataset, 50)
   # debug_save_features("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_dataset_50")
   # exit()
   print("n_cards:", ds_builder.n_cards)
@@ -381,7 +379,7 @@ if __name__ == '__main__':
       for k, v in x.items():
         x[k] = v.numpy()
     rtg = rtg.numpy(); timestep = timestep.numpy()
-    # continue
+    continue
     print(s['arena'].shape, s['arena_mask'].shape, s['cards'].shape, s['elixir'].shape)
     print(a['select'].shape, a['pos'].shape)
     print(y['select'].shape, y['pos'].shape, y['delay'].shape)
