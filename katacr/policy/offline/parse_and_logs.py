@@ -22,7 +22,7 @@ def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.N
   parser.add_argument("--n-embd-local", type=int, default=64)
   parser.add_argument("--n-head-local", type=int, default=4)
   parser.add_argument("--n-block", type=int, default=6)
-  parser.add_argument("--n-step", type=int, default=30)
+  parser.add_argument("--n-step", type=int, default=50)
   parser.add_argument("--patch-size", default=(2, 2))
   parser.add_argument("--weight-decay", type=float, default=1e-1)
   parser.add_argument("--cnn-mode", type=str, default="cnn_blocks")  # "csp_darknet" or "resnet"
@@ -46,7 +46,7 @@ def parse_args_and_writer(input_args=None, with_writer=True) -> tuple[argparse.N
 
   ### Create Path ###
   path_root = Path(__file__).parents[3]
-  args.run_name = f"{args.name}_{args.cnn_mode}__nbc{nbc}__ep{args.total_epochs}__{args.seed}__{time.strftime(r'%Y%m%d_%H%M%S')}"
+  args.run_name = f"{args.name}_{args.cnn_mode}__nbc{nbc}__ep{args.total_epochs}__step{args.n_step}__{args.seed}__{time.strftime(r'%Y%m%d_%H%M%S')}"
   path_logs = path_root / "logs" / args.run_name
   path_logs.mkdir(parents=True, exist_ok=True)
   args.path_logs = path_logs
