@@ -163,10 +163,18 @@ class StARformer(nn.Module):
     pos_embd = nn.Embed(N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(N))  # (1, N, Ng)
     cards_g = Embed(cfg.n_cards, 8)(cards).reshape(B, N, -1)  # (B, N, 5*8)
     elixir_g = Embed(cfg.n_elixir+1, 4)(elixir).reshape(B, N, -1)  # (B, N, 4)
+    # xg = nn.Sequential([
+    #   lambda x: cfg.CNN(cfg.arena_cfg)(x),  # (B, N, 4, 3, 128)
+    #   lambda x: jnp.concatenate([x.reshape(B, N, -1), cards_g, elixir_g], -1),  # (B, N, 1580)
+    #   Dense(ng)
+    # ])(arena) + pos_embd
+    cards_g = Embed(cfg.n_cards, 4)(cards).reshape(B, N, -1)  # (B, N, 5*4)
+    elixir_g = Embed(cfg.n_elixir+1, 4)(elixir).reshape(B, N, -1)  # (B, N, 4)
     xg = nn.Sequential([
       lambda x: cfg.CNN(cfg.arena_cfg)(x),  # (B, N, 4, 3, 128)
-      lambda x: jnp.concatenate([x.reshape(B, N, -1), cards_g, elixir_g], -1),  # (B, N, 1580)
-      Dense(ng)
+      lambda x: x.reshape(B, N, -1),
+      Dense(ng-6*4),  # 192 - 24 = 168
+      lambda x: jnp.concatenate([x, cards_g, elixir_g], -1)  # (B, N, Ng)
     ])(arena) + pos_embd
     ### Embedding Local Token ###
     ### Action ###
@@ -337,6 +345,7 @@ if __name__ == '__main__':
   n_step = 30
   max_timestep = 300
   # Total Parameters: 14,932,940 (59.7 MB)
+  # Total Parameters: 14,887,728 (59.6 MB)  # split (arena, card, elixir) feature input
   cfg = StARConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks')
   print(dict(cfg))
   model = StARformer(cfg)

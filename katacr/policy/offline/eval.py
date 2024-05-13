@@ -19,8 +19,9 @@ from katacr.policy.replay_data.data_display import GridDrawer
 import time
 
 path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232147/ckpt"
-# path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_no_mask_cnn_blocks__nbc128__ep15__0__20240511_133058/ckpt"
+# path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232147/ckpt"
+# path_weights = path_root / "logs/Policy/StARformer_3L_v0.8_golem_ai_30step_cnn_blocks__nbc128__ep30__0__20240512_181548/ckpt"
+path_weights = path_root / "logs/Policy/StARformer_3L_v0.8_golem_ai_50step_cnn_blocks__nbc128__ep30__0__20240512_181646/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer_2L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232848/ckpt"
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
