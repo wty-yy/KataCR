@@ -297,8 +297,7 @@ KataCR is a non-embedded AI for Clash Royale based on RL and CV. Supervised lear
 1. 加入`pred_card_idx`可选项，将action和target_action中的card_idx转为`card_name_idx`，修改模型的输出与输入编码
 2. 修改数据集读入，使其支持`pred_card_idx`，注意`target_action`直接从`card_name_idx`获取未来的放置单位，而非从当前的`state`中获取放置单位名称索引
 
-模型版本v0.8
-1. 尝试减少`n_ste=5`，使用`no_delay`版本进行训练
-
-### v0.7.18 (2024.5.12)
-1. 增大离线数据集到
+模型版本v0.8 (2024.5.12)
+1. 尝试减少`n_ste=5`，使用`no_delay`版本进行训练（过拟合太严重）
+2. 增大离线数据集到113981，总共124个episodes。
+3. 尝试StARformer_3L的`n_step=30,50`

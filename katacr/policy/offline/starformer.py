@@ -297,11 +297,11 @@ class StARformer(nn.Module):
         select, y, x, delay = state.apply_fn({'params': params}, s, a, r, timestep, train=train, rngs={'dropout': dropout_rng})
         y_select, y_pos, y_delay = target['select'], target['pos'], target['delay']
         mask = (y_delay.reshape(-1) < self.cfg.max_delay)
-        loss_select = ce(select, y_select)
-        loss_pos_y = ce(y, y_pos[...,0])
-        loss_pos_x = ce(x, y_pos[...,1])
+        loss_select = ce(select, y_select, mask)
+        loss_pos_y = ce(y, y_pos[...,0], mask)
+        loss_pos_x = ce(x, y_pos[...,1], mask)
         loss_pos = loss_pos_y + loss_pos_x
-        loss_delay = ce(delay, y_delay)
+        loss_delay = ce(delay, y_delay, mask)
         B = r.shape[0]
         loss = B * (loss_select + loss_pos + loss_delay)
 

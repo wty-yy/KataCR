@@ -361,7 +361,8 @@ if __name__ == '__main__':
   os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
   from katacr.build_dataset.constant import path_dataset
   # path_dataset = path_dataset / "replay_data/golem_ai"
-  path_dataset = path_dataset / "replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
+  # path_dataset = path_dataset / "replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
+  path_dataset = "/data/user/zhihengwu/Coding/dataset/Clash-Royale-Replay-Dataset/golem_ai"
   # path_dataset = "/home/yy/Coding/GitHub/KataCR/logs/offline/test_replay_data"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
@@ -373,7 +374,7 @@ if __name__ == '__main__':
   # ds_builder.debug()
   from katacr.utils.detection import build_label2colors
   from PIL import Image
-  ds = ds_builder.get_dataset(32, 1, max_delay=None)
+  ds = ds_builder.get_dataset(32, 8)
   for s, a, rtg, timestep, y in tqdm(ds):
     for x in [s, a, y]:
       for k, v in x.items():
