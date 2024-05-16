@@ -9,6 +9,7 @@ from katacr.policy.perceptron.utils import cell2pixel, background_size
 from pathlib import Path
 from katacr.policy.env.sar_daemon import SARDaemon
 from katacr.utils import colorstr
+from katacr.policy.env.utils import tap_screen
 
 def ratio2name(img_size):
   r = img_size[1] / img_size[0]
@@ -39,21 +40,14 @@ class InteractEnv:
       tot += t
     print()
   
-  def reset(self):
-    self.q_reset.put(True)
+  def reset(self, auto=False):
+    self.q_reset.put(SARDaemon.AUTO_START_NEXT_EPISODE if auto else SARDaemon.WAIT_FOR_NEXT_EPISODE)
     s, a, r, done, info = self.q_sar.get()
     self.img_size = info['img_size']
     self.dt.update(info['dt'])
     assert not done
     self._show_dt()
     return s, a, r
-  
-  def _tap(self, xy, relative=True):
-    # print("tap:", xy)
-    if relative:
-      w, h = self.img_size
-      xy = xy[0] * w, xy[1] * h
-    subprocess.run(['adb', 'shell', 'input', 'tap', *[str(int(x)) for x in xy]])
   
   def _act(self, select, xy, delay=0.05):
     name = ratio2name(self.img_size)
@@ -64,11 +58,10 @@ class InteractEnv:
       return xy
     params = const.part3_bbox_params[select]
     tap2part = params[0]+params[2]/2, params[1]+params[3]/2
-    self._tap(get_xy(3, tap2part))
-    time.sleep(delay)
+    tap_screen(get_xy(3, tap2part), img_size=self.img_size, delay=delay)
     params = cell2pixel(xy)
     tap2part = [params[i] / background_size[i] for i in range(2)]
-    self._tap(get_xy(2, tap2part))
+    tap_screen(get_xy(2, tap2part), img_size=self.img_size)
 
   def step(self, action, max_delay=5):
     """
@@ -87,7 +80,7 @@ class InteractEnv:
       s, a, r, done, info = self.q_sar.get()
     self.dt.update(info['dt'])
     self._show_dt()
-    return s, a, r, done
+    return s, a, r, done, info
 
 if __name__ == '__main__':
   env = InteractEnv(save=True)

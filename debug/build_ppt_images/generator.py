@@ -13,22 +13,23 @@ from generation_config import (
   map_fly, map_ground, level2units, unit2level, grid_size, background_size, tower_unit_list, spell_unit_list,
   drop_units, xyxy_grids, towers_bottom_center_grid_position, drop_fliplr, 
   color2alpha, color2bright, color2RGB, aug2prob, aug2unit, alpha_transparency, background_augment,  # augmentation
-  component_prob, component2unit, component_cfg, important_components, bar_xy_range,  # component configs
+  component_prob, component2unit, component_cfg, important_components, option_components, bar_xy_range,  # component configs
   item_cfg, drop_box, background_item_list,  # background item
   unit_scale, unit_stretch,  # affine transformation
-  tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio,
+  tower_intersect_ratio_thre, bar_intersect_ratio_thre, tower_generation_ratio, king_tower_generation_ratio
 )
 import random, glob
 
+# background_size = (568, 896), cell_size = (30.9, 25)
 cell_size = np.array([(xyxy_grids[3] - xyxy_grids[1]) / grid_size[1], (xyxy_grids[2] - xyxy_grids[0]) / grid_size[0]])[::-1]  # cell pixel: (w, h)
 
-def cell2pixel(xy: tuple):
+def cell2pixel(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
   return (xy * cell_size + xyxy_grids[:2]).astype(np.int32)
 
-def pixel2cell(xy: tuple):
+def pixel2cell(xy):
   if type(xy) != np.ndarray: xy = np.array(xy)
-  return ((xy - xyxy_grids[:2]) / cell_size)
+  return ((xy - xyxy_grids[:2]) / cell_size).astype(np.float32)
 
 def show_point(img: Image, xy_cell: tuple):
   xy = cell2pixel(xy_cell)
@@ -154,7 +155,7 @@ class Unit:
     xy = cell2pixel(self.xy_cell)
     # Note that xyxy is (x0,y0,x1+1,y1+1)
     self.xyxy = np.array((xy[0]-w//2, xy[1]-h, xy[0]+(w+1)//2, xy[1]), np.float32)  # xyxy relative to background
-    if self.cls_name in ['text', 'bar'] + spell_unit_list:  # if text or spell units, clip the out range
+    if self.cls_name in ['text', 'bar', 'circle'] + spell_unit_list:  # if text or spell units, clip the out range
       self.xyxy = np.array((
         max(self.xyxy[0], 0),
         max(self.xyxy[1], 0),
@@ -314,6 +315,7 @@ class Generator:
     self.map_cfg.update(map_update)
     self.moveable_unit_paths, self.moveable_unit2idx, self.idx2moveable_unit = [], {}, {}
     self.noise_unit_paths, self.noise_unit2idx, self.idx2noise_unit = [], {}, {}
+    self.avail_names = avail_names
     for p in sorted(self.path_segment.glob('*')):
       if p.name in ['backgrounds'] + tower_unit_list + drop_units:
         continue
@@ -452,9 +454,7 @@ class Generator:
       if u.cls != -1:
         # box.append((*u.xyxy_visiable, *u.states, u.cls))  # xyxy visiable is bad
         box.append((*u.xyxy, *u.states, u.cls))
-    box = np.array(box, np.float32)
-    if len(box) == 0:
-      box = np.empty((0, 6), np.float32)
+    box = np.array(box, np.float32) if len(box) else np.empty((0, 6), np.float32)
     if img_size is not None:
       img, box = self.resize_and_pad(img, box, img_size)
     if box_format == 'cxcywh':
@@ -465,7 +465,7 @@ class Generator:
       raise RuntimeError(f"Don't know {box_format=}")
     origin_img = img
     img = Image.fromarray(img)
-    if show_box and len(box):
+    if show_box:
       cls2color = build_label2colors(list(cls))
       for u in unit_avail:
         img = u.show_box(img, cls2color)
@@ -521,6 +521,7 @@ class Generator:
       xy_bottom_center[0] += img.shape[1] / 2 / cell_size[0]
     if 'right' in xy_format:
       xy_bottom_center[0] -= img.shape[1] / 2 / cell_size[0]
+    if (self.avail_names is not None) and (name.split('_')[0] not in self.avail_names): drop = True
     unit = Unit(img=img, xy_bottom_center=xy_bottom_center, level=level, background_size=self.background_size, name=name, augment=self.augment, drop=drop)
     if join: self.unit_list.append(unit)
     return unit
@@ -550,18 +551,25 @@ class Generator:
   
   def add_tower(self, king=True, queen=True):
     if king:
-      king0 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
-      unit = self._build_unit_from_path(king0, self.towers_bc_pos['king0'], 1)
-      self._add_component(unit)
-      king1 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
-      unit = self._build_unit_from_path(king1, self.towers_bc_pos['king1'], 1)
-      self._add_component(unit)
+      for i in range(2):  # is enermy?
+        if random.random() < king_tower_generation_ratio:
+          path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex=f'king-tower_{i}'))
+        else:
+          path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='background-items', regex='^king-tower-ruin_\d+.png'))
+        unit = self._build_unit_from_path(path, self.towers_bc_pos[f'king{i}'], 1)
+        self._add_component(unit)
+      # king0 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_0'))
+      # unit = self._build_unit_from_path(king0, self.towers_bc_pos['king0'], 1)
+      # self._add_component(unit)
+      # king1 = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='king-tower', regex='king-tower_1'))
+      # unit = self._build_unit_from_path(king1, self.towers_bc_pos['king1'], 1)
+      # self._add_component(unit)
     if queen:
       for i in range(2):  # is enermy?
         for j in range(2):  # left or right
           p = random.random()
           if p > sum(list(tower_generation_ratio.values())):  # generating tower ruin in background_itmes/ruin{i}.png
-            path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='background-items', regex="ruin_\d+.png"))
+            path = self._sample_elem(self.path_manager.search(subset='images', part='segment', name='background-items', regex='^ruin_\d+.png'))
             # continue  # TODO: Add tower ruin
           else:
             for name, prob in tower_generation_ratio.items():
@@ -667,9 +675,16 @@ class Generator:
       if c in components and c not in cs and random.random() < prob:
         components.remove(c)
         cs.append(c)
+    for oc, prob in option_components:
+      if oc in components:
+        rand = random.random()
+        for c, p in zip(oc, prob):
+          if rand > p: rand -= p
+          else: break
+        components.remove(oc)
+        cs.append(c)
     # Second, check normal component probability
-    for ns, prob in component_prob.items():
-      if unit.cls_name in ns: break
+    prob = component_prob[unit.cls_name]
     if random.random() < prob:
       # Third, check single component probability
       for c in components:
@@ -704,19 +719,19 @@ class Generator:
         xy_ = xy.copy()
         xy_[0] += 0.08  # 0.08 * 30.8 pixel = 2.464 pixel
         paths_bar_level = sorted(self.path_manager.path.joinpath("images/segment/bar-level").glob(f"bar-level_{unit.states[0]}*"))
-        bar_level = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center', drop=unit.drop)
+        bar_level = self._build_unit_from_path(self._sample_elem(paths_bar_level), xy_, level, None, 'right_center')
         unit.components.append(bar_level)
-      cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format, drop=unit.drop)
+      cu = self._build_unit_from_path(self._sample_elem(paths), xy, level, max_width, xy_format)
       unit.components.append(cu)
       if c == 'dagger-duchess-tower-bar':
         junction = pixel2cell((cu.xyxy[0], (cu.xyxy[1] + cu.xyxy[3]) / 2))
         junction[1] += 0.06
-        bar_icon = self._build_unit_from_path(self.path_segment/"background-items/dagger-duchess-tower-icon.png", junction, level, None, 'right_center', drop=unit.drop)
+        bar_icon = self._build_unit_from_path(self.path_segment/"background-items/dagger-duchess-tower-icon.png", junction, level, None, 'right_center')
         unit.components.append(bar_icon)
   
   def _add_background_item(self):
     """
-    Add background items in `background_item_list`, `big-text`, `emote`.
+    Add background items in `background_item_list`, `big-text`, `small-text`, `emote`.
     Look at `item_cfg.keys()`.
     """
     # (prob, [center, dx_range, dy_range, width_range, max_num]*n)
@@ -747,7 +762,7 @@ class Generator:
     Add unit in [ground, flying, others] randomly.
     Unit list looks at `katacr/constants/label_list.py`
     """
-    self._add_background_item()
+    # self._add_background_item()
     def get_freq(freq):
       if self.dynamic_unit and len(freq):
         return 1 / (freq - freq.min() + 1)
@@ -777,14 +792,16 @@ class Generator:
     })
 
 if __name__ == '__main__':
-  generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
-  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'dynamic', 'size': 5}, noise_unit_ratio=0, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
+  # generator = Generator(seed=42, background_index=25, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'naive', 'size': 5}, avail_names=None)
+  generator = Generator(seed=1, background_index=25, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'dynamic', 'size': 5}, avail_names=None)
+  # generator = Generator(seed=42, intersect_ratio_thre=0.5, augment=True, map_update={'mode': 'dynamic', 'size': 5}, noise_unit_ratio=1/4, avail_names=['king-tower', 'queen-tower', 'cannoneer-tower', 'dagger-duchess-tower', 'dagger-duchess-tower-bar', 'tower-bar', 'king-tower-bar', 'bar', 'bar-level', 'clock', 'emote', 'elixir', 'ice-spirit-evolution-symbol', 'evolution-symbol', 'bat', 'elixir-golem-small', 'fire-spirit', 'skeleton', 'lava-pup', 'skeleton-evolution', 'heal-spirit', 'ice-spirit', 'phoenix-egg', 'bat-evolution', 'minion', 'goblin', 'archer', 'spear-goblin', 'bomber', 'electro-spirit', 'royal-hog', 'rascal-girl', 'ice-spirit-evolution', 'hog', 'dirt', 'mini-pekka', 'wizard', 'barbarian', 'zappy', 'little-prince', 'firecracker', 'valkyrie', 'bandit', 'wall-breaker', 'musketeer', 'princess', 'barbarian-evolution', 'elite-barbarian', 'guard', 'knight-evolution', 'archer-evolution', 'bomber-evolution', 'goblin-brawler', 'bomb', 'goblin-ball', 'axe', 'electro-wizard', 'mother-witch', 'elixir-golem-mid', 'tesla', 'knight', 'royal-recruit', 'ice-wizard', 'valkyrie-evolution', 'dart-goblin', 'mortar', 'the-log', 'firecracker-evolution', 'lumberjack', 'royal-ghost', 'miner', 'night-witch', 'ram-rider', 'electro-dragon', 'hunter', 'mortar-evolution', 'executioner', 'mega-minion', 'golemite', 'witch', 'barbarian-barrel'])
   path_generation = path_logs / "generation"
   path_generation.mkdir(exist_ok=True)
-  for i in range(5):
+  for i in range(1):
     # generator = Generator(background_index=None, seed=42+i, intersect_ratio_thre=0.9)
-    generator.add_tower()
-    generator.add_unit(n=30)
+    # generator._add_background_item()
+    # generator.add_tower()
+    # generator.add_unit(n=15)
     x, box, _ = generator.build(verbose=False, show_box=True, save_path=str(path_generation / f"test{0+2*i}.jpg"))
     # for b in box:
     #   assert idx2unit[b[5]] != 'skeleton-king-skill'

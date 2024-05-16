@@ -13,7 +13,7 @@ drop_units = [
   'emote', 'small-text', 'elixir', 'bar', 'tower-bar',
   'king-tower-bar', 'clock', 'big-text', 'background-items',
   'bar-level', 'skeleton-king-skill', 'skeleton-king-bar', # 'tesla-evolution-shock'
-  'dagger-duchess-tower-bar',
+  'dagger-duchess-tower-bar', 'scoreboard'
 ]
 drop_fliplr = [
   'text', 'bar', 'bar-level', 'king-tower-bar', 'tower-bar', 'elixir',
