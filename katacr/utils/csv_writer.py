@@ -5,17 +5,15 @@ from typing import Sequence
 class CSVWriter:
   def __init__(self, path_csv: Path, title: Sequence = None):
     assert path_csv.suffix == '.csv'
-    path_csv.parent.mkdir(parents=True, exist_ok=True)
-    self.file = path_csv.open('w')
-    self.writer = csv.writer(self.file)
+    self.path_csv = path_csv
+    self.path_csv.parent.mkdir(parents=True, exist_ok=True)
     if title is not None:
-      self.writer.writerow(title)
-  
-  def close(self):
-    self.file.close()
+      self.write(title)
   
   def write(self, data: Sequence):
-    self.writer.writerow(data)
+    with self.path_csv.open('a') as file:
+      writer = csv.writer(file)
+      writer.writerow(data)
 
 if __name__ == '__main__':
   path_root = Path(__file__).parents[2]
@@ -23,4 +21,3 @@ if __name__ == '__main__':
   csv_writer = CSVWriter(path_logs / "test.csv", title=['A', 'B', 'C', '4'])
   csv_writer.write([321,123,4,2])
   csv_writer.write([1,2,3,4])
-  csv_writer.close()
