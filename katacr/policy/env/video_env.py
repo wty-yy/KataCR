@@ -57,10 +57,12 @@ class VideoEnv:
           print(colorstr('red', 'bold', f"Target Action (time={s['time']},frame={self.count}):"), a)
         return s, a, r, done
   
-  def reset(self):
+  def reset(self, auto=False):
     self.count = 0
+    self.total_reward = 0
     self.sar_builder.reset()
     s, a, r, done = self.get_sar()
+    self.total_reward += r
     self._show_dt()
     return s, a, r
   
@@ -72,10 +74,11 @@ class VideoEnv:
     """
     assert self.done, "self.done=True, need reset first!"
     s, a, r, done = self.get_sar()
+    self.total_reward += r
     if action[0] and (len(action) == 3 or (len(action) == 4 and action[-1] <= max_delay)):
       print(colorstr('yellow', 'bold', f"Predict Action (time={s['time']},frame={self.count},delay={action[-1]}):"), action)
     self._show_dt()
-    return s, a, r, done
+    return s, a, r, done, {'total_reward': self.total_reward}
 
 if __name__ == '__main__':
   vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/3.mp4"
