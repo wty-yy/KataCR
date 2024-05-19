@@ -133,7 +133,7 @@ class CRTaskAlignedAssigner(TaskAlignedAssigner):
     target_scores.scatter_(2, target_labels[...,0:1], 1)  # cls TODO
     target_scores[...,-1] = target_labels[...,1]  # bel at last idx
 
-    fg_scores_mask = fg_mask[:, :, None].repeat(1, 1, self.num_classes)  # (b, h*w, class_number + 1)
+    fg_scores_mask = fg_mask[:, :, None].repeat(1, 1, self.num_classes)  # (b, h*w, class_number)
     target_scores = torch.where(fg_scores_mask > 0, target_scores, 0)
 
     return target_labels, target_bboxes, target_scores

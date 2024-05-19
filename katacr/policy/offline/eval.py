@@ -6,13 +6,15 @@ scrcpy --v4l2-sink=/dev/video2 --no-video-playback
 (Automatically) evaluate model by interacting with mobile phone.
 """
 import os, sys
+from pathlib import Path
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+path_root = Path(__file__).parents[3]
+sys.path.append(str(path_root))
 from katacr.utils.ckpt_manager import CheckpointManager
 from katacr.policy.offline.dataset import build_feature
 import cv2, jax
 from katacr.policy.env.interact_env import InteractEnv
 from katacr.policy.env.video_env import VideoEnv
-from pathlib import Path
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
 from katacr.utils.merge_videos import merge_videos_left_and_right
@@ -21,8 +23,6 @@ from katacr.policy.replay_data.data_display import GridDrawer
 import time
 from katacr.utils.csv_writer import CSVWriter
 
-path_root = Path(__file__).parents[3]
-sys.path.append(str(path_root))
 # path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232147/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer_3L_v0.8_golem_ai_30step_cnn_blocks__nbc128__ep30__0__20240512_181548/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer_3L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step50__0__20240512_181646/ckpt"
@@ -274,7 +274,6 @@ class Evaluator:
       self._init_vid_writer()
       if self.eval_num is not None and self.episode == self.eval_num:
         break
-    self.csv_writer.close()
     print(colorstr("Finish all evaluation!"))
 
 if __name__ == '__main__':
