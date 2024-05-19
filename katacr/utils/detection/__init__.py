@@ -94,6 +94,7 @@ def get_box_colors(n):
   return colors
 
 def build_label2colors(labels):
+  if not len(labels): return {}
   labels = np.unique(labels).astype(np.int32)
   colors = get_box_colors(len(labels))
   return dict(zip(labels, colors))

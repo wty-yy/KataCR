@@ -5,14 +5,16 @@ scrcpy --v4l2-sink=/dev/video2 --no-video-playback
 
 (Automatically) evaluate model by interacting with mobile phone.
 """
-import os
+import os, sys
+from pathlib import Path
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+path_root = Path(__file__).parents[3]
+sys.path.append(str(path_root))
 from katacr.utils.ckpt_manager import CheckpointManager
 from katacr.policy.offline.dataset import build_feature
 import cv2, jax
 from katacr.policy.env.interact_env import InteractEnv
 from katacr.policy.env.video_env import VideoEnv
-from pathlib import Path
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
 from katacr.utils.merge_videos import merge_videos_left_and_right
@@ -21,10 +23,11 @@ from katacr.policy.replay_data.data_display import GridDrawer
 import time
 from katacr.utils.csv_writer import CSVWriter
 
-path_root = Path(__file__).parents[3]
 # path_weights = path_root / "logs/Policy/StARformer_3L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232147/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer_3L_v0.8_golem_ai_30step_cnn_blocks__nbc128__ep30__0__20240512_181548/ckpt"
-path_weights = path_root / "logs/Policy/StARformer_3L_v0.8_golem_ai_50step_cnn_blocks__nbc128__ep30__0__20240512_181646/ckpt"
+# path_weights = path_root / "logs/Policy/StARformer_3L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step50__0__20240512_181646/ckpt"
+# MODEL_NAME = "StARformer_2L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step100__0__20240513_114949"
+MODEL_NAME = "StARformer_2L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step50__0__20240513_114808"
 # path_weights = path_root / "logs/Policy/StARformer_2L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step100__0__20240513_114949/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer_2L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step50__0__20240513_114808/ckpt"
 # path_weights = path_root / "logs/Policy/StARformer_2L_v0.6_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_232848/ckpt"
@@ -44,12 +47,13 @@ class Evaluator:
   a_key = ['select', 'pos']
 
   def __init__(
-      self, path_weights=path_weights, vid_path=None, show=True, save=False,
+      self, path_weights, load_epoch=None, vid_path=None, show=True, save=False,
       rtg=3., deterministic=True, verbose=False, show_predict=True, eval_num=None
     ):
     """
     Args:
       path_weights (str|Path): The weights of the model.
+      load_epoch (int): If given, the model will be loaded from specified epoch weights.
       vid_path (str|Path): If given, will load video for evaluate (just for checking input features are right).
       show (bool): If taggled, the real-time detection results will be displayed.
       save (bool): If taggled, the detection results will be save at `KataCR/logs/intercation/start-time/`
@@ -70,16 +74,18 @@ class Evaluator:
       self.path_save_dir = self.env.path_save_dir
     self.rng = jax.random.PRNGKey(42)
     self.open_window = False
-    self._load_model(path_weights)
+    self._load_model(path_weights, load_epoch)
     self.vid_writer = None
     self.csv_writer = CSVWriter(self.path_save_dir / f"{self.model_name}_load{self.load_epoch}.csv", title=CSV_TITLE)
   
-  def _load_model(self, path_weights):
+  def _load_model(self, path_weights, load_epoch=None):
     print("Loading policy model...", end='')
     ckpt_mngr = CheckpointManager(str(path_weights))
     self.model_name = Path(path_weights).parent.name
-    self.load_epoch = int(sorted(Path(path_weights).glob('*'))[-1].name)
-    self.load_epoch = 30
+    if load_epoch is not None:
+      self.load_epoch = load_epoch
+    else:
+      self.load_epoch = int(sorted(Path(path_weights).glob('*'))[-1].name)
     load_info = ckpt_mngr.restore(self.load_epoch)
     params, cfg = load_info['variables']['params'], load_info['config']
     if 'StARformer' in str(path_weights):
@@ -268,11 +274,20 @@ class Evaluator:
       self._init_vid_writer()
       if self.eval_num is not None and self.episode == self.eval_num:
         break
-    self.csv_writer.close()
     print(colorstr("Finish all evaluation!"))
 
 if __name__ == '__main__':
-  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True, eval_num=20)
+  import argparse
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--model-name", default=MODEL_NAME,
+    help="The policy model weights directory name in 'KataCR/logs/Policy/{model_name}'")
+  parser.add_argument("--load-epoch", type=int, default=None,
+    help="The load epoch id in 'KataCR/logs/Policy/{model_name}/ckpt/{load_epoch}'")
+  parser.add_argument("--eval-num", type=int, default=20,
+    help="The automatically evaluation number times")
+  args = parser.parse_args()
+  path_weights = path_root / f"logs/Policy/{args.model_name}/ckpt"
+  evaluator = Evaluator(path_weights, load_epoch=args.load_epoch, show=True, save=True, deterministic=True, eval_num=args.eval_num)
   # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
   # evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
