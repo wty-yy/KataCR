@@ -1,7 +1,7 @@
 import os
 # os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.16'  # allocate GPU memory as needed
-# os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.32'  # allocate GPU memory as needed
+# os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.16'  # allocate GPU memory as needed
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.32'  # allocate GPU memory as needed
 # os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.24'  # allocate GPU memory as needed
 # 14.345Gb <-> (bs32,step30) (batch size, n_step)
 # 28.785Gb <-> (bs16,step100), (bs32,step50) (batch size, n_step)
@@ -45,6 +45,9 @@ def train():
     from katacr.policy.offline.starformer_no_delay import StARConfig, TrainConfig, StARformer
     ModelConfig, Model = StARConfig, StARformer
     args.no_delay = True
+  if 'DT' in args.name:
+    from katacr.policy.offline.dt import DTConfig, TrainConfig, DT
+    ModelConfig, Model = DTConfig, DT
   model_cfg = ModelConfig(**vars(args))
   model = Model(model_cfg)
   model.create_fns()

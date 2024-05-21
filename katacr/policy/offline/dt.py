@@ -1,5 +1,5 @@
 """
-Global transformer with sequence length=n_step*3, (local_embd, card_and_elixir_embd, arena_cnn_embd)
+Decision transformer with sequence_length=n_step*4, (action, reward, card_and_elixir_embd, arena_cnn_embd)
 """
 import jax, jax.numpy as jnp
 import flax.linen as nn
@@ -41,7 +41,6 @@ class DTConfig(Config):
     self.n_bar_size = np.prod(self.bar_size) * (3 if BAR_RGB else 1)
     assert self.n_embd % self.n_head == 0, "n_embd must be devided by n_head"
     assert self.n_embd % 6 == 0, "We need n_embd be devided by 6, since add the number of cards and elixir is 6"
-    assert self.n_embd_local % self.n_head_local == 0, "n_embd_local must be devided by n_head_local"
     if self.cnn_mode == 'resnet':
       self.bar_cfg = ResNetConfig(stage_sizes=[1,1,2], filters=4)  # 24,912 (99.6 KB)
       self.arena_cfg = ResNetConfig(stage_size=[3,4,6], filters=16)  # 392,736 (1.6 MB)
@@ -161,12 +160,16 @@ class DT(nn.Module):
       Dense(ng)
     ])(arena)
     pos_embd = nn.Embed(4*N, ng, embedding_init=nn.initializers.zeros)(jnp.arange(4*N))[None,...]  # (1, 4*N, Ng)
-    xg = jnp.concatenate([a, r, z_card, z_arena], -1).reshape(B, 4*N, ng) + pos_embd  # (B, 4*N, ng)
+    xg = jnp.concatenate([a, r, z_card, z_arena], -1).reshape(B, 4*N, ng) + pos_embd  # (B, 4*N, Ng)
+    time_embd = nn.Embed(cfg.max_timestep+1, ng, embedding_init=nn.initializers.zeros)(timestep)  # (B, N) -> (B, N, Ng)
+    xg = xg + time_embd.repeat(4, -1).reshape(B, 4*N, ng)
     ### DT ###
     xg = nn.Dropout(cfg.p_drop_embd)(xg, deterministic=not train)
-    block = TransformerBlock(n_embd=self.cfg.n_embd, n_head=self.cfg.n_head, cfg=self.cfg)
     for _ in range(cfg.n_block):
-      xg = block(cfg=self.cfg)(xg, train)
+      mask = jnp.tri(4*N)
+      mask = mask.at[jnp.arange(N) * 4 + 2, jnp.arange(N) * 4 + 3].set(1)
+      block = TransformerBlock(n_embd=self.cfg.n_embd, n_head=self.cfg.n_head, cfg=self.cfg)
+      xg = block(xg, mask=mask, train=train)
     xg = nn.LayerNorm()(xg).reshape(B, N, 4, ng)
     # OLD: action predict just time
     # select = Dense(5, use_bias=False)(xg)
@@ -315,8 +318,10 @@ if __name__ == '__main__':
   n_cards = 20
   n_step = 30
   max_timestep = 300
+  # StARformer:
   # pred_card_idx: Total Parameters: 14,931,040 (59.7 MB)
   # pred_card_name_idx: Total Parameters: 14,933,792 (59.7 MB)
+  # DT: Total Parameters: 3,407,936 (13.6 MB)
   cfg = DTConfig(n_unit=n_unit, n_cards=n_cards, n_step=n_step, max_timestep=max_timestep, cnn_mode='cnn_blocks', pred_card_idx=False)
   print(dict(cfg))
   model = DT(cfg)
