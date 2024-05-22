@@ -7,6 +7,10 @@ img_size = (576, 896)  # width, height
 assert img_size[0] % 32 == 0 and img_size[1] % 32 == 0, "The shape must be 32 multiple"
 
 base_idxs = 15
+### Three Detector ###
+# max_detect_num = 65  # 160  # 85  # 65
+# num_detector = 3  # 1  # 2  # 3
+# noise_unit_ratio = 1/4
 ### Two Detector ###
 max_detect_num = 85  # 160  # 85  # 65
 num_detector = 2  # 1  # 2  # 3

@@ -308,3 +308,9 @@ StARformer
    - `StARformer_3L,n_step=100,epochs=20`
    - `StARformer_3L_pred_cls,n_step=50,epochs=20`
    - `StARformer_2L,n_step=30,epochs=20`
+
+2024.5.21
+1. 测试detector1,2在v0.7.13下的性能：`P,R,mAP50,mAP:0.894,0.801,0.843,0.672`
+1. 测试detector1v0.7.12.2,detector2v0.7.13下的性能：`P,R,mAP50,mAP:0.895,0.798,0.843,0.674`
+1. 测试detector1,2,3在v0.7.13下的性能：`P,R,mAP50,mAP:0.897,0.809,0.852,0.688`
+2. 测试yolov8在没有数据增强下的性能

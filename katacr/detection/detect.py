@@ -5,6 +5,8 @@ python katacv/yolov5/detect.py --path detection_files.txt   # detection_files, e
                                       /your/path/image.jpg  # image formats
                                       /your/path/video.mp4  # video formats
 """
+import os
+os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
 import sys, cv2, glob, os, argparse, numpy as np
 from pathlib import Path
 sys.path.append(str(Path(__file__).parents[2]))
@@ -108,6 +110,7 @@ class Infer:
     else:
       from katacr.utils.model_weights import load_weights_orbax
       self.state = load_weights_orbax(self.state, path_model)
+    self.state = self.state.replace(params=None, batch_stats=None, grads=None)
     
     from katacr.detection.predict import Predictor
     self.predictor = Predictor(self.args, self.state)
