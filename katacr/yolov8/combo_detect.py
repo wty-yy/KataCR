@@ -23,8 +23,8 @@ path_detectors = [
   # path_root / './runs/detector3_v0.7.6.pt',
   # path_root / './runs/detector1_v0.7.8.pt',
   # path_root / './runs/detector2_v0.7.8.pt',
-  path_root / './runs/detector1_v0.7.12.pt',
-  path_root / './runs/detector2_v0.7.12.pt',
+  path_root / './runs/detector1_v0.7.13.pt',
+  # path_root / './runs/detector2_v0.7.13.pt',
 ]
 
 class ComboDetector:

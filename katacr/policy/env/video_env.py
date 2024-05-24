@@ -66,7 +66,7 @@ class VideoEnv:
     self._show_dt()
     return s, a, r
   
-  def step(self, action, max_delay=5):
+  def step(self, action, max_delay=5, prob_img=None):
     """
     Args:
       action (np.ndarray): [select_index, position_xy, (delay)], shape=(3,) or (4,)
