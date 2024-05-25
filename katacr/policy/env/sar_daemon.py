@@ -69,7 +69,7 @@ class SARDaemon:
 
   def _start_new_episode(self):
     # img_size = self.img.shape[:2][::-1]  # (1080, 2400)
-    time.sleep(5)  # wait for OK button
+    time.sleep(10)  # wait for OK button
     img_size = (1080, 2400)
     # End episode OK button
     tap_screen((534/1080,1940/2400), img_size=img_size, delay=10.0)
@@ -132,7 +132,8 @@ class SARDaemon:
         while not self.q_prob_img.empty():
           self.prob_img = self.q_prob_img.get()
         if not hasattr(self, 'prob_img'):
-          self.prob_img = np.zeros_like(rimg, np.uint8)
+          self.prob_img = np.zeros((896, 576, 3), np.uint8)
+        # print(rimg.shape, org_img.shape)
         rimg = np.concatenate([org_img, rimg, self.prob_img], 1)
         rimg_size = rimg.shape[:2][::-1]
         if self.show:
@@ -151,5 +152,6 @@ class SARDaemon:
             self.vid_writer = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, rimg_size)
             # path_save_vid = path_save_dir / f"{self.episode}_org.mp4"
             # self.vid_writer_org = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, org_img_size)
+          print("Write image")
           self.vid_writer.write(rimg)
           # self.vid_writer_org.write(org_img)

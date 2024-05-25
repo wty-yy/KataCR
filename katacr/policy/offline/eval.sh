@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python eval.py --load-epoch 3 --eval-num 20 --model-name "StARformer_3L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step50__0__20240512_181646"
+python eval.py --load-epoch 3 --eval-num 100 --model-name "StARformer_3L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step50__0__20240512_181646"
 # python eval.py --load-epoch 4 --eval-num 20 --model-name "StARformer_3L_v0.8_golem_ai_cnn_blocks__nbc128__ep30__step30__0__20240512_181548"
 
 # Evaluate all models
