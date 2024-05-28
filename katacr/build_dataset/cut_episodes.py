@@ -17,7 +17,7 @@
 '''
 import os, sys
 sys.path.append(os.getcwd())
-from katacr.utils.ffmpeg_tools import ffmpeg_extract_subclip
+from katacr.utils.ffmpeg.ffmpeg_tools import ffmpeg_extract_subclip
 from katacr.utils.related_pkgs.utility import *
 from katacr.build_dataset.utils.split_part import split_part
 from katacr.utils import load_image_array, colorstr, second2str

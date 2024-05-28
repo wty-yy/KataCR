@@ -161,6 +161,6 @@ if __name__ == '__main__':
   )
   ploter.plot(
     ['StARformer_3L_step30', 'StARformer_3L_step50', 'StARformer_3L_step100'],
-    colors=['tab:blue', 'tab:green', 'tab:red'],
+    colors=['tab:blue', 'tab:red', 'tab:green'],
     filename="diff_3L_nstep"
   )

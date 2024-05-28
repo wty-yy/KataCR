@@ -15,7 +15,7 @@ from katacr.policy.env.interact_env import InteractEnv
 from katacr.policy.env.video_env import VideoEnv
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
-from katacr.utils.merge_videos import merge_videos_left_and_right
+from katacr.utils.ffmpeg.merge_videos import merge_videos_left_and_right
 from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
 import time
@@ -171,32 +171,32 @@ class Evaluator:
           prob = prob_pos[i,j]
           pos_drawer.paint((j, i), (0,0,int(255*prob)), f"{prob*100:.1f}")
       pimg = np.array(pos_drawer.image)
-      img = np.concatenate([pimg, simg], 0)
-      if not self.open_window:
-        self.open_window = True
-        cv2.namedWindow("Predict Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-        cv2.resizeWindow("Predict Probability", img.shape[:2][::-1])
-      cv2.imshow("Predict Probability", img)
-      cv2.waitKey(1)
-      if self.save:
-        if self.vid_writer is None:
-          self.path_save_vid = self.path_save_dir / f"{self.episode}_predict.mp4"
-          self.vid_writer = cv2.VideoWriter(str(self.path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, (576, 896))
-        self.vid_writer.write(img)
-    return action
+      prob_img = np.concatenate([pimg, simg], 0)
+      # if not self.open_window:
+      #   self.open_window = True
+      #   cv2.namedWindow("Predict Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+      #   cv2.resizeWindow("Predict Probability", img.shape[:2][::-1])
+      # cv2.imshow("Predict Probability", img)
+      # cv2.waitKey(1)
+      # if self.save:
+      #   if self.vid_writer is None:
+      #     self.path_save_vid = self.path_save_dir / f"{self.episode}_predict.mp4"
+      #     self.vid_writer = cv2.VideoWriter(str(self.path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, (576, 896))
+      #   self.vid_writer.write(img)
+    return action, prob_img
   
-  def _init_vid_writer(self):
-    if self.path_save_dir is None: return
-    if self.vid_writer is not None:
-      time.sleep(3)
-      self.vid_writer.release()
-      path_detection_vid = self.path_save_vid.with_stem(str(self.episode))
-      path_origin_vid = self.path_save_vid.with_stem(str(self.episode)+'_org')
-      path_merge_vid = merge_videos_left_and_right(path_detection_vid, self.path_save_vid)
-      merge_videos_left_and_right(path_origin_vid, path_merge_vid)
-      for p in [path_detection_vid, self.path_save_vid, path_origin_vid, path_merge_vid]:
-        p.unlink()
-      self.vid_writer = None
+  # def _init_vid_writer(self):
+  #   if self.path_save_dir is None: return
+  #   if self.vid_writer is not None:
+  #     time.sleep(3)
+  #     self.vid_writer.release()
+  #     path_detection_vid = self.path_save_vid.with_stem(str(self.episode))
+  #     path_origin_vid = self.path_save_vid.with_stem(str(self.episode)+'_org')
+  #     path_merge_vid = merge_videos_left_and_right(path_detection_vid, self.path_save_vid)
+  #     merge_videos_left_and_right(path_origin_vid, path_merge_vid)
+  #     for p in [path_detection_vid, self.path_save_vid, path_origin_vid, path_merge_vid]:
+  #       p.unlink()
+  #     self.vid_writer = None
   
   def eval(self):
     self.episode = 0
@@ -211,7 +211,7 @@ class Evaluator:
       while not done:
         if s['elixir'] is not None: last_elixir = s['elixir']
         with self.sw[0]:
-          a = self.get_action()
+          a, prob_img = self.get_action()
         a = np.array(a)
         card = self.idx2card[str(s['cards'][a[0]])]
         if a[0] and card == 'empty':
@@ -221,7 +221,7 @@ class Evaluator:
           print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
           a[0] = 0  # Skip
         with self.sw[1]:
-          s, _, r, done, info = self.env.step(a, max_delay=None)
+          s, _, r, done, info = self.env.step(a, max_delay=None, prob_img=prob_img)
           # s, a, r, done = self.env.step(a)
         if a[0]: use_actions += 1
         a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None}
@@ -240,7 +240,7 @@ class Evaluator:
       plt.savefig(str(self.path_save_dir / f"scores_{self.episode}.png"))
       plt.close()
       self.csv_writer.write([self.episode, self.model_name, self.load_epoch, s['time'], score, use_actions])
-      self._init_vid_writer()
+      # self._init_vid_writer()
       if self.eval_num is not None and self.episode == self.eval_num:
         break
     print(colorstr("Finish all evaluation!"))

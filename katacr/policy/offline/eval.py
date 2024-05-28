@@ -17,7 +17,7 @@ from katacr.policy.env.interact_env import InteractEnv
 from katacr.policy.env.video_env import VideoEnv
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
-from katacr.utils.merge_videos import merge_videos_left_and_right
+from katacr.utils.ffmpeg.merge_videos import merge_videos_left_and_right
 from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
 import time

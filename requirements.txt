@@ -3,6 +3,7 @@ flax==0.8.1
 jax==0.4.26
 jaxlib==0.4.26+cuda12.cudnn89
 matplotlib==3.8.2
+moviepy==1.0.3
 numpy==1.26.4
 opencv_python==4.9.0.80
 optax==0.2.2

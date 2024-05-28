@@ -3,6 +3,8 @@ from pathlib import Path
 import multiprocessing, cv2, time
 from katacr.build_dataset.utils.split_part import process_part
 from katacr.policy.env.utils import tap_screen
+from katacr.utils.ffmpeg.format_conversion import compress_video
+import shutil
 DESTROY_FRAME_DELTA_THRE = 10  # wait 10*0.3s after game terminal
 
 path_root = Path(__file__).parents[3]
@@ -93,6 +95,7 @@ class SARDaemon:
           self.vid_writer = None
           # self.vid_writer_org = None
           # print("RELEASE mp4 videos!!!")
+          compress_video(self.path_save_vid)
         self.terminal = False
         self.total_reward = 0
         reset = True
@@ -148,10 +151,9 @@ class SARDaemon:
           cv2.waitKey(1)
         if self.save:
           if self.vid_writer is None:
-            path_save_vid = path_save_dir / f"{self.episode}.mp4"
-            self.vid_writer = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, rimg_size)
+            self.path_save_vid = path_save_dir / f"{self.episode}.mp4"
+            self.vid_writer = cv2.VideoWriter(str(self.path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, rimg_size)
             # path_save_vid = path_save_dir / f"{self.episode}_org.mp4"
             # self.vid_writer_org = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, org_img_size)
-          print("Write image")
           self.vid_writer.write(rimg)
           # self.vid_writer_org.write(org_img)
