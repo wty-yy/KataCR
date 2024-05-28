@@ -5,7 +5,7 @@
 本仓库为我本科设计全部代码，目标是实现一个仅通过移动设备屏幕获取信息并做出决策的智能体，其设计框架如下
 ![架构](asserts/figures/framework.jpg)
 
-使用到的图像数据集：[目标识别、图像分类数据集](https://github.com/wty-yy/Clash-Royale-Detection-Dataset)，
+使用到的图像数据集：[Clash-Royale-Detection-Dataset 目标识别、图像分类数据集](https://github.com/wty-yy/Clash-Royale-Detection-Dataset)。
 
 YOLOv8目标检测
 <div align="center">
@@ -13,7 +13,7 @@ YOLOv8目标检测
   <img src="https://github.com/wty-yy/picture-bed/blob/master/2.gif?raw=true" width="49%">
 </div>
 
-离线强化学习策略与8000分AI进行实时对局
+离线强化学习策略与8000分AI进行实时对局（[12个获胜对局-Bilibili](https://www.bilibili.com/video/BV1xn4y1R7GQ/?vd_source=92e1ce2ebcdd26a23668caedd3c9e57e)）
 <div align="center">
   <img src="https://github.com/wty-yy/picture-bed/blob/master/1_eval.gif?raw=true" width="100%">
   <img src="https://github.com/wty-yy/picture-bed/blob/master/2_eval.gif?raw=true" width="100%">
@@ -65,7 +65,7 @@ python eval_all_unit.py --load-epoch 2 --eval-num 20 --model-name "StARformer_3L
 ```
 
 ## 模型训练
-### YOLOv8模型
+### YOLOv8
 YOLOv8模型的重构内容见[yolov8_modify](./asserts/yolov8_modify.md)。
 - 生成式数据集下载[Clash-Royale-Detection-Dataset](https://github.com/wty-yy/Clash-Royale-Detection-Dataset)，修改[build_dataset/constant.py](./katacr/build_dataset/constant.py)中`path_dataset`参数为本机的数据集路径。
 - 生成式目标识别图像：执行[build_dataset/generator.py](./katacr/build_dataset/generator.py)，即可在`KataCR/logs/generation`文件夹下看到生成的原图像与带目标识别的图像。
@@ -73,7 +73,26 @@ YOLOv8模型的重构内容见[yolov8_modify](./asserts/yolov8_modify.md)。
 ![切片大小分布图](./asserts/figures/segment_size.jpg)
 橙色和绿色虚线分别分割了双和三模型组合所需识别的切片类型，训练不同模型组合方法如下：
   1. 配置多模型参数配置文件[`yolov8/cfg.py`](./katacr/yolov8/cfg.py)
-  2. 执行[`yolov8/model_setup.py`](./katacr/yolov8/model_setup.py)在`./katacr/yolov8/detector{i}`下生成对应的识别器配置（所需识别的类别，验证集路径）
+  2. 执行[`yolov8/model_setup.py`](./katacr/yolov8/model_setup.py)可自动在`./katacr/yolov8/detector{i}`下生成对应的识别器配置用于模型训练（所需识别的类别，验证集路径）
+  3. 配置[`yolov8/ClashRoyale.yaml`](./katacr/yolov8/ClashRoyale.yaml)中`name`模型名称、`device`GPU设别编号和一些数据增强策略
+  4. 训练：执行[`yolov8/train.py`](./katacr/yolov8/train.py)对模型进行训练（本项目的训练曲线图[wandb_YOLOv8](https://wandb.ai/wty-yy/YOLOv8)）
+  5. 验证：执行[`yolov8/combo_validator.py`](./katacr/yolov8/combo_validator.py)对组合模型进行验证
+  6. 推理：执行[`yolov8/combo_detect.py`](./katacr/yolov8/combo_detect.py)对组合模型进行推理（推理中可以制定目标追踪算法）
+- 决策模型训练：
+  1. 离线数据集制作（也可直接从[Clash Royale Replay Dataset](https://github.com/wty-yy/Clash-Royale-Replay-Dataset)下载）：
+    1. 将原始对战视频通过[`build_dataset/cut_episodes.py`](./katacr/build_dataset/cut_episodes.py)通过OCR识别按照回合进行划分
+    2. 使用[`build_dataset/extract_part.py`](./katacr/build_dataset/extract_part.py)将回合中的竞技场部分单独截取出来
+    3. 使用[`policy/replay_data/offline_data_builder.py`](./katacr/policy/replay_data/offline_data_builder.py)进行特征融合制作出离线数据集，制作结果保存于`KataCR/logs/offline/{start-time}/`文件夹下
+
+  2. 参考[train_policy.sh](./train_policy.sh)中代码
+  ```shell
+  CUDA_VISIBLE_DEVICES=$1 \  # 指定GPU编号（只支持单卡训练）
+  python katacr/policy/offline/train.py --wandb \  # 启用wandb在线记录
+    --total-epochs 20 --batch-size 32 --nominal-batch-size 128 \  # 训练参数配置
+   --cnn-mode "cnn_blocks" --name "StARformer_3L_v0.8_golem_ai_interval2" --pred-card-idx --random-interval 2 --n-step 50 \  # 模型参数配置
+    --replay-dataset "/data/user/zhihengwu/Coding/dataset/Clash-Royale-Replay-Dataset/golem_ai"  # 数据集参数配置
+  ```
+  （本项目的训练曲线图[wandb_ClashRoyale_Policy](https://wandb.ai/wty-yy/ClashRoyale%20Policy)）
 
 ## 代码架构
 

@@ -6,7 +6,7 @@ from katacr.yolov8.combo_detect import unit2idx, idx2unit, torchvision
 
 path_root = Path(__file__).parents[2]
 
-path_detectors = [
+path_detectors = [  # The combo detectors to evaluate
   # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector2_v0.7.pt',
   # '/home/yy/Coding/GitHub/KataCR/runs/detector1_v0.7.1.pt',
