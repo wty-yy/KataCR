@@ -361,8 +361,8 @@ if __name__ == '__main__':
   os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'  # allocate GPU memory as needed
   from katacr.build_dataset.constant import path_dataset
   # path_dataset = path_dataset / "replay_data/golem_ai"
-  # path_dataset = path_dataset / "replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
-  path_dataset = "/data/user/zhihengwu/Coding/dataset/Clash-Royale-Replay-Dataset/golem_ai"
+  path_dataset = path_dataset / "replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"
+  # path_dataset = "/data/user/zhihengwu/Coding/dataset/Clash-Royale-Replay-Dataset/golem_ai"
   # path_dataset = "/home/yy/Coding/GitHub/KataCR/logs/offline/test_replay_data"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai"
   # path_dataset = "/home/yy/Coding/datasets/Clash-Royale-Dataset/replay_data/golem_ai/WTY_20240419_golem_ai_episodes_1.npy.xz"

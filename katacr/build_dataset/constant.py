@@ -18,8 +18,8 @@ path_logs.mkdir(exist_ok=True)
 path_features = root / "katacr/features"
 # path_videos = Path("/home/yy/Coding/datasets/CR/fast_pig_2.6")
 # path_dataset = Path("/home/wty/Coding/datasets/CR")
-# path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
-path_dataset = Path("/data/user/wutianyang/dataset/Clash-Royale-Dataset")
+path_dataset = Path("/home/yy/Coding/datasets/Clash-Royale-Dataset")
+# path_dataset = Path("/data/user/wutianyang/dataset/Clash-Royale-Dataset")
 # path_dataset = Path("/data/user/zhihengwu/Coding/dataset/Clash-Royale-Dataset")
 assert path_dataset.exists(), "Dataset not exist!"
 

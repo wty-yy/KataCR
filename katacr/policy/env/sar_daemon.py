@@ -1,11 +1,14 @@
-import multiprocessing, cv2, time
+import numpy as np
 from pathlib import Path
+import multiprocessing, cv2, time
 from katacr.build_dataset.utils.split_part import process_part
 from katacr.policy.env.utils import tap_screen
-DESTROY_FRAME_DELTA_THRE = 10
+from katacr.utils.ffmpeg.format_conversion import compress_video
+import shutil
+DESTROY_FRAME_DELTA_THRE = 10  # wait 10*0.3s after game terminal
 
 path_root = Path(__file__).parents[3]
-path_save_dir = path_root / "logs/intercation" / time.strftime("%Y%m%d_%H:%M:%S")
+path_save_dir = path_root / "logs/interaction" / time.strftime("%Y%m%d_%H:%M:%S")
 
 class SARDaemon:
   WAIT_FOR_NEXT_EPISODE = 1
@@ -15,10 +18,11 @@ class SARDaemon:
       q_reset: multiprocessing.Queue,
       q_sar: multiprocessing.Queue,
       q_info: multiprocessing.Queue,
+      q_prob_img: multiprocessing.Queue,
       show: bool = True, save: bool = False, interval: int = 2
     ):
     from katacr.policy.perceptron.sar_builder import SARBuilder
-    self.q_reset, self.q_sar, self.q_info = q_reset, q_sar, q_info
+    self.q_reset, self.q_sar, self.q_info, self.q_prob_img = q_reset, q_sar, q_info, q_prob_img
     self.show, self.save = show, save
     self.interval = interval
     self.sar_builder = SARBuilder()
@@ -67,6 +71,7 @@ class SARDaemon:
 
   def _start_new_episode(self):
     # img_size = self.img.shape[:2][::-1]  # (1080, 2400)
+    time.sleep(10)  # wait for OK button
     img_size = (1080, 2400)
     # End episode OK button
     tap_screen((534/1080,1940/2400), img_size=img_size, delay=10.0)
@@ -86,15 +91,17 @@ class SARDaemon:
       while not self.q_reset.empty() or self.terminal:
         if self.vid_writer is not None:
           self.vid_writer.release()
-          self.vid_writer_org.release()
+          # self.vid_writer_org.release()
           self.vid_writer = None
-          self.vid_writer_org = None
+          # self.vid_writer_org = None
           # print("RELEASE mp4 videos!!!")
+          compress_video(self.path_save_vid)
         self.terminal = False
         self.total_reward = 0
         reset = True
         reset_id = self.q_reset.get()
         if reset_id == self.AUTO_START_NEXT_EPISODE:
+          # print("Start new episode AUTO!")
           self._start_new_episode()
       if reset:
         self.episode += 1
@@ -125,21 +132,28 @@ class SARDaemon:
         rimg_size = rimg.shape[:2][::-1]
         org_img_size = (int(rimg_size[1]/1280*600), rimg_size[1])
         org_img = cv2.resize(self.img, org_img_size)
+        while not self.q_prob_img.empty():
+          self.prob_img = self.q_prob_img.get()
+        if not hasattr(self, 'prob_img'):
+          self.prob_img = np.zeros((896, 576, 3), np.uint8)
+        # print(rimg.shape, org_img.shape)
+        rimg = np.concatenate([org_img, rimg, self.prob_img], 1)
+        rimg_size = rimg.shape[:2][::-1]
         if self.show:
           if not self.open_window:
             self.open_window = True
-            cv2.namedWindow('Detection', cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-            cv2.resizeWindow('Detection', rimg_size)
-            cv2.namedWindow('Origin', cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-            cv2.resizeWindow('Origin', org_img_size)
-          cv2.imshow('Detection', rimg)
-          cv2.imshow('Origin', org_img)
+            cv2.namedWindow('Agent', cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+            cv2.resizeWindow('Agent', rimg_size)
+            # cv2.namedWindow('Origin', cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+            # cv2.resizeWindow('Origin', org_img_size)
+          cv2.imshow('Agent', rimg)
+          # cv2.imshow('Origin', org_img)
           cv2.waitKey(1)
         if self.save:
           if self.vid_writer is None:
-            path_save_vid = path_save_dir / f"{self.episode}.mp4"
-            self.vid_writer = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, rimg_size)
-            path_save_vid = path_save_dir / f"{self.episode}_org.mp4"
-            self.vid_writer_org = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, org_img_size)
+            self.path_save_vid = path_save_dir / f"{self.episode}.mp4"
+            self.vid_writer = cv2.VideoWriter(str(self.path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, rimg_size)
+            # path_save_vid = path_save_dir / f"{self.episode}_org.mp4"
+            # self.vid_writer_org = cv2.VideoWriter(str(path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, org_img_size)
           self.vid_writer.write(rimg)
-          self.vid_writer_org.write(org_img)
+          # self.vid_writer_org.write(org_img)

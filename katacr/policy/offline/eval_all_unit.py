@@ -3,23 +3,30 @@ Open phone screen video stream:
 sudo modprobe v4l2loopback
 scrcpy --v4l2-sink=/dev/video2 --no-video-playback
 """
-import os
+import os, sys
+from pathlib import Path
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+path_root = Path(__file__).parents[3]
+sys.path.append(str(path_root))
 from katacr.utils.ckpt_manager import CheckpointManager
 from katacr.policy.offline.dataset import build_feature
 import cv2, jax
 from katacr.policy.env.interact_env import InteractEnv
 from katacr.policy.env.video_env import VideoEnv
-from pathlib import Path
 import numpy as np
 from katacr.utils import colorstr, Stopwatch
-from katacr.utils.merge_videos import merge_videos_left_and_right
+from katacr.utils.ffmpeg.merge_videos import merge_videos_left_and_right
 from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
 import time
+from katacr.utils.csv_writer import CSVWriter
 
-path_root = Path(__file__).parents[3]
-path_weights = path_root / "logs/Policy/StARformer_3L_v0.7_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_231638/ckpt"
+MODEL_NAME = "StARformer_3L_v0.7_golem_ai_cnn_blocks__nbc128__ep30__0__20240510_231638"
+CSV_TITLE = ['episode', 'model_name', 'epoch', 'survival_time', 'total_reward', 'use_actions']
+class_merge = [
+  {'ice-spirit', 'ice-spirit-evolution'},
+  {'skeleton', 'skeleton-evolution'}
+]
 
 def pad_along_axis(array: np.ndarray, target_length: int, axis: int = 0) -> np.ndarray:
   """ This function would pad at the end of certain axis, https://stackoverflow.com/a/49766444 """
@@ -35,11 +42,11 @@ class Evaluator:
   a_key = ['select', 'pos']
 
   def __init__(
-      self, path_weights=path_weights, vid_path=None, show=True, save=False,
-      rtg=3, deterministic=True, verbose=False, show_predict=True
+      self, path_weights, load_epoch=None, vid_path=None, show=True, save=False,
+      rtg=3., deterministic=True, verbose=False, show_predict=True, eval_num=None
     ):
     self.base_rtg, self.deterministic = rtg, deterministic
-    self.verbose, self.show_predict = verbose, show_predict
+    self.verbose, self.show_predict, self.eval_num = verbose, show_predict, eval_num
     self.show, self.save = show, save
     if vid_path is not None:
       self.env = VideoEnv(vid_path, action_freq=2, show=show, verbose=verbose)
@@ -49,22 +56,25 @@ class Evaluator:
       self.path_save_dir = self.env.path_save_dir
     self.rng = jax.random.PRNGKey(42)
     self.open_window = False
-    self._load_model(path_weights)
+    self._load_model(path_weights, load_epoch)
     self.vid_writer = None
+    self.csv_writer = CSVWriter(self.path_save_dir / f"{self.model_name}_load{self.load_epoch}.csv", title=CSV_TITLE)
   
-  def _load_model(self, path_weights):
+  def _load_model(self, path_weights, load_epoch=None):
     print("Loading policy model...", end='')
     ckpt_mngr = CheckpointManager(str(path_weights))
-    load_step = int(sorted(Path(path_weights).glob('*'))[-1].name)
-    # load_step = 25
-    load_info = ckpt_mngr.restore(load_step)
+    self.model_name = Path(path_weights).parent.name
+    if load_epoch is not None:
+      self.load_epoch = load_epoch
+    else:
+      self.load_epoch = int(sorted(Path(path_weights).glob('*'))[-1].name)
+    load_info = ckpt_mngr.restore(self.load_epoch)
     params, cfg = load_info['variables']['params'], load_info['config']
     if 'StARformer' in str(path_weights):
       from katacr.policy.offline.starformer import StARformer, StARConfig, TrainConfig
       if 'cnn_mode' not in cfg:
         cfg['cnn_mode'] = 'resnet'
       self.model = StARformer(StARConfig(**cfg))
-      self.model_name = 'StARformer'
     if 'ViDformer' in str(path_weights):
       from katacr.policy.offline.vidformer import ViDformer, ViDConfig, TrainConfig
       self.model = ViDformer(ViDConfig(**cfg))
@@ -137,17 +147,24 @@ class Evaluator:
       pad(self.rtg),
       pad(self.timestep),
       step_len, rng, self.deterministic))
-    action = np.array(action[0])
-    for i in range(len(cards)):
-      if self.idx2card[cards[i]] == 'ice-spirit-evolution':
-        cards[i] = self.card2idx['ice-spirit']
-    action[0] = np.argmax(logits_select[0,cards])+1
     prob_select_all = np.exp(logits_select-logits_select.max())[0]
     prob_select_all /= prob_select_all.sum()
+    action = np.array(action[0])  # make a copy
+    # Merge card and its evolution probability
+    prob_select = []
+    for i in range(len(cards)):
+      prob = 0
+      c = self.idx2card[cards[i]]
+      cs = [c]
+      for merge in class_merge:
+        if c in merge: cs = merge
+      prob = sum([prob_select_all[self.card2idx[c]] for c in cs])
+      prob_select.append(prob)
+    prob_select = np.array(prob_select)
+    action[0] = np.argmax(prob_select) + 1
     for i in np.argsort(prob_select_all)[::-1]:
       print(f"{self.idx2card[i]}={prob_select_all[i]:.2f}", end=',')
     print()
-    prob_select = np.exp(logits_select[0,cards]-logits_select[0,cards].max())
     prob_select /= prob_select.sum()
     prob_x = np.exp(logits_x-logits_x.max())[0].reshape(1, 18)
     prob_x /= prob_x.sum()
@@ -160,6 +177,7 @@ class Evaluator:
     # if step_len == 30:
     #   np.save("/home/yy/Coding/GitHub/KataCR/logs/intercation/video1_eval_dataset_50.npy", data, allow_pickle=True)
     #   exit()
+    prob_img = None
     if self.show_predict:
       sel_drawer = GridDrawer(1, 5, size=(576, 50))
       sel_drawer.paint((0, 0), (0,0,0), f"delay:\n{action[-1]:.0f}")  # future action
@@ -178,35 +196,39 @@ class Evaluator:
           prob = prob_pos[i,j]
           pos_drawer.paint((j, i), (0,0,int(255*prob)), f"{prob*100:.1f}")
       pimg = np.array(pos_drawer.image)
-      img = np.concatenate([pimg, simg], 0)
-      if not self.open_window:
-        self.open_window = True
-        cv2.namedWindow("Predict Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-        cv2.resizeWindow("Predict Probability", img.shape[:2][::-1])
-      cv2.imshow("Predict Probability", img)
-      cv2.waitKey(1)
-      if self.save:
-        if self.vid_writer is None:
-          self.path_save_vid = self.path_save_dir / f"{self.episode}_predict.mp4"
-          self.vid_writer = cv2.VideoWriter(str(self.path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, (576, 896))
-        self.vid_writer.write(img)
-    return action
+      prob_img = np.concatenate([pimg, simg], 0)
+      # if not self.open_window:
+      #   self.open_window = True
+      #   cv2.namedWindow("Predict Probability", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+      #   cv2.resizeWindow("Predict Probability", img.shape[:2][::-1])
+      # cv2.imshow("Predict Probability", img)
+      # cv2.waitKey(1)
+      # if self.save:
+      #   if self.vid_writer is None:
+      #     self.path_save_vid = self.path_save_dir / f"{self.episode}_predict.mp4"
+      #     self.vid_writer = cv2.VideoWriter(str(self.path_save_vid), cv2.VideoWriter_fourcc(*'mp4v'), 10, (576, 896))
+      #   self.vid_writer.write(img)
+    return action, prob_img
   
-  def _init_vid_writer(self):
-    if self.path_save_dir is None: return
-    if self.vid_writer is not None:
-      time.sleep(1)
-      self.vid_writer.release()
-      merge_videos_left_and_right(self.path_save_vid.with_stem(str(self.episode)), self.path_save_vid)
-      self.vid_writer = None
+  # def _init_vid_writer(self):
+  #   if self.path_save_dir is None: return
+  #   if self.vid_writer is not None:
+  #     time.sleep(3)
+  #     self.vid_writer.release()
+  #     path_detection_vid = self.path_save_vid.with_stem(str(self.episode))
+  #     path_origin_vid = self.path_save_vid.with_stem(str(self.episode)+'_org')
+  #     path_merge_vid = merge_videos_left_and_right(path_detection_vid, self.path_save_vid)
+  #     merge_videos_left_and_right(path_origin_vid, path_merge_vid)
+  #     for p in [path_detection_vid, self.path_save_vid, path_origin_vid, path_merge_vid]:
+  #       p.unlink()
+  #     self.vid_writer = None
   
   def eval(self):
     self.episode = 0
     while True:
-      score = 0
+      scores, use_actions = [], 0
       self._init_sart()
-      self._init_vid_writer()
-      s, a, _ = self.env.reset()
+      s, a, _ = self.env.reset(auto=self.eval_num is not None)
       self.episode += 1
       last_elixir = 0
       now_rtg, done = self.base_rtg, False
@@ -214,7 +236,7 @@ class Evaluator:
       while not done:
         if s['elixir'] is not None: last_elixir = s['elixir']
         with self.sw[0]:
-          a = self.get_action(s['cards'][1:])
+          a, prob_img = self.get_action(s['cards'][1:])
         a = np.array(a)
         card = self.idx2card[s['cards'][a[0]]]
         if a[0] and card == 'empty':
@@ -223,21 +245,45 @@ class Evaluator:
         if a[0] and card2elixir[card] > last_elixir:
           print(f"Skip action, since no enough elixir for card {card}={card2elixir[card]} > {last_elixir}")
           a[0] = 0  # Skip
+        if last_elixir == 10:
+          a[-1] = 0  # NO delay
         with self.sw[1]:
-          s, _, r, done = self.env.step(a)
+          s, _, r, done, info = self.env.step(a, max_delay=8, prob_img=prob_img)
           # s, a, r, done = self.env.step(a)
+        if a[0]: use_actions += 1
         a = {'card_id': a[0], 'xy': a[1:3] if a[0] != 0 else None, 'delay': a[3]}
-        print("Action:", a)
+        # print("Action:", a)
         # When use future action predict, a[0] in [1,2,3,4]
         if self.verbose:
           print(colorstr("Time used (Eval):"), *[f"{k}={self.sw[i].dt*1e3:.1f}ms" for k, i in zip(['policy', 'step'], range(2))])
         now_rtg = max(now_rtg-r, 1)
         self._add_sart(s, a, now_rtg, s['time'])
-        score += r
+        score = info['total_reward']
+        scores.append(score)
       print(f"score {score}, timestep {s['time']}")
+      import matplotlib.pyplot as plt
+      plt.plot(scores)
+      plt.tight_layout()
+      plt.savefig(str(self.path_save_dir / f"scores_{self.episode}.png"))
+      plt.close()
+      self.csv_writer.write([self.episode, self.model_name, self.load_epoch, s['time'], score, use_actions])
+      # self._init_vid_writer()
+      if self.eval_num is not None and self.episode == self.eval_num:
+        break
+    print(colorstr("Finish all evaluation!"))
 
 if __name__ == '__main__':
-  evaluator = Evaluator(path_weights, show=True, save=True, deterministic=True)
+  import argparse
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--model-name", default=MODEL_NAME,
+    help="The policy model weights directory name in 'KataCR/logs/Policy/{model_name}'")
+  parser.add_argument("--load-epoch", type=int, default=None,
+    help="The load epoch id in 'KataCR/logs/Policy/{model_name}/ckpt/{load_epoch}'")
+  parser.add_argument("--eval-num", type=int, default=20,
+    help="The automatically evaluation number times")
+  args = parser.parse_args()
+  path_weights = path_root / f"logs/Policy/{args.model_name}/ckpt"
+  evaluator = Evaluator(path_weights, load_epoch=args.load_epoch, show=True, save=True, deterministic=True, eval_num=args.eval_num)
   # vid_path = "/home/yy/Videos/CR_Videos/test/golem_ai/1.mp4"
   # evaluator = Evaluator(path_weights, vid_path, show=True, deterministic=False, verbose=False)
   evaluator.eval()
