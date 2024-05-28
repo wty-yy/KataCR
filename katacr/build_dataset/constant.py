@@ -7,6 +7,7 @@
 @Blog    : https://wty-yy.xyz/
 @Desc    : 
 This file is used to define the clip rate for each part.
+Change path_dataset to Clash-Royale-Detection-Dataset directory!
 '''
 from pathlib import Path
 
