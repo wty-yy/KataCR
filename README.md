@@ -5,13 +5,19 @@
 本仓库为我本科设计全部代码，目标是实现一个仅通过移动设备屏幕获取信息并做出决策的智能体，其设计框架如下
 ![架构](asserts/figures/framework.jpg)
 
-使用到的图像数据集：[Clash-Royale-Detection-Dataset 目标识别、图像分类数据集](https://github.com/wty-yy/Clash-Royale-Detection-Dataset)。
+生成式目标识别数据集构建方法
+![生成式数据集流程](asserts/figures/detection_dataset_building.png)
+
+制作的图像数据集：[GitHub - Clash-Royale-Detection-Dataset 目标识别、图像分类数据集](https://github.com/wty-yy/Clash-Royale-Detection-Dataset)。
 
 YOLOv8目标检测
 <div align="center">
   <img src="https://github.com/wty-yy/picture-bed/blob/master/1.gif?raw=true" width="49%">
   <img src="https://github.com/wty-yy/picture-bed/blob/master/2.gif?raw=true" width="49%">
 </div>
+
+决策模型架构设计
+![决策模型](asserts/figures/policy_model.png)
 
 离线强化学习策略与8000分AI进行实时对局（[12个获胜对局-Bilibili](https://www.bilibili.com/video/BV1xn4y1R7GQ/?vd_source=92e1ce2ebcdd26a23668caedd3c9e57e)）
 <div align="center">

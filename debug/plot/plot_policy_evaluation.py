@@ -29,9 +29,12 @@ config = {
 }
 plt.rcParams.update(config)
 translation = {
-  'survival_time': '对局时长',
-  'total_reward': '总奖励',
-  'use_actions': '动作数',
+  # 'survival_time': '对局时长',
+  'survival_time': 'Match duration',
+  # 'total_reward': '总奖励',
+  'total_reward': 'Total reward',
+  # 'use_actions': '动作数',
+  'use_actions': 'Number of actions',
 }
 
 class Ploter:
@@ -96,7 +99,8 @@ class Ploter:
           if self.get_name(d) != name: continue
           eval = d['eval']
           name = self.get_name(d)
-          label = name.replace('_', ' ').replace('pred cls', '（预测全体类别）').replace('no delay', '（离散预测）')
+          # label = name.replace('_', ' ').replace('pred cls', '（预测全体类别）').replace('no delay', '（离散预测）')
+          label = name.replace('_', ' ').replace('pred cls', '(Predict all classes)').replace('no delay', '(Discrete actions)')
           x = np.array(eval['ep'], np.int32)
           y = np.array(eval[key]['mu'], np.float32)
           mx = np.array(eval[key]['max'], np.float32)
@@ -114,8 +118,10 @@ class Ploter:
         # ax.set_ylim(*axis[2:])
         xticks = list(np.arange(0,axis[1],1)+1)
         ax.set_xticks(xticks)
-        ax.set_xlabel("训练回合")
-        ax.set_title(translation[key])
+        # ax.set_xlabel("训练回合")
+        ax.set_xlabel("Epoch")
+        # ax.set_title(translation[key])
+        ax.set_ylabel(translation[key])
     for d in self.data:
       if self.get_name(d) in model_names:
         eval = d['eval']
@@ -132,9 +138,11 @@ class Ploter:
         print(get_best(eval))
         print("="*10)
     fig.legend(*axs[0].get_legend_handles_labels(), loc='lower center', ncols=ncols, frameon=False)
-    fig.tight_layout(w_pad=0)
+    # fig.tight_layout(w_pad=0)
+    fig.tight_layout(w_pad=1)
     fig.subplots_adjust(bottom=subplot_bottom)
     plt.savefig(filename+".pdf")
+    # plt.savefig(filename+".svg")
     plt.show()
   
   @property

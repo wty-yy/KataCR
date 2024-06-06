@@ -4,15 +4,21 @@
 
 This repository contains all the code for my undergraduate design project, aiming to implement an agent that makes decisions solely based on information obtained from mobile device screens. The design framework is as follows:
 
-![Framework](asserts/figures/framework.jpg)
+![Framework](asserts/figures/framework_en.png)
 
-The image dataset used: [Clash-Royale-Detection-Dataset Object Recognition and Image Classification Dataset](https://github.com/wty-yy/Clash-Royale-Detection-Dataset).
+Building generative object detection dataset
+![Generative object detection dataset](asserts/figures/detection_dataset_building_en.png)
+
+The image dataset used: [GitHub - Clash-Royale-Detection-Dataset Object Recognition and Image Classification Dataset](https://github.com/wty-yy/Clash-Royale-Detection-Dataset).
 
 YOLOv8 Object Detection
 <div align="center">
   <img src="https://github.com/wty-yy/picture-bed/blob/master/1.gif?raw=true" width="49%">
   <img src="https://github.com/wty-yy/picture-bed/blob/master/2.gif?raw=true" width="49%">
 </div>
+
+Policy model struct design
+![policy model](asserts/figures/policy_model_en.png)
 
 Offline reinforcement learning strategy with 8000-point AI for real-time battles ([12 winning battles - Bilibili](https://www.bilibili.com/video/BV1xn4y1R7GQ/?vd_source=92e1ce2ebcdd26a23668caedd3c9e57e))
 <div align="center">
