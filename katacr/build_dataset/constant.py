@@ -28,7 +28,7 @@ image_size_part2 = (568, 896)  # ratio: 1.57~1.58
 split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
   # Forall height/width = 2.16~2.17
   # 'part1_2.16': (0.835, 0.075, 0.165, 0.025),  # just time
-  'part1_2.16': (0.835, 0.063, 0.165, 0.038),  # time and head text
+  'part1_2.16': (0.835, 0.063, 0.165, 0.038),  # left top time
   # 'part1': {  # number ocr
   #   'time': (0.835, 0.074, 0.165, 0.025),
   #   'hp0':  (0.166, 0.180, 0.090, 0.020),
@@ -38,7 +38,7 @@ split_bbox_params = {  # format: [x_top_left, y_top_left, width, hight]
   #   'hp4':  (0.756, 0.617, 0.090, 0.020),
   #   'hp5':  (0.511, 0.753, 0.090, 0.020),
   # },
-  'part2_2.16': (0.021, 0.073, 0.960, 0.700),  # battle field, image size: (568, 896), origin: 592x1282, ratio: 2.16~2.17
+  'part2_2.16': (0.021, 0.073, 0.960, 0.700),  # battle field (Arena), image size: (568, 896), origin: 592x1282, ratio: 2.16~2.17
   'part3_2.16': (0.000, 0.808, 1.000, 0.155),  # card table
   'part4_2.16': {  # center word ocr
     'up': (0.100, 0.340, 0.800, 0.070),

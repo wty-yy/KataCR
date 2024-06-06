@@ -54,7 +54,22 @@ conda install -c conda-forge cudatoolkit=11.8 cudnn=8.9  # or cudatoolkit=12.0 c
 Scrcpy的安装方法见[scrcpy/doc/linux](https://github.com/Genymobile/scrcpy/blob/master/doc/linux.md)
 
 ## 模型验证
-三种不同模型的验证方法不同
+> 注意：由于我使用的手机屏幕分辨率为 `1080x2400` 高比宽为 `2.22`，其他屏幕位置的相对参数均在该分辨率比例下确定，如果需要使用不同的分辨率，请在 [`constant.py`](./katacr/build_dataset/constant.py) 中修改 `split_bbox_params` 中的 `part{idx}_{ratio}`，其中 `idx=1,2,3` 分别表示右上角时间图像位置，中间竞技场和下方手牌区域，可以使用 [`split_part.py`](./katacr/build_dataset/utils/split_part.py) 进行调试，`ratio` 为你的手机屏幕高比宽比例。
+### 目标识别模型
+这里给出最佳性能双目标组合识别器，将模型权重文件放到 `KataCR/runs` 下，修改代码 [`combo_detect.py`](./katacr/yolov8/combo_detect.py) 中的识别视频文件，即可在 `KataCR/logs/detection/{start-time}` 下看到目标识别出的结果。
+| 模型名称 | 参数下载 | 更新时间 |
+| - | - | - |
+| YOLOv8 x2 | [detector1 v0.7.13](https://drive.google.com/file/d/1DMD-EYXa1qn8lN4JjPQ7UIuOMwaqS5w_/view?usp=drive_link), [detector2 v0.7.13](https://drive.google.com/file/d/1yEq-6liLhs_pUfipJM1E-tMj6l4FSbxD/view?usp=drive_link) | 2024.05.01. |
+
+### 分类模型
+这是两个用ResNet实现的模型
+| 模型名称 | 参数下载 | 备注 |
+| - | - | - |
+| 卡牌分类器 | [CardClassification](https://drive.google.com/drive/folders/1Ely1gIOEOui7uHLppeS7tLXNtdkvit07?usp=drive_link) | 仅对2.6速猪卡牌进行分类 |
+| 圣水分类器 | [ElixirClassification](https://drive.google.com/drive/folders/1cuqD_WQaa4uOlzSVEqLUwGmy0XNucteU?usp=drive_link) | 仅对圣水数字-1,-2,-3,-4进行分类 |
+
+### 决策模型
+三种不同决策模型的验证方法不同
 | | 连续动作预测模型（有Delay） | 离散动作预测模型（无Delay） | 连续动作预测全卡牌模型 |
 |-|-|-|-|
 | 验证代码 | [eval.py](./katacr/policy/offline/eval.py) | [eval_no_delay.py](./katacr/policy/offline/eval_no_delay.py) | [eval_all_unit.py](./katacr/policy/offline/eval_all_unit.py) |
@@ -69,6 +84,7 @@ python eval.py --load-epoch 8 --eval-num 20 --model-name "DT_4L_v0.8_golem_ai_cn
 python eval_no_delay.py --load-epoch 1 --eval-num 20 --model-name "StARformer_no_delay_2L_v0.8_golem_ai_cnn_blocks__nbc128__ep20__step50__0__20240520_205252"
 python eval_all_unit.py --load-epoch 2 --eval-num 20 --model-name "StARformer_3L_pred_cls_v0.8_golem_ai_cnn_blocks__nbc128__ep20__step50__0__20240516_125201"
 ```
+模型会自动点击屏幕中的几个位置进入训练师对局，当然这几个点位也是相对 `2.22` 分辨率高宽比设定的，自行对 [`sar_daemon.py`](./katacr/policy/env/sar_daemon.py) 中的 `def _start_new_episode(self)` 函数进行修改。
 
 ## 模型训练
 ### YOLOv8
