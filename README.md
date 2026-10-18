@@ -86,6 +86,20 @@ python eval_all_unit.py --load-epoch 2 --eval-num 20 --model-name "StARformer_3L
 ```
 模型会自动点击屏幕中的几个位置进入训练师对局，当然这几个点位也是相对 `2.22` 分辨率高宽比设定的，自行对 [`sar_daemon.py`](./katacr/policy/env/sar_daemon.py) 中的 `def _start_new_episode(self)` 函数进行修改。
 
+### ADB 设备输入
+
+实时交互默认使用摄像头视频流，也可以通过 ADB 从 Android 设备或模拟器读取截图并执行点击：
+
+```shell
+export KATACR_INTERACT_SOURCE=adb
+export KATACR_ADB=adb
+export KATACR_ADB_SERIAL=127.0.0.1:5555
+export KATACR_ADB_TARGET_RATIO=2.16
+export KATACR_ADB_NORMALIZE=resize_width  # or center_crop
+```
+
+`KATACR_ADB_SERIAL` 可省略，此时使用 ADB 默认设备。截图会先按目标高宽比归一化，动作坐标再映射回设备原始分辨率。设备连接、截图和点击由 [`katacr/policy/env/adb.py`](./katacr/policy/env/adb.py) 提供；具体页面导航和训练场点位仍需根据设备界面配置。
+
 ## 模型训练
 ### YOLOv8
 YOLOv8模型的重构内容见[yolov8_modify](./asserts/yolov8_modify.md)。

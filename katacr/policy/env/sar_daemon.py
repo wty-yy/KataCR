@@ -1,7 +1,9 @@
 import numpy as np
 from pathlib import Path
 import multiprocessing, cv2, time
+import os
 from katacr.build_dataset.utils.split_part import process_part
+from katacr.policy.env.adb import AdbDevice, normalize_frame
 from katacr.policy.env.utils import tap_screen
 from katacr.utils.ffmpeg.format_conversion import compress_video
 import shutil
@@ -28,8 +30,20 @@ class SARDaemon:
     self.sar_builder = SARBuilder()
     self.q_info.put({'idx2card': self.sar_builder.visual_fusion.classifier.idx2card, 'path_save_dir': path_save_dir})
     self.ocr = self.sar_builder.action_builder.ocr  # Share OCR with action text OCR
-    self.cap = cv2.VideoCapture(2)
-    assert self.cap.isOpened(), "The phone stream can't connect!"
+    self.source = os.getenv("KATACR_INTERACT_SOURCE", "camera").lower()
+    self.tap_offset = (0, 0)
+    self.tap_scale = (1, 1)
+    self.adb_device = None
+    if self.source == "adb":
+      self.adb_device = AdbDevice()
+      self.target_ratio = float(os.getenv("KATACR_ADB_TARGET_RATIO", "2.16"))
+      self.normalize_mode = os.getenv("KATACR_ADB_NORMALIZE", "resize_width")
+      self.cap = None
+    elif self.source == "camera":
+      self.cap = cv2.VideoCapture(2)
+      assert self.cap.isOpened(), "The phone stream can't connect!"
+    else:
+      raise ValueError(f"unknown interaction source: {self.source}")
     self.open_window = False
     self.vid_writer = None
     if self.save:
@@ -42,13 +56,23 @@ class SARDaemon:
   
   def _read_img(self):
     self.timestamp = time.time()
+    if self.source == "adb":
+      self.raw_img = self.adb_device.screencap()
+      img, self.tap_offset, self.tap_scale = normalize_frame(
+        self.raw_img,
+        target_ratio=self.target_ratio,
+        mode=self.normalize_mode,
+      )
+      return img
     _, img = self.cap.read()
+    self.tap_offset = (0, 0)
+    self.tap_scale = (1, 1)
     return img
 
   def _wait_next_episode(self):
     """ Wait for entering one episode """
     start_time = time.time()
-    while self.cap.isOpened():
+    while self._is_open():
       img = self._read_img()
       t = self.ocr.process_part1(process_part(img, 1))
       ep_flag = self.ocr.process_center_texts(img)
@@ -58,6 +82,9 @@ class SARDaemon:
       if time.time() - start_time > 2:
         print("Wait for opening new episode...")
         start_time = time.time()
+
+  def _is_open(self):
+    return True if self.source == "adb" else self.cap.isOpened()
 
   def _check_terminal(self):
     if self.first_terminal_time is None:
@@ -118,6 +145,8 @@ class SARDaemon:
       self.count += 1
       if self.count % self.interval == 0:
         info = {'dt': {}, 'timestamp': self.timestamp, 'img_size': self.img.shape[:2][::-1]}
+        info['tap_offset'] = self.tap_offset
+        info['tap_scale'] = self.tap_scale
         info['dt']['sar_update'] = sum(dt)
         s, a, r, dt = self.sar_builder.get_sar(verbose=False)
         self.total_reward += r
