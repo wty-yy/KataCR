@@ -44,6 +44,8 @@ class InteractEnv:
     self.q_reset.put(SARDaemon.AUTO_START_NEXT_EPISODE if auto else SARDaemon.WAIT_FOR_NEXT_EPISODE)
     s, a, r, done, info = self.q_sar.get()
     self.img_size = info['img_size']
+    self.tap_offset = info.get('tap_offset', (0, 0))
+    self.tap_scale = info.get('tap_scale', (1, 1))
     self.dt.update(info['dt'])
     assert not done
     self._show_dt()
@@ -58,10 +60,21 @@ class InteractEnv:
       return xy
     params = const.part3_bbox_params[select]
     tap2part = params[0]+params[2]/2, params[1]+params[3]/2
-    tap_screen(get_xy(3, tap2part), img_size=self.img_size, delay=delay)
+    tap_screen(
+      get_xy(3, tap2part),
+      img_size=self.img_size,
+      delay=delay,
+      offset=self.tap_offset,
+      scale=self.tap_scale,
+    )
     params = cell2pixel(xy)
     tap2part = [params[i] / background_size[i] for i in range(2)]
-    tap_screen(get_xy(2, tap2part), img_size=self.img_size)
+    tap_screen(
+      get_xy(2, tap2part),
+      img_size=self.img_size,
+      offset=self.tap_offset,
+      scale=self.tap_scale,
+    )
 
   def step(self, action, max_delay=5, prob_img=None):
     """
@@ -81,6 +94,8 @@ class InteractEnv:
     s, a, r, done, info = self.q_sar.get()
     while action[0] and not done and act_time is not None and info['timestamp'] < act_time:  # wait SAR after action complete
       s, a, r, done, info = self.q_sar.get()
+    self.tap_offset = info.get('tap_offset', self.tap_offset)
+    self.tap_scale = info.get('tap_scale', self.tap_scale)
     self.dt.update(info['dt'])
     self._show_dt()
     return s, a, r, done, info

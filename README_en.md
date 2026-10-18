@@ -87,6 +87,20 @@ python eval_all_unit.py --load-epoch 2 --eval-num 20 --model-name "StARformer_3L
 ```
 The model will automatically click on several positions on the screen to enter trainer matches. These positions are also set relative to the `2.22` resolution aspect ratio. Modify the `def _start_new_episode(self)` function in [`sar_daemon.py`](./katacr/policy/env/sar_daemon.py) accordingly.
 
+### ADB device input
+
+The realtime interaction path uses a camera stream by default. It can also read screenshots and send taps through ADB to an Android device or emulator:
+
+```shell
+export KATACR_INTERACT_SOURCE=adb
+export KATACR_ADB=adb
+export KATACR_ADB_SERIAL=127.0.0.1:5555
+export KATACR_ADB_TARGET_RATIO=2.16
+export KATACR_ADB_NORMALIZE=resize_width  # or center_crop
+```
+
+`KATACR_ADB_SERIAL` is optional and defaults to the ADB default device. Screenshots are normalized to the target aspect ratio, then action coordinates are mapped back to the original device resolution. [`katacr/policy/env/adb.py`](./katacr/policy/env/adb.py) provides the device backend; page navigation and trainer coordinates still need to match the connected device.
+
 ## Model Training
 ### YOLOv8
 For the reconstruction of the YOLOv8 model, see [yolov8_modify](./asserts/yolov8_modify.md).
