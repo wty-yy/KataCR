@@ -18,6 +18,7 @@ from katacr.utils import colorstr, Stopwatch
 from katacr.utils.ffmpeg.merge_videos import merge_videos_left_and_right
 from katacr.constants.card_list import card2elixir
 from katacr.policy.replay_data.data_display import GridDrawer
+from katacr.policy.offline.eval_output import resolve_output_dir
 import time
 from katacr.utils.csv_writer import CSVWriter
 
@@ -49,8 +50,9 @@ class Evaluator:
     self.verbose, self.show_predict, self.eval_num = verbose, show_predict, eval_num
     self.show, self.save = show, save
     if vid_path is not None:
-      self.env = VideoEnv(vid_path, action_freq=2, show=show, verbose=verbose)
-      self.path_save_dir = None
+      self.env = VideoEnv(
+        vid_path, action_freq=2, show=show, save=save, verbose=verbose)
+      self.path_save_dir = resolve_output_dir(path_root, vid_path, save=save)
     else:
       self.env = InteractEnv(show=show, save=save)
       self.path_save_dir = self.env.path_save_dir
@@ -58,7 +60,12 @@ class Evaluator:
     self.open_window = False
     self._load_model(path_weights, load_epoch)
     self.vid_writer = None
-    self.csv_writer = CSVWriter(self.path_save_dir / f"{self.model_name}_load{self.load_epoch}.csv", title=CSV_TITLE)
+    self.csv_writer = None
+    if self.path_save_dir is not None:
+      self.path_save_dir.mkdir(parents=True, exist_ok=True)
+      self.csv_writer = CSVWriter(
+        self.path_save_dir / f"{self.model_name}_load{self.load_epoch}.csv",
+        title=CSV_TITLE)
   
   def _load_model(self, path_weights, load_epoch=None):
     print("Loading policy model...", end='')
@@ -234,12 +241,13 @@ class Evaluator:
         score = info['total_reward']
         scores.append(score)
       print(f"score {score}, timestep {s['time']}")
-      import matplotlib.pyplot as plt
-      plt.plot(scores)
-      plt.tight_layout()
-      plt.savefig(str(self.path_save_dir / f"scores_{self.episode}.png"))
-      plt.close()
-      self.csv_writer.write([self.episode, self.model_name, self.load_epoch, s['time'], score, use_actions])
+      if self.path_save_dir is not None:
+        import matplotlib.pyplot as plt
+        plt.plot(scores)
+        plt.tight_layout()
+        plt.savefig(str(self.path_save_dir / f"scores_{self.episode}.png"))
+        plt.close()
+        self.csv_writer.write([self.episode, self.model_name, self.load_epoch, s['time'], score, use_actions])
       # self._init_vid_writer()
       if self.eval_num is not None and self.episode == self.eval_num:
         break
